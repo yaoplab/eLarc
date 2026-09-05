@@ -270,3 +270,50 @@ passent en `ILIKE` pour matcher aussi les nouveaux chemins :
 - Les selects `QPushButton` dans les QSS fonctionnent encore via héritage Qt
 
 ---
+
+## Itération 5 — 2026-09-05 : Design System P0+P1 fixes
+
+### Audit design (UI review)
+Analyse du design system LarcCommon + phibuilder révèle 5 points d'amélioration. Priorisation :
+- **P0** : Radius incohérent + secondary_container mal mapée + contrastes dark mode
+- **P1** : Fixer secondary_container distinctiveness
+- **P2-P3** : Elevations, type scale, palette doc
+
+### Changements P0+P1
+
+#### 1. Radius normalisé (design_system.py)
+- **Avant** : 8 valeurs mi-Fibonacci mi-M3 (0, 5, 12, 16, 28 px)
+- **Après** : 4 valeurs M3 standard claires
+  - `radius_sm = 4px` (TextFields)
+  - `radius_md = 8px` (Buttons)
+  - `radius_lg = 12px` (Cards, Dialogs)
+  - `radius_xl = 28px` (Pills, BottomNav)
+- Aliases backward compat : `radius_xs`, `radius_btn`, `radius_none` pointent vers nouvelles valeurs
+
+#### 2. Secondary container corrigé (theme.py)
+- **Bug** : `_LarcM3Colors.secondary_container = p.primary_container` (écrasait la palette)
+- **Fix** : `_LarcM3Colors.secondary_container = p.secondary_container` (utilise couleur propre)
+- Impact : Hiérarchie couleurs primaire/secondaire now distinct (primary bleu, secondary slate)
+
+#### 3. Dark mode contrast amélioré (theme.py palette dark)
+- `text_soft` : #A5B0BF → #CBD5E1 (contraste 4.5:1 → ~5.5:1, WCAG AA ✓)
+- `text_disabled` : #64748B → #94A3B8 (meilleur pour petits textes)
+- `secondary_container` : #334155 → #475569 (plus distinctif de primary_container #1E3A8A)
+- `border` / `border_light` : ajusté pour cohérence slate
+
+#### 4. RADIUS_BTN uniformisé (phibuilder/phi/scale.py)
+- **Avant** : RADIUS_BTN = 5 (Fibonacci F₅)
+- **Après** : RADIUS_BTN = 8 (M3 standard radius-medium)
+
+### Fichiers modifiés
+- `LarcCommon/larccommon/design_system.py` : radius normalisé + aliases
+- `LarcCommon/larccommon/theme.py` : secondary_container fix + dark palette
+- `LarcCommon/phibuilder/phi/scale.py` : RADIUS_BTN value
+
+### Prochaines étapes
+1. P2 : Implémenter elevations M3 (5 niveaux ombres)
+2. P3 : Type scale documentation + validation
+3. Tertiary integration (ou removal si non utilisée)
+4. Audit contraste complet WCAG AAA
+
+---
