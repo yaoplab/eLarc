@@ -2,8 +2,8 @@ from enum import IntEnum
 from phibuilder.phi.constants import PHI
 from phibuilder.phi.sequence import fibonacci
 
-# Rayon des boutons — Fibonacci F₅ (skill pyside6-data-entry-ui-builder)
-RADIUS_BTN = 5
+# Rayon des boutons — M3 standard 8px (shape-medium)
+RADIUS_BTN = 8
 
 class SpacingToken(IntEnum):
     NONE = 0

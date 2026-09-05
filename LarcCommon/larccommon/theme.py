@@ -21,7 +21,7 @@ class _LarcM3Colors:
         self.on_primary_container = p.text_strong
         self.secondary = p.secondary
         self.on_secondary = p.on_secondary
-        self.secondary_container = p.primary_container
+        self.secondary_container = p.secondary_container
         self.on_secondary_container = p.text_strong
         self.tertiary = p.tertiary
         self.on_tertiary = p.on_tertiary
@@ -174,7 +174,7 @@ _THEME_PALETTES = {
         primary_container="#1E3A8A",
         secondary="#64748B",
         on_secondary="#FFFFFF",
-        secondary_container="#334155",
+        secondary_container="#475569",
         tertiary="#38BDF8",
         on_tertiary="#082F49",
         tertiary_container="#0C4A6E",
@@ -188,13 +188,13 @@ _THEME_PALETTES = {
         outline="#334155",
         outline_variant="#475569",
         text_strong="#F1F5F9",
-        text_soft="#A5B0BF",
-        text_disabled="#64748B",
+        text_soft="#CBD5E1",
+        text_disabled="#94A3B8",
         active="#24A9E1",
         accent="#24A9E1",
-        inactive="#64748B",
-        border="#334155",
-        border_light="#475569",
+        inactive="#94A3B8",
+        border="#475569",
+        border_light="#64748B",
     ),
     "sobre": Palette(
         primary="#1F4494",

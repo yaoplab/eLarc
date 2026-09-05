@@ -27,15 +27,16 @@ class _DesignSystem(QObject):
         # Constantes fondamentales
         self.GOLDEN = 1.618033988749895
         self.border_width = 1
-        # Shapes M3 (voir Sous-système C du skill design-system-larc)
-        # Skill data-entry-ui : cartes/champs = angles droits (0), boutons 5px (F₅)
-        self.radius_none = 0      # shape-none — DataTable, ListItem
-        self.radius_xs = 0         # shape-extra-small — TextField (angles droits)
-        self.radius_sm = 0         # shape-small — Card (angles droits)
-        self.radius_btn = 5        # boutons — Fibonacci F₅ (skill data-entry-ui)
-        self.radius_md = 12        # shape-medium — Dialog, Drawer
-        self.radius_lg = 16        # shape-large — Filled Button, FAB (NOT pill)
-        self.radius_xl = 28        # shape-extra-large — Pill, BottomNav
+        # Shapes M3 — hiérarchie claire en 4 niveaux
+        self.radius_sm = 4         # shape-small — TextField (M3 standard 4px)
+        self.radius_md = 8         # shape-medium — Button (M3 standard 8px)
+        self.radius_lg = 12        # shape-large — Card, Dialog (M3 standard 12px)
+        self.radius_xl = 28        # shape-extra-large — Pill, BottomNav (M3 standard 28px)
+
+        # Aliases pour backward compatibility (code existant)
+        self.radius_none = self.radius_sm    # compat: shape-none → radius_sm
+        self.radius_xs = self.radius_sm      # compat: shape-extra-small → radius_sm
+        self.radius_btn = self.radius_md     # compat: Fibonacci F₅ → M3 radius_md (8px)
 
         # Variants M3 (raccourcis pour les widgets phibuilder)
         self.BTN_FILLED   = ButtonVariant.FILLED
