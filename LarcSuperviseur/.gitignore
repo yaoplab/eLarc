@@ -1,0 +1,34 @@
+# Credentials
+config.ini
+.env
+secrets.env
+
+# Base de données
+*.db
+
+# Python
+__pycache__/
+*.py[codz]
+*$py.class
+*.so
+*.pyd
+.venv/
+venv/
+env/
+
+# IDE
+.idea/
+.vscode/
+.obsidian/
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Source photos (processed 500×500 PNGs in photos/ root are tracked)
+photos/FB/
+photos/Fond-Blanc/
+photos/Gaits/

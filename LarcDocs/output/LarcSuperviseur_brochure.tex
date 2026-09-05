@@ -1,0 +1,79 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[french]{babel}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{geometry}
+\geometry{margin=2cm, bottom=2.5cm}
+\usepackage{hyperref}
+\usepackage{xcolor}
+
+\definecolor{larcblue}{HTML}{1565C0}
+\definecolor{larclight}{HTML}{E3F2FD}
+
+\newcommand{\larcsection}[1]{
+  \vspace{1em}
+  {\color{larcblue}\Large\textbf{#1}}
+  \vspace{0.5em}
+}
+
+\begin{document}
+\thispagestyle{empty}
+
+\begin{center}
+  {\Huge\color{larcblue}\textbf{LarcSuperviseur}}\\[0.3cm]
+  {\Large Supervision des présences et événements}
+\end{center}
+
+\vspace{0.8cm}
+
+\begin{center}
+\fcolorbox{larcblue}{larclight}{
+  \begin{minipage}{0.85\textwidth}
+    \centering
+    Application de supervision pour le suivi des présences, retards et événements des élèves.
+  \end{minipage}
+}
+\end{center}
+
+\larcsection{Points clés}
+
+\begin{itemize}
+  \item \textbf{Suivi des absences et retards en temps réel}
+  \item \textbf{Génération d'événements (absence journée, retard, événements)}
+  \item \textbf{Statistiques par groupe, classe et élève}
+  \item \textbf{Tableau de bord avec KPIs et graphiques}
+  \item \textbf{Gestion des photos élèves}
+  \item \textbf{Éditeur d'emploi du temps}
+\end{itemize}
+
+\larcsection{Bénéfices}
+
+\begin{itemize}
+  \item \textbf{Gain de temps} : automatisation des tâches répétitives
+  \item \textbf{Fiabilité} : données sécurisées sur PostgreSQL
+  \item \textbf{Ergonomie} : interface Material Design~3 intuitive
+  \item \textbf{Flexibilité} : mode connecté (Intranet/Cloud) ou hors-ligne
+  \item \textbf{Évolutivité} : mises à jour régulières
+\end{itemize}
+
+\vspace{1.5cm}
+
+\begin{center}
+\fbox{
+  \begin{minipage}{0.85\textwidth}
+    \centering
+    {\large\textbf{Contact}}\\[0.3cm]
+    \textbf{Arc-en-Ciel}\\
+    Email : \href{mailto:contact@arc-en-ciel.education}{contact@arc-en-ciel.education}\\
+    Site : \href{https://www.arc-en-ciel.education}{www.arc-en-ciel.education}
+  \end{minipage}
+}
+\end{center}
+
+\vfill
+
+\begin{center}
+  {\footnotesize\color{gray} LarcSuperviseur — Une solution de la suite Larc}
+\end{center}
+
+\end{document}

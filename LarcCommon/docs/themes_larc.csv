@@ -1,0 +1,72 @@
+Propriété,Blue,Dark,Sobre,Contrasté,Usage ds
+primary,#1565C0,#64B5F6,#37474F,#0033A0,ds.p.primary
+on_primary,#FFFFFF,#0D2137,#FFFFFF,#FFFFFF,ds.p.on_primary
+primary_container,#BBDEFB,#1E3A5F,#CFD8DC,#80B3FF,ds.p.primary_container
+secondary,#00897B,#81C784,#546E7A,#005A9E,ds.p.secondary
+on_secondary,#FFFFFF,#1B3A1B,#FFFFFF,#FFFFFF,ds.p.on_secondary
+secondary_container,#B2DFDB,#2E5C2E,#B0BEC5,#80D0FF,ds.p.secondary_container
+tertiary,#E65100,#FFB74D,#78909C,#C62828,ds.p.tertiary
+on_tertiary,#FFFFFF,#3E2C00,#FFFFFF,#FFFFFF,ds.p.on_tertiary
+tertiary_container,#FFCC80,#5C4300,#CFD8DC,#FFB3B3,ds.p.tertiary_container
+error,#C62828,#EF9A9A,#BF360C,#B71C1C,ds.p.error
+on_error,#FFFFFF,#5C1A1A,#FFFFFF,#FFFFFF,ds.p.on_error
+error_container,#FFCDD2,#7C2020,#FFCCBC,#FFCDD2,ds.p.error_container
+success,#2E7D32,#81C784,#33691E,#1B5E20,ds.p.success
+surface,#F5F7FA,#1E1E1E,#FAFAFA,#FFFFFF,ds.p.surface
+surface_variant,#E8EAF6,#2D2D2D,#EEEEEE,#D6E8FF,ds.p.surface_variant
+background,#F5F7FA,#121212,#FFFFFF,#FFFFFF,ds.p.background
+text_strong,#1B1B1F,#E0E0E0,#212121,#000000,ds.p.text_strong
+text_soft,#455A64,#9E9E9E,#616161,#1A1A1A,ds.p.text_soft
+text_disabled,#90A4AE,#616161,#9E9E9E,#555555,ds.p.text_disabled
+outline,#546E7A,#616161,#BDBDBD,#000000,ds.p.outline
+outline_variant,#B0BEC5,#424242,#E0E0E0,#333333,ds.p.outline_variant
+active,#1565C0,#64B5F6,#37474F,#0033A0,ds.p.active
+inactive,#90A4AE,#616161,#BDBDBD,#666666,ds.p.inactive
+card_bg,#FFFFFF,#252525,#FFFFFF,#FFFFFF,ds.p.card_bg
+header_bg,#1565C0,#1E3A5F,#37474F,#0033A0,ds.p.header_bg
+header_text,#FFFFFF,#64B5F6,#FFFFFF,#FFFFFF,ds.p.header_text
+accent,#00897B,#81C784,#546E7A,#005A9E,ds.p.accent
+danger,#C62828,#EF9A9A,#BF360C,#B71C1C,ds.p.danger
+
+,,,,
+PARAMÈTRES,Blue,Dark,Sobre,Contrasté,Note
+Seed M3,#1565C0,#212121,#37474F,#0033A0,Généré par materialyoucolor
+Dark mode,non,oui,non,non,Impacte M3ColorScheme
+radius,4,6,4,6,DesignTokens
+radius_lg,8,10,8,10,DesignTokens
+radius_xl,12,14,12,14,DesignTokens
+field_pad_v,8,10,8,10,DesignTokens
+field_pad_h,12,14,12,16,DesignTokens
+btn_pad_v,8,10,8,10,DesignTokens
+btn_pad_h,20,22,20,24,DesignTokens
+spacing,6,6,6,8,DesignTokens
+margin,16,16,16,20,DesignTokens
+
+,,,,
+DESIGN SYSTEM (ds),Valeur,Fibonacci,Description
+space_xxs,4,XXS × 4,Très petit espacement
+space_xs,8,XS × 4,Petit espacement
+space_sm,12,SM × 4,Espacement standard
+space_md,20,MD × 4,Espacement moyen
+space_lg,32,LG × 4,Grand espacement
+space_xl,52,XL × 4,Très grand espacement
+space_xxl,84,XXL × 4,Espacement énorme
+field_height,32,=space_lg,Hauteur des champs
+button_height,52,=space_xl,Hauteur des boutons
+header_height,52,=space_xl,Hauteur des en-têtes
+icon_md,32,=space_lg,Taille icône medium
+GOLDEN,1.618,φ,Constante nombre d'or
+border_width,1,,Épaisseur des bordures
+
+,,,,
+M3 BUTTON VARIANTS (ds),Couleur fond,Couleur texte,Hover
+BTN_FILLED,primary,on_primary,primary_container
+BTN_TONAL,primary_container,text_strong,primary_container
+BTN_OUTLINED,transparent,primary,outline border
+BTN_TEXT,transparent,primary,
+
+,,,,
+QSS HELPERS,,,,
+ds.flat_input_qss(),QLineEdit avec border,padding 20px,hover/focus/disabled
+ds.table_qss(),M3TableWidget,padding 20px,rows/header style
+ds.panel_qss(),QFrame,radius 8px,border + background

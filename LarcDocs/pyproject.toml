@@ -1,0 +1,49 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.package-dir]
+"LarcDocs" = "."
+"LarcDocs.views" = "views"
+"LarcDocs.common" = "common"
+
+[tool.setuptools]
+packages = ["LarcDocs", "LarcDocs.views", "LarcDocs.common"]
+
+[project]
+name = "larcdocs"
+version = "0.1.0"
+description = "LarcDocs — Générateur de documentation et publicité"
+requires-python = ">=3.10"
+license = "MIT"
+dependencies = [
+    "PySide6>=6.5",
+    "psycopg2-binary>=2.9",
+    "materialyoucolor>=3.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=9",
+    "pytest-qt>=4",
+    "ruff>=0.15",
+    "black>=26",
+    "pre-commit>=4",
+]
+
+[tool.ruff]
+line-length = 160
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W"]
+ignore = ["E501", "E701", "E702", "E741", "F841"]
+
+[tool.black]
+line-length = 160
+target-version = ["py310"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+

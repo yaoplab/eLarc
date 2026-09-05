@@ -1,0 +1,46 @@
+# Classification des tables par niveau de sync
+
+| Table | Niveau | Fréquence |
+|---|---|---|
+| larcauth_learnerdp_has_termsubjectdp | 1 | 5 min |
+| larcauth_learnerpei_has_termsubjectpei | 1 | 5 min |
+| larcauth_evaluation | 1 | 5 min |
+| larcauth_learner_has_termsubject | 1 | 5 min |
+| larcauth_learner_has_termothersubject | 1 | 5 min |
+| larcauth_student_has_dayevents | 1 | 5 min |
+| larcauth_termsubject_has_homework | 1 | 5 min |
+| larcauth_aecuser | 2 | 1 h |
+| staff_dossier_check | 2 | 1 h |
+| staff_dossier_status | 2 | 1 h |
+| larcauth_classroom_has_timeperiod | 2 | 1 h |
+| larcauth_classroom_termothersubject | 2 | 1 h |
+| larcauth_classroom_termsubject | 2 | 1 h |
+| larcauth_edt_classe | 2 | 1 h |
+| larcauth_learner_has_subjectgroup | 2 | 1 h |
+| larcauth_learner_has_term | 2 | 1 h |
+| larcauth_student | 2 | 1 h |
+| larcauth_teachadm | 2 | 1 h |
+| larcauth_academicyear | 3 | 1 jour |
+| larcauth_agenda | 3 | 1 jour |
+| larcauth_campus | 3 | 1 jour |
+| larcauth_classroom | 3 | 1 jour |
+| larcauth_concept | 3 | 1 jour |
+| larcauth_criteria_of_levelsubject | 3 | 1 jour |
+| larcauth_district | 3 | 1 jour |
+| larcauth_gender | 3 | 1 jour |
+| larcauth_globalcontext | 3 | 1 jour |
+| larcauth_language | 3 | 1 jour |
+| larcauth_level | 3 | 1 jour |
+| larcauth_levelsubject | 3 | 1 jour |
+| larcauth_lieu | 3 | 1 jour |
+| larcauth_natureparentutor | 3 | 1 jour |
+| larcauth_program | 3 | 1 jour |
+| larcauth_subjectgroup | 3 | 1 jour |
+| larcauth_term | 3 | 1 jour |
+| larcauth_timeperiod | 3 | 1 jour |
+| larcauth_type_event | 3 | 1 jour |
+| larcauth_unit | 3 | 1 jour |
+| larcauth_student_has_events | _A revoir_ | — |
+| larcauth_student_has_termevents | _A revoir_ | — |
+| larcauth_student_has_weekevents | _A revoir_ | — |
+| larcauth_unit_period | _A revoir_ | — |

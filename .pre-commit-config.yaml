@@ -1,0 +1,49 @@
+# Pre-commit hooks pour le Design System Larc
+# 
+# Installation :
+#   pip install pre-commit && pre-commit install
+#   
+# Ce fichier est la config CENTRALE — tous les projets Larc pointent
+# vers lui via leur .pre-commit-config.yaml local.
+#
+# Voir Sous-système D2 du skill design-system-larc
+#
+# Règles actives :
+#   D1  — setText() HTML sans color: explicite
+#   J7  — M3Frame/QWidget/QFrame avec background QSS sans WA_StyledBackground
+#   D3  — Couleurs hex hardcodées (#xxxxxx) dans setStyleSheet()
+#   D4  — Contrastes insuffisants (text_soft + petit texte / fond surface_variant)
+#   D5  — color: text_soft dans setStyleSheet() inline
+#   D6  — setStyleSheet palette sans theme_changed.connect
+#   D7  — Widgets manquants dans _restyle()
+#   R   — Zéro hardcoding pixels (ds.space_*, ds.radius_*, s())
+#   Q1+Q3 — Tables interactives sans curseur main / eventFilter (Sous-système Q)
+
+repos:
+  - repo: local
+    hooks:
+      - id: lint-dlinter
+        name: 🎨 Linter Design System Larc (D1+J7+D3+D4+D5+D6+D7)
+        description: >
+          Vérifie que tout le code Larc respecte les règles du design system :
+          D1=HTML color, J7=WA_StyledBackground, D3=hex hardcodés,
+          D4=contraste, D5=text_soft inline, D6=theme_changed.connect,
+          D7=complétude _restyle()
+        entry: python C:/projets/scripts/lint_d1_color_checker.py --rule D1+J7+D3+D4+D5+D6+D7 --fix-only
+        language: system
+        files: \.py$
+        stages: [pre-commit]
+        verbose: true
+        pass_filenames: false
+      - id: lint-rlinter
+        name: 🔬 Linter QSS Larc (R + Q1+Q3 + Q2 — zéro hardcoding)
+        description: >
+          Vérifie le ZERO hardcoding pixels (Sous-système R) et la règle Q1+Q3
+          (tables interactives sans curseur main ni eventFilter) du skill
+          design-system-larc. Retourne 1 si une violation est détectée.
+        entry: python C:/projets/scripts/lint_qss_hardcoding.py --fix-only
+        language: system
+        files: \.py$
+        stages: [pre-commit]
+        verbose: true
+        pass_filenames: false

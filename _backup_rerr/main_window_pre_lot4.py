@@ -1,0 +1,1887 @@
+from larccommon.design_system import ds
+from larccommon.icons import icon as md3_icon
+from larccommon.l10n import _
+from larccommon.safe_slot import safe_slot
+from larccommon.session import UserRole
+from phibuilder.widgets import (
+    M3Button,
+    M3ComboBox,
+    M3Frame,
+    M3HeaderView,
+    M3Label,
+    M3Menu,
+    M3ScrollArea,
+    M3StackedWidget,
+    M3TableWidget,
+    M3TabWidget,
+    M3TextEdit,
+)
+from PySide6.QtCharts import (
+    QBarCategoryAxis,
+    QBarSeries,
+    QBarSet,
+    QChart,
+    QChartView,
+    QDateTimeAxis,
+    QLineSeries,
+    QPieSeries,
+    QValueAxis,
+)
+from PySide6.QtCore import QDate, QDateTime, QEvent, QSize, Qt, QTime, QTimer
+from PySide6.QtGui import QBrush, QColor, QFont, QPainter
+from PySide6.QtWidgets import (
+    QApplication,
+    QButtonGroup,
+    QDialog,
+    QGridLayout,
+    QHBoxLayout,
+    QMessageBox,
+    QTableWidget,
+    QTableWidgetItem,
+    QVBoxLayout,
+    QWidget,
+)
+
+from LarcSuperviseur.common.database import db
+from LarcSuperviseur.views.panels.event_types_panel import EventTypesPanel
+from LarcSuperviseur.common.event_helpers import event_color, event_icon
+from LarcSuperviseur.common.logger import log
+from LarcSuperviseur.common.session import session
+from LarcSuperviseur.common.theme import QssHelper, theme_manager
+from larccommon.theme import PROGRAM_STYLES
+from LarcSuperviseur.common.trace import trace
+from LarcSuperviseur.views.core.cardsList.card import StudentCard
+from LarcSuperviseur.views.core.cardsList.config import CARD_THEMES
+from LarcSuperviseur.views.core.event_actions import EventActions
+from LarcSuperviseur.views.core.time_manager import TimeManager
+from LarcSuperviseur.views.dialogs.event_generator import EventGenerator
+from LarcSuperviseur.views.dialogs.timetable_editor import TimetableEditor
+from LarcSuperviseur.views.panels.student_detail import StudentDetail
+from LarcSuperviseur.views.top_bar import TopBar
+from larccommon.widgets.sidebar import SidebarWidget
+from larccommon.widgets.skeleton import M3Skeleton
+from larccommon.widgets.themed_widget import ThemedWidget
+
+
+# ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# Fenêtre principale
+# ---------------------------------------------------------------------------
+class MainWindow(QWidget):
+    @property
+    def _STYLE(self) -> str:
+        p = theme_manager.palette
+        d = theme_manager.design
+        s = theme_manager.font_size
+        return f"""
+            {QssHelper.top_bar(p, d)}
+            {QssHelper.panel(p, d)}
+            {QssHelper.panel_title(p, s, 14)}
+            {QssHelper.table(p, d, s)}
+            {QssHelper.combobox(p, d)}
+            {QssHelper.push_button(p, d, s)}
+            {QssHelper.section_btn(p, d, s)}
+            {QssHelper.class_btn(p, d, s)}
+            {QssHelper.period_btn(p, d)}
+            {QssHelper.kpi_common(p, d, s)}
+            {QssHelper.phi_btn(p, d)}
+            QPushButton#theme_btn {{
+                background: transparent; border: none; font-size: {s(18)}px;
+            }}
+            QPushButton#tt_btn {{
+                background: {p.surface_variant}; color: {p.text_strong};
+                border: none; border-radius: {d.radius}px; padding: {d.field_pad_v}px {d.field_pad_h}px;
+                font-size: {s(10)}px;
+            }}
+            QPushButton#tt_btn:hover {{
+                background: {p.primary}; color: {p.on_primary};
+            }}
+            QLabel#kpi_small_value {{
+                font-size: {s(18)}px; font-weight: bold; color: {p.primary};
+            }}
+            QLabel#kpi_small_label {{
+                font-size: {s(9)}px; color: {p.text_strong};
+            }}
+            QLabel#sd_photo {{
+                background: {p.surface_variant}; border-radius: {d.radius_lg}px;
+            }}
+            QLabel#sd_contact_value {{
+                font-size: {s(13)}px; color: {p.text_strong}; padding-left: {d.radius_lg}px;
+            }}
+            QLabel#sd_contact_label {{
+                font-size: {s(13)}px; color: {p.text_strong};
+            }}
+            QPushButton#sd_back {{
+                background: transparent; color: {p.primary};
+                border: none; font-weight: bold;
+                font-size: {s(11)}px; padding: {d.btn_sm_pad_v}px {d.spacing}px;
+            }}
+            QPushButton#sd_back:hover {{
+                color: {p.active};
+            }}
+            QPushButton#sd_add_event {{
+                background: {p.primary}; color: {p.on_primary};
+                border: none; border-radius: {d.radius_xl}px; font-weight: bold;
+                font-size: {s(28)}px;
+            }}
+            QPushButton#sd_add_event:hover {{
+                background: {p.active};
+            }}
+            QLabel#sd_placeholder {{
+                color: {p.text_disabled}; font-size: {s(14)}px;
+            }}
+            QLabel#sd_class {{
+                color: {p.text_strong}; font-size: {s(11)}px;
+            }}
+            QWidget#group_page {{
+                background: {p.background};
+            }}
+        """
+
+    def __init__(self):
+        super().__init__()
+        trace(" MainWindow.__init__: démarre")
+        self.setWindowTitle(_("main.title").format(name=session.full_name, role=session.role.value))
+        self._current_class_id: int = 0
+        self._current_class_label: str = ""
+        self._selected_btn: M3Button | None = None
+        self._current_group_mode: str = ""  # 'pei', 'dp', 'etab', 'class'
+        self._current_weekday: int = 0
+        self._selected_student_id: int = 0
+        self._students: list[dict] = []
+        self._classes: list = []
+        self._programs: dict = {}
+        self._time_manager = TimeManager()
+        self._actions = EventActions()
+        self._load_user_prefs()  # avant _init_ui pour éviter thème mixte
+        self._init_ui()
+        ds.theme_changed.connect(self._restyle)
+        trace(" MainWindow.__init__: _init_ui OK, appel _load_initial_data")
+        self._load_initial_data()
+        trace(" MainWindow.__init__: _load_initial_data terminé")
+        QTimer.singleShot(30000, self._refresh_timer)
+
+    def _init_ui(self):
+        self.setStyleSheet(self._STYLE)
+        d = theme_manager.design
+        outer = QVBoxLayout()
+        outer.setContentsMargins(d.spacing, d.spacing, d.spacing, d.spacing)
+        outer.setSpacing(d.spacing)
+
+        # -- Top bar ------------------------------------------------------------
+        self._top_bar = TopBar(
+            on_period_click=self._on_period_clicked,
+            on_theme_change=self._on_theme_selected,
+            on_refresh=self.refresh_all,
+        )
+        outer.addWidget(self._top_bar)
+
+        # -- Main area (sidebar + content) ------------------------------------
+        main_h = QHBoxLayout()
+        main_h.setContentsMargins(0, 0, 0, 0)
+        main_h.setSpacing(d.spacing)
+
+        # Sidebar gauche — SidebarWidget partagé (Sous-système K)
+        _sections = [
+            (_("sidebar.section_primaire"), [("PYP", "PYP"), ("PP", "PP")]),
+            (_("sidebar.section_college"), [("PEI", "PEI"), ("MYP", "MYP")]),
+            (_("sidebar.section_lycee"), [("DP", "DPFr"), ("DPEn", "DPEn")]),
+        ]
+        # Couleurs des programmes centralisées dans larccommon.theme.PROGRAM_STYLES
+        self._sidebar = SidebarWidget(_sections, PROGRAM_STYLES)
+        if session.role in (UserRole.ADMIN, UserRole.COORD):
+            self._sidebar.set_header_widgets([self._build_event_types_btn()])
+        self._sidebar.group_selected.connect(self._on_sidebar_group_selected)
+        self._sidebar.class_selected.connect(lambda cid, label: self._on_class_clicked(cid, label))
+        self._sidebar.all_selected.connect(self._on_all_clicked)
+
+        # Content area
+        self._content_stack = M3StackedWidget()
+
+        # Page 0: Mode groupe (KPIs + charts + tables)
+        self._group_page = ThemedWidget(object_name="group_page")
+        self._group_scroll = M3ScrollArea()
+        self._group_scroll.setWidgetResizable(True)
+        self._group_scroll.setWidget(self._group_page)
+        self._group_scroll.setFrameShape(M3Frame.NoFrame)
+        # Fond du viewport = couleur réelle (PAS « transparent » : un viewport
+        # transparent casse l'héritage des palettes Qt et noircit tous les
+        # widgets en dessous — noms illisibles en thème contrasté, 2026-08-16)
+        self._group_scroll.viewport().setStyleSheet(
+            f"background: {theme_manager.palette.background};")
+        group_layout = QVBoxLayout(self._group_page)
+        group_layout.setContentsMargins(0, 0, 0, 0)
+        group_layout.setSpacing(ds.space_xs)
+
+        # -- Ligne KPIs --
+        kpi_row = QHBoxLayout()
+        kpi_row.setSpacing(ds.space_xs)
+        self._kpi_cards = {}
+        # Period label
+        self._kpi_period = M3Label("—")
+        self._kpi_period.setObjectName("kpi_value")
+        self._kpi_period.setAlignment(Qt.AlignCenter)
+        period_card = M3Frame()
+        period_card.setObjectName("kpi_card")
+        period_card.setFixedHeight(ds.kpi_card_height)
+        period_card.setAttribute(Qt.WA_StyledBackground, True)
+        pcl = QVBoxLayout(period_card)
+        pcl.setContentsMargins(ds.space_xs, ds.space_xxs, ds.space_xs, ds.space_xxs)
+        pcl.addWidget(self._kpi_period)
+        period_label = M3Label(_("kpi.period"))
+        period_label.setObjectName("kpi_label")
+        period_label.setAlignment(Qt.AlignCenter)
+        pcl.addWidget(period_label)
+        kpi_row.addWidget(period_card)
+
+        for k, label in [
+            ("total", _("kpi.total")),
+            ("present", _("kpi.present")),
+            ("absent", _("kpi.absent")),
+            ("exit", _("kpi.exit")),
+        ]:
+            card = M3Frame()
+            card.setObjectName("kpi_card")
+            card.setFixedHeight(ds.kpi_card_height)
+            card.setAttribute(Qt.WA_StyledBackground, True)
+            cl = QVBoxLayout(card)
+            cl.setContentsMargins(ds.space_xs, ds.space_xxs, ds.space_xs, ds.space_xxs)
+            val = M3Label("—")
+            val.setObjectName("kpi_value")
+            val.setAlignment(Qt.AlignCenter)
+            lbl = M3Label(label)
+            lbl.setObjectName("kpi_label")
+            lbl.setAlignment(Qt.AlignCenter)
+            cl.addWidget(val)
+            cl.addWidget(lbl)
+            self._kpi_cards[k] = val
+            kpi_row.addWidget(card)
+        group_layout.addLayout(kpi_row)
+
+        # -- Liste des absents (apres KPIs, avant historique) --
+        self._absents_group = M3Frame()
+        self._absents_group.setObjectName("panel")
+        self._absents_group.setAttribute(Qt.WA_StyledBackground, True)
+        absents_layout = QVBoxLayout(self._absents_group)
+        absents_title = M3Label(f"<b>{_('kpi.absent')}</b>")
+        absents_title.setObjectName("panel_title")
+        absents_layout.addWidget(absents_title)
+        self._absents_table = M3TableWidget()
+        self._absents_table.setColumnCount(3)
+        self._absents_table.setHorizontalHeaderLabels(
+            [_("table.header.name"), _("table.header.class"), _("table.header.reason")]
+        )
+        self._absents_table.horizontalHeader().setStretchLastSection(True)
+        self._absents_table.setEditTriggers(M3TableWidget.NoEditTriggers)
+        self._absents_table.setSelectionBehavior(M3TableWidget.SelectRows)
+        self._absents_table.setMaximumHeight(ds.kpi_card_height * 2 + ds.space_md)
+        absents_layout.addWidget(self._absents_table)
+        self._absents_group.setVisible(False)
+        self._history_group = M3Frame()
+        self._history_group.setObjectName("panel")
+        self._history_group.setAttribute(Qt.WA_StyledBackground, True)
+        self._history_layout = QVBoxLayout(self._history_group)
+        history_title = M3Label(f"<b>{_('history.title')}</b>")
+        history_title.setObjectName("panel_title")
+        self._history_table = M3TableWidget()
+        self._history_table.setAlternatingRowColors(False)
+        self._history_table.horizontalHeader().setStretchLastSection(True)
+        self._history_table.setEditTriggers(M3TableWidget.NoEditTriggers)
+        self._history_table.setSelectionBehavior(M3TableWidget.SelectRows)
+        self._history_table.setSortingEnabled(True)
+        self._history_table.setContextMenuPolicy(Qt.CustomContextMenu)
+        self._history_table.customContextMenuRequested.connect(
+            lambda pos: self._show_event_context_menu(self._history_table, pos)
+        )
+        self._history_table.viewport().setCursor(Qt.PointingHandCursor)
+        self._history_table.setToolTip(_("history.dblclick_hint"))
+        self._history_table.installEventFilter(self)
+        self._history_table.cellDoubleClicked.connect(self._on_history_dblclick)
+        self._history_layout.addWidget(history_title)
+        # -- Filtres --
+        filter_row = QHBoxLayout()
+        filter_row.setSpacing(d.spacing)
+        self._history_filter_class = M3ComboBox()
+        self._history_filter_class.setMinimumWidth(ds.avatar)  # 150px
+        self._history_filter_class.addItem(_("history.filter_all_classes"), "")
+        filter_row.addWidget(M3Label(_("history.filter_class") + ":"))
+        filter_row.addWidget(self._history_filter_class)
+        self._history_filter_type = M3ComboBox()
+        self._history_filter_type.setMinimumWidth(ds.window_width * 3 // 20)  # 180px
+        self._history_filter_type.setEditable(True)
+        self._history_filter_type.lineEdit().setPlaceholderText(
+            _("history.filter_type_placeholder")
+        )
+        filter_row.addWidget(M3Label(_("history.filter_type") + ":"))
+        filter_row.addWidget(self._history_filter_type)
+        filter_row.addSpacing(ds.space_xs)
+        filter_btn = M3Button(_("history.filter_button"))
+        filter_btn.setCursor(Qt.PointingHandCursor)
+        filter_btn.clicked.connect(self._on_filter_history)
+        filter_row.addWidget(filter_btn)
+        filter_row.addStretch()
+        self._history_layout.addLayout(filter_row)
+        self._history_layout.addWidget(self._history_table)
+        self._history_group.setMinimumHeight(ds.window_height * 2 // 5)  # 320px
+        hist_row = QHBoxLayout()
+        hist_row.setAlignment(Qt.AlignTop)
+        hist_row.addWidget(self._history_group, 3)
+        hist_row.addWidget(self._absents_group, 1, Qt.AlignTop)
+        group_layout.addLayout(hist_row, 1)
+
+        # -- Bottom row: charts (tabbed) + stats table --
+        bottom_row = QHBoxLayout()
+        bottom_row.setSpacing(ds.space_xs)
+
+        self._charts_tabs = M3TabWidget()
+        self._charts_tabs.setMinimumSize(
+            ds.window_width * 7 // 20, ds.window_height * 3 // 8  # 420×300
+        )
+
+        tab_abs = QWidget()
+        tab_abs_layout = QVBoxLayout(tab_abs)
+        tab_abs_layout.setContentsMargins(0, 0, 0, 0)
+        self._abs_bar_view = QChartView()
+        self._abs_bar_view.setRenderHint(QPainter.Antialiasing)
+        self._abs_bar_view.setObjectName("panel")
+        self._abs_bar = QChart()
+        self._abs_bar_view.setChart(self._abs_bar)
+        tab_abs_layout.addWidget(self._abs_bar_view)
+        self._charts_tabs.addTab(tab_abs, _("chart.absences"))
+
+        tab_exit = QWidget()
+        tab_exit_layout = QVBoxLayout(tab_exit)
+        tab_exit_layout.setContentsMargins(0, 0, 0, 0)
+        self._exit_bar_view = QChartView()
+        self._exit_bar_view.setRenderHint(QPainter.Antialiasing)
+        self._exit_bar_view.setObjectName("panel")
+        self._exit_bar = QChart()
+        self._exit_bar_view.setChart(self._exit_bar)
+        tab_exit_layout.addWidget(self._exit_bar_view)
+        self._charts_tabs.addTab(tab_exit, _("chart.exits"))
+
+        tab_trend = QWidget()
+        tab_trend_layout = QVBoxLayout(tab_trend)
+        tab_trend_layout.setContentsMargins(0, 0, 0, 0)
+        self._trend_view = QChartView()
+        self._trend_view.setRenderHint(QPainter.Antialiasing)
+        self._trend_view.setObjectName("panel")
+        self._trend_chart = QChart()
+        self._trend_chart.setAnimationOptions(QChart.SeriesAnimations)
+        self._trend_view.setChart(self._trend_chart)
+        tab_trend_layout.addWidget(self._trend_view)
+        self._charts_tabs.addTab(tab_trend, _("chart.trend"))
+
+        tab_donut = QWidget()
+        tab_donut_layout = QVBoxLayout(tab_donut)
+        tab_donut_layout.setContentsMargins(0, 0, 0, 0)
+        self._donut_view = QChartView()
+        self._donut_view.setRenderHint(QPainter.Antialiasing)
+        self._donut_view.setObjectName("panel")
+        self._donut_chart = QChart()
+        self._donut_view.setChart(self._donut_chart)
+        tab_donut_layout.addWidget(self._donut_view)
+        self._charts_tabs.addTab(tab_donut, _("chart.presence_rate"))
+
+        bottom_row.addWidget(self._charts_tabs, 3)
+
+        self._stats_group = M3Frame()
+        self._stats_group.setObjectName("panel")
+        self._stats_group.setAttribute(Qt.WA_StyledBackground, True)
+        self._stats_layout = QVBoxLayout(self._stats_group)
+        stats_title = M3Label(f"<b>{_('table.stats_title')}</b>")
+        stats_title.setObjectName("panel_title")
+        self._stats_table = M3TableWidget()
+        self._stats_table.setAlternatingRowColors(False)
+        self._stats_table.horizontalHeader().setStretchLastSection(True)
+        self._stats_table.setEditTriggers(M3TableWidget.NoEditTriggers)
+        self._stats_table.setSelectionBehavior(M3TableWidget.SelectRows)
+        self._stats_layout.addWidget(stats_title)
+        self._stats_layout.addWidget(self._stats_table)
+        bottom_row.addWidget(self._stats_group, 2)
+
+        group_layout.addLayout(bottom_row)
+
+        # Page 1: Mode classe (cards empilées avec détail élève)
+        self._class_page = QWidget()
+        class_layout = QVBoxLayout(self._class_page)
+        class_layout.setContentsMargins(0, 0, 0, 0)
+
+        self._class_stack = M3StackedWidget()
+
+        # -- Page 0 : Cartes élèves --
+        self._cards_widget = QWidget()
+        self._cards_layout = QGridLayout(self._cards_widget)
+        self._cards_layout.setSpacing(ds.space_xs)
+        self._cards_scroll = M3ScrollArea()
+        self._cards_scroll.setWidget(self._cards_widget)
+        self._cards_scroll.setWidgetResizable(True)
+        cards_frame = M3Frame()
+        cards_frame.setObjectName("panel")
+        cards_frame.setAttribute(Qt.WA_StyledBackground, True)
+        cards_frame_layout = QVBoxLayout(cards_frame)
+        cards_frame_layout.setContentsMargins(0, 0, 0, 0)
+        # Header row: titre à gauche, bouton EDT à droite
+        header_row = QHBoxLayout()
+        header_row.setContentsMargins(0, 0, 0, 0)
+        self._cards_title = M3Label(f"<b>{_('student.cards_title')}</b>")
+        self._cards_title.setObjectName("panel_title")
+        header_row.addWidget(self._cards_title)
+        header_row.addStretch()
+        # (préférences chargées avant _init_ui via _load_user_prefs)
+
+        # Boutons thèmes Phi
+        self._phi_group = QButtonGroup(self)
+        self._phi_group.setExclusive(True)
+        self._card_theme: str = session.card_theme
+        for key, icon_name in [
+            ("compact", "view_comfy"),
+            ("medium", "view_module"),
+            ("large", "dashboard"),
+        ]:
+            btn = M3Button("")
+            btn.setObjectName("phi_btn")
+            btn.setCheckable(True)
+            btn.setFixedSize(theme_manager.image.theme_btn, theme_manager.image.theme_btn)
+            btn.setToolTip(f"{_('student.phi_theme')} {key.capitalize()}")
+            btn.setIcon(
+                md3_icon(
+                    icon_name,
+                    color=theme_manager.palette.text_strong,
+                    size=ds.icon_sm,
+                )
+            )
+            btn.setIconSize(QSize(ds.icon_sm, ds.icon_sm))
+            self._phi_group.addButton(btn)
+            btn.clicked.connect(lambda checked, k=key: self._on_card_theme(k))
+            if key == session.card_theme:
+                btn.setChecked(True)
+            header_row.addWidget(btn)
+        self._tt_edit_btn = M3Button(f" {_('student.timetable')}")
+        self._tt_edit_btn.setObjectName("tt_btn")
+        self._tt_edit_btn.setCursor(Qt.PointingHandCursor)
+        self._tt_edit_btn.setIcon(
+            md3_icon(
+                "calendar_today",
+                color=theme_manager.palette.text_strong,
+                size=ds.icon_sm,
+            )
+        )
+        self._tt_edit_btn.setIconSize(
+            QSize(ds.icon_sm, ds.icon_sm)
+        )
+        self._tt_edit_btn.clicked.connect(self._on_edit_timetable)
+        header_row.addWidget(self._tt_edit_btn)
+        cards_frame_layout.addLayout(header_row)
+
+        # Fond réel (PAS transparent — voir le commentaire du group_scroll)
+        self._cards_scroll.viewport().setStyleSheet(
+            f"background: {theme_manager.palette.surface};")
+        self._cards_widget.setAttribute(Qt.WA_StyledBackground, True)
+        self._cards_widget.setStyleSheet(
+            f"background: {theme_manager.palette.surface};")
+
+        self._class_absents_group = M3Frame()
+        self._class_absents_group.setObjectName("panel")
+        self._class_absents_group.setAttribute(Qt.WA_StyledBackground, True)
+        cal = QVBoxLayout(self._class_absents_group)
+        cal.setContentsMargins(ds.space_xs, ds.space_xxs, ds.space_xs, ds.space_xxs)
+        cal_title = M3Label(f"<b>{_('student.absents_today')}</b>")
+        cal_title.setStyleSheet(f"font-size: {theme_manager.font_size(13)}px; font-weight: bold;")
+        cal.addWidget(cal_title)
+        self._class_absents_table = M3TableWidget()
+        self._class_absents_table.setColumnCount(2)
+        self._class_absents_table.setHorizontalHeaderLabels(
+            [_("table.header.name"), _("table.header.reason")]
+        )
+        self._class_absents_table.horizontalHeader().setStretchLastSection(True)
+        self._class_absents_table.setEditTriggers(M3TableWidget.NoEditTriggers)
+        self._class_absents_table.setMaximumHeight(ds.kpi_card_height + ds.space_xl + ds.space_xs)
+        cal.addWidget(self._class_absents_table)
+        # Row cartes (3/4) + absents (1/4)
+        self._class_absents_group.setVisible(False)
+        cards_absents_row = QHBoxLayout()
+        cards_absents_row.setAlignment(Qt.AlignTop)
+        cards_absents_row.addWidget(self._cards_scroll, 3)
+        cards_absents_row.addWidget(self._class_absents_group, 1, Qt.AlignTop)
+        cards_frame_layout.addLayout(cards_absents_row)
+        self._class_stack.addWidget(cards_frame)  # index 0
+
+        # -- Page 1 : Skeleton loading --
+        self._cards_skeleton_page = QWidget()
+        sk_layout = QVBoxLayout(self._cards_skeleton_page)
+        sk_layout.setContentsMargins(ds.space_md, ds.space_md, ds.space_md, ds.space_md)
+        sk_layout.setAlignment(Qt.AlignCenter)
+        self._cards_skeleton = M3Skeleton.table(self._cards_skeleton_page, rows=6, cols=4)
+        self._cards_skeleton.set_label(_("topbar.loading_students"))
+        sk_layout.addWidget(self._cards_skeleton)
+        self._class_stack.addWidget(self._cards_skeleton_page)  # index 1
+
+        # -- Page 2 : Detail eleve --
+        self._build_student_detail()
+
+        class_layout.addWidget(self._class_stack)
+        self._class_stack.addWidget(self._student_detail)  # index 2
+
+        self._content_stack.addWidget(self._group_scroll)  # 0
+        self._content_stack.addWidget(self._class_page)  # 1
+        self._event_types_panel = EventTypesPanel()
+        self._content_stack.addWidget(self._event_types_panel)  # 2
+        self._content_stack.setCurrentIndex(0)
+
+        main_h.addWidget(self._sidebar)
+        main_h.addWidget(self._content_stack, 1)
+
+        outer.addLayout(main_h)
+        self.setLayout(outer)
+        self._compact_tables()
+
+    def _compact_tables(self):
+        for table in self.findChildren(QTableWidget):
+            table.verticalHeader().setDefaultSectionSize(ds.table_row_min)
+            table.verticalHeader().setMinimumSectionSize(ds.table_min_section)
+
+    def _build_student_detail(self):
+        self._student_detail = StudentDetail()
+        self._student_detail.back_requested.connect(self._on_back_to_cards)
+        self._student_detail.hide()
+
+    def _rebuild_student_detail_theme(self):
+        if hasattr(self, "_student_detail") and self._student_detail:
+            self._student_detail.refresh_theme()
+
+    def _build_sidebar(self):
+        self._selected_btn = None
+        layout = self._sidebar_layout
+        while layout.count():
+            item = layout.takeAt(0)
+            w = item.widget()
+            if w:
+                w.deleteLater()
+            if item.layout():
+                while item.layout().count():
+                    child = item.layout().takeAt(0)
+                    cw = child.widget()
+                    if cw:
+                        cw.deleteLater()
+
+        p = theme_manager.palette
+        s = theme_manager.font_size
+        d = theme_manager.design
+        prog_style = {
+            "PYP":  (p.primary, p.primary_container, p.on_primary, "PYP"),
+            "PP":   (p.secondary, p.secondary_container, p.on_secondary, "PP"),
+            "PEI":  (p.primary, p.primary_container, p.on_primary, "PEI"),
+            "MYP":  (p.secondary, p.secondary_container, p.on_secondary, "MYP"),
+            "DPFr": (p.error, p.error_container, p.on_error, "DP"),
+            "DPEn": (p.tertiary, p.tertiary_container, p.on_tertiary, "DPEn"),
+        }
+
+        groups = {k: [] for k in ["PYP", "PP", "PEI", "MYP", "DPEn", "DPFr"]}
+        for cid, label, pid, sigle in self._classes:
+            if sigle in groups:
+                groups[sigle].append((cid, label))
+        trace(
+            f" _build_sidebar: classes={len(self._classes)}, groups={ {k: len(v) for k, v in groups.items()} }"
+        )
+
+        def _make_btn(ss, min_h=34):
+            b = M3Button()
+            b.setMinimumHeight(min_h)
+            b.setStyleSheet(ss)
+            b.setCursor(Qt.PointingHandCursor)
+            return b
+
+        sections = [
+            (_("sidebar.section_primaire"), [("PYP", "PYP"), ("PP", "PP")]),
+            (_("sidebar.section_college"), [("PEI", "PEI"), ("MYP", "MYP")]),
+            (_("sidebar.section_lycee"), [("DP", "DPFr"), ("DPEn", "DPEn")]),
+        ]
+
+        for sec_name, columns in sections:
+            sec_hdr = _make_btn(
+                f"QPushButton {{ background: transparent; color: {p.text_strong}; "
+                f"border: none; border-bottom: 2px solid {p.outline_variant}; "
+                f"font-weight: bold; font-size: {s(13)}px; text-align: left; "
+                f"padding: {ds.space_xxs}px {ds.space_xxs // 2}px; }}"
+                f"QPushButton:hover {{ color: {p.primary}; border-bottom: 2px solid {p.primary}; }}",
+                min_h=34,
+            )
+            sec_hdr.setText(sec_name)
+            sec_hdr.clicked.connect(lambda checked, sn=sec_name: self._on_section_clicked(sn))
+            layout.addWidget(sec_hdr)
+
+            grd = QGridLayout()
+            grd.setSpacing(d.spacing)
+
+            for col_idx, (hdr_text, prog_key) in enumerate(columns):
+                fg, bg, on_fg, prog_label = prog_style[prog_key]
+                items = groups.get(prog_key, [])
+
+                col_hdr = _make_btn(
+                    f"QPushButton {{ background: {fg}; color: {on_fg}; border: none; "
+                    f"border-radius: {d.radius}px; font-weight: bold; font-size: {s(13)}px; "
+                    f"padding: {ds.space_xxs}px; }}"
+                    f"QPushButton:hover {{ opacity: 0.8; }}",
+                    min_h=21,
+                )
+                col_hdr.setText(hdr_text)
+                col_hdr.clicked.connect(lambda checked, pk=prog_key: self._on_prog_clicked(pk))
+                grd.addWidget(col_hdr, 0, col_idx)
+
+                for i, (cid, label) in enumerate(items):
+                    btn = _make_btn(
+                        f"QPushButton {{ background: {bg}; color: {fg}; border: none; "
+                        f"border-radius: {d.radius}px; font-size: {s(13)}px; "
+                        f"padding: {ds.space_xxs // 2}px; }}"
+                        f"QPushButton:hover {{ background: {fg}; color: {bg}; }}"
+                        f"QPushButton:checked {{ background: {fg}; color: {bg}; "
+                        f"border: 2px solid {fg}; }}",
+                        min_h=34,
+                    )
+                    btn.setCheckable(True)
+                    btn.setText(label)
+                    btn.clicked.connect(
+                        lambda checked, c=cid, l=label, b=btn: self._on_class_clicked(c, l, b)
+                    )
+                    grd.addWidget(btn, i + 1, col_idx)
+
+            layout.addLayout(grd)
+            layout.addSpacing(d.spacing)
+
+        self._all_btn = _make_btn(
+            f"QPushButton {{ background: {p.primary}; color: {p.on_primary}; "
+            f"border: none; border-radius: {d.radius}px; font-weight: bold; font-size: {s(21)}px; }}"
+            f"QPushButton:hover {{ background: {p.active}; }}",
+            min_h=55,
+        )
+        self._all_btn.setText(_("sidebar.all_classes"))
+        self._all_btn.clicked.connect(self._on_all_clicked)
+        layout.addWidget(self._all_btn)
+        layout.addStretch()
+        trace(" _build_sidebar: terminé")
+
+    @safe_slot("MainWindow.on_sidebar_group_selected")
+    def _on_sidebar_group_selected(self, group: str):
+        """Dispatch depuis SidebarWidget — sections (l10n) et programmes (grp_*) ."""
+        if group.startswith("grp_"):
+            # Clic sur en-tête programme : group = "grp_pei"
+            prog = group[4:]  # "pei"
+            self._current_group_mode = f"grp_{prog.lower()}"
+            self._current_class_id = 0
+            self._current_class_label = prog
+            self._select_btn(None)
+            self._show_group_mode(f"grp_{prog.lower()}")
+        else:
+            # Clic sur section (Primaire/Collège/Lycée)
+            mode_map = {
+                _("sidebar.section_primaire"): "grp_primaire",
+                _("sidebar.section_college"): "grp_college",
+                _("sidebar.section_lycee"): "grp_lycee",
+            }
+            self._current_group_mode = mode_map[group]
+            self._current_class_id = 0
+            self._current_class_label = group
+            self._select_btn(None)
+            self._show_group_mode(mode_map[group])
+
+    @safe_slot("MainWindow.on_section_clicked")
+    def _on_section_clicked(self, section: str):
+        """Ancien handler conservé pour compatibilité — redirige vers le nouveau dispatch."""
+        self._on_sidebar_group_selected(section)
+
+    @safe_slot("MainWindow.on_prog_clicked")
+    def _on_prog_clicked(self, prog: str):
+        """Ancien handler conservé pour compatibilité — redirige vers le nouveau dispatch."""
+        self._on_sidebar_group_selected(f"grp_{prog.lower()}")
+
+    @safe_slot("MainWindow.on_class_clicked")
+    def _on_class_clicked(self, class_id: int, label: str, btn: M3Button | None = None):
+        self._current_class_id = class_id
+        self._current_class_label = label
+        self._current_group_mode = "class"
+        self._select_btn(btn)
+        self._show_class_mode(class_id)
+
+    @safe_slot("MainWindow.on_all_clicked")
+    def _on_all_clicked(self):
+        self._current_group_mode = "grp_all"
+        self._current_class_id = 0
+        self._current_class_label = ""
+        self._select_btn(None)
+        trace(" _on_all_clicked: lance _show_group_mode(grp_all)")
+        self._show_group_mode("grp_all")
+        trace(" _on_all_clicked: terminé")
+
+    def _select_btn(self, btn: M3Button | None):
+        if self._selected_btn is not None:
+            try:
+                self._selected_btn.setChecked(False)
+            except RuntimeError:
+                from larccommon.error_reporting import get_reporter
+                get_reporter().report_exception()
+                pass
+        self._selected_btn = btn
+        if btn is not None:
+            try:
+                btn.setChecked(True)
+            except RuntimeError:
+                from larccommon.error_reporting import get_reporter
+                get_reporter().report_exception()
+                pass
+
+    def _load_initial_data(self):
+        if not db.is_server_connected:
+            return
+        self._top_bar.set_loading(True, _("topbar.loading_initial"))
+        trace(" _load_initial_data: démarre")
+        conn = db.server_conn
+        trace(f" _load_initial_data: server_conn={conn is not None}")
+        if not conn:
+            QMessageBox.warning(self, _("common.error"), _("main.error_no_connection"))
+            self._top_bar.set_loading(False)
+            return
+
+        try:
+            cur = conn.cursor()
+
+            # Terme actif + annee academique (via academicyear)
+            cur.execute("""
+                SELECT t.id, t.label, ay.label
+                FROM larcauth_term t, larcauth_academicyear ay
+                WHERE ay.s_id = (SELECT MAX(s_id) FROM larcauth_academicyear)
+                  AND t.trim = ay.current_term_number
+                  AND t.fk_language_id = %s
+                ORDER BY t.id DESC
+                LIMIT 1
+            """, (getattr(session, "fk_language", 2),))
+            r = cur.fetchone()
+            if r:
+                self._time_manager.term_id = int(r[0])
+                self._time_manager.term_label = r[1]
+                session.term_id = int(r[0])
+                session.term_label = f"{r[2]} — {r[1]}"
+            else:
+                self._time_manager.term_id = 0
+                self._time_manager.term_label = ""
+                session.term_id = 0
+                session.term_label = ""
+
+            # Programmes (PEI, DP, ...)
+            cur.execute("SELECT id, sigle, label FROM larcauth_program ORDER BY sigle")
+            self._programs = {r[0]: {"sigle": r[1], "label": r[2]} for r in cur.fetchall()}
+            trace(f" _load_initial_data: {len(self._programs)} programmes chargés")
+
+            # Classes avec leur programme via level (Collège + Lycée uniquement)
+            cur.execute("""
+                SELECT c.id, c.label, l.fk_program_id, p.sigle
+                FROM larcauth_classroom c
+                JOIN larcauth_level l ON l.id = c.fk_level_id
+                JOIN larcauth_program p ON p.id = l.fk_program_id
+                WHERE c.enabled = TRUE AND p.sigle IN ('PYP', 'PP', 'PEI', 'MYP', 'DPEn', 'DPFr')
+                ORDER BY p.sigle, c.label
+            """)
+            self._classes = cur.fetchall()
+            trace(f" _load_initial_data: {len(self._classes)} classes chargées")
+
+            # Unités de période
+            from LarcSuperviseur.views.core.data_loader import DataLoader
+
+            self._time_manager.unit_periods = DataLoader().get_unit_periods()
+            self._top_bar.set_unit_periods(self._time_manager.unit_periods)
+
+            # Charger les classes dans le SidebarWidget
+            trace(" _load_initial_data: chargement classes dans SidebarWidget")
+            self._sidebar.load_classes(self._classes)
+            trace(" _load_initial_data: classes chargées")
+
+            # Activer le mode groupe par défaut
+            self._on_all_clicked()
+            self._top_bar.set_loading(False)
+
+        except Exception as e:
+            from larccommon.error_reporting import get_reporter
+            get_reporter().report_exception()
+            log(f"_load_initial_data: {e}")
+            QMessageBox.critical(self, _("common.error"), str(e))
+            self._top_bar.set_loading(False)
+
+    @safe_slot("MainWindow.on_period_clicked")
+    def _on_period_clicked(self, key: str):
+        self._time_manager.select_period(key)
+        self.refresh_all()
+
+    def _load_user_prefs(self):
+        if not db.is_server_connected:
+            return
+        """Charge les préférences utilisateur avant la construction UI."""
+        if not session.user_id:
+            return
+        try:
+            cur = db.server_conn.cursor()
+            cur.execute(
+                "SELECT key, value FROM larcauth_config WHERE key LIKE %s",
+                (f"user_{session.user_id}_%",),
+            )
+            for k, v in cur.fetchall():
+                pref = k.rsplit("_", 1)[-1]
+                if pref == "theme_pref":
+                    session.theme_pref = v
+                    theme_manager.set_active(v)
+                elif pref == "card_theme":
+                    session.card_theme = v
+                elif pref == "fk_language":
+                    session.fk_language = int(v)
+        except Exception as e:
+            from larccommon.error_reporting import get_reporter
+            get_reporter().report_exception()
+            log(f"MainWindow._load_user_prefs: {e}")
+
+    @safe_slot("MainWindow._restyle")
+    def _restyle(self):
+        """Thème changé via PreferencesDialog ou autre source externe."""
+        self.setStyleSheet(self._STYLE)
+        self._top_bar.restyle()
+        # Fond réel (PAS transparent — palette noire sinon, voir init)
+        if hasattr(self, "_cards_widget"):
+            self._cards_widget.setStyleSheet(f"background: {ds.p.surface};")
+
+    @safe_slot("MainWindow.on_theme_selected")
+    def _on_theme_selected(self, key: str):
+        theme_manager.set_active(key)
+        session.theme_pref = key
+        self.setStyleSheet(self._STYLE)
+        self._top_bar.restyle()
+        # SidebarWidget se reconstruit automatiquement via theme_changed
+        self._rebuild_student_detail_theme()
+        self._top_bar.update_network()
+        # Fonds réels (PAS transparent — palette noire sinon, voir init)
+        if hasattr(self, "_cards_scroll"):
+            self._cards_scroll.viewport().setStyleSheet(
+                f"background: {p.surface};")
+        if hasattr(self, "_cards_widget"):
+            self._cards_widget.setStyleSheet(f"background: {p.surface};")
+        if hasattr(self, "_group_scroll"):
+            self._group_scroll.viewport().setStyleSheet(
+                f"background: {p.background};")
+        if self._current_group_mode:
+            self.refresh_all()
+
+    # ---- Mode groupe -------------------------------------------------------
+
+    def _show_group_mode(self, mode: str):
+        self._content_stack.setCurrentIndex(0)
+        self._group_scroll.verticalScrollBar().setValue(0)
+        self._top_bar.show_period_row(True)
+        trace(f" _show_group_mode({mode}): chargement stats + historique")
+        self._load_group_stats(mode)
+        self._load_global_history(mode)
+        trace(f" _show_group_mode({mode}): terminé")
+
+    def _load_group_stats(self, mode: str):
+        if not db.is_server_connected:
+            return
+        self._top_bar.set_loading(True, _("topbar.loading_stats"))
+        conn = db.server_conn
+        trace(
+            f" _load_group_stats: mode={mode}, server_conn={conn is not None}, term_id={self._time_manager.term_id}"
+        )
+        if not conn or not self._time_manager.term_id:
+            self._top_bar.set_loading(False)
+            return
+
+        p = theme_manager.palette
+        date_from, date_to = self._time_manager.period_dates()
+        trace(f" _load_group_stats: mode={mode}, dates={date_from} → {date_to}")
+
+        try:
+            cur = conn.cursor()
+
+            if mode == "grp_all":
+                class_filter = "AND p.sigle IN ('PYP', 'PP', 'PEI', 'MYP', 'DPEn', 'DPFr')"
+            elif mode == "grp_primaire":
+                class_filter = "AND (p.sigle ILIKE 'PYP' OR p.sigle ILIKE 'PP')"
+            elif mode == "grp_college":
+                class_filter = "AND (p.sigle ILIKE 'PEI' OR p.sigle ILIKE 'MYP')"
+            elif mode == "grp_lycee":
+                class_filter = "AND (p.sigle ILIKE 'DPEn' OR p.sigle ILIKE 'DPFr')"
+            else:
+                sigle = mode.split("_")[1]
+                class_filter = f"AND p.sigle ILIKE '{sigle}'"
+
+            # --- Stats par classe ---
+            cur.execute(
+                f"""
+                SELECT c.id, c.label,
+                       COUNT(DISTINCT se.event_id) AS event_count,
+                       COUNT(DISTINCT CASE WHEN se.event_type = %s OR se.event_type ILIKE %s OR se.event_type ILIKE %s THEN se.event_id END) AS abs_count,
+                       COUNT(DISTINCT CASE WHEN se.event_type = %s OR se.event_type ILIKE %s OR se.event_type ILIKE %s OR se.event_type ILIKE %s THEN se.event_id END) AS exit_count,
+                       COUNT(DISTINCT s.aecuser_ptr_id) AS student_count
+                FROM larcauth_classroom c
+                JOIN larcauth_level l ON l.id = c.fk_level_id
+                JOIN larcauth_program p ON p.id = l.fk_program_id
+                LEFT JOIN larcauth_student s ON s.s_classroom_id = c.id AND s.enabled = TRUE
+                LEFT JOIN student_event se ON se.student_id = s.aecuser_ptr_id
+                    AND DATE(se.event_at) BETWEEN %s AND %s
+                WHERE c.enabled = TRUE {class_filter}
+                GROUP BY c.id, c.label
+                ORDER BY c.label
+            """,
+                (
+                    "absence",
+                    "Suivi > Absence%",
+                    "Absence%",
+                    "exit",
+                    "Sortie%",
+                    "%Fuite%",
+                    "Fugue%",
+                    date_from,
+                    date_to,
+                ),
+            )
+
+            rows = cur.fetchall()
+
+            # --- KPIs ---
+            total_students = sum(r[5] for r in rows)
+            total_abs = sum(r[3] for r in rows)
+            total_exits = sum(r[4] for r in rows)
+            total_events = sum(r[2] for r in rows)
+
+            self._kpi_cards["total"].setText(str(total_students))
+            period_key = self._time_manager.current_period
+            self._kpi_period.setText(_(f"topbar.period.{period_key}"))
+            present_val = max(0, total_students - total_abs) if total_abs > 0 else total_students
+            self._kpi_cards["present"].setText(str(present_val))
+            self._kpi_cards["absent"].setText(str(total_abs))
+            self._kpi_cards["exit"].setText(str(total_exits))
+
+            # --- Liste des absents ---
+            self._absents_group.setVisible(total_abs > 0 and self._absents_table.rowCount() > 0)
+            if total_abs > 0:
+                cur.execute(
+                    f"""
+                    SELECT aec.last_name || ' ' || aec.first_name AS name,
+                           c.label AS class_label, se.event_type
+                    FROM student_event se
+                    JOIN larcauth_student s ON s.aecuser_ptr_id = se.student_id
+                    JOIN larcauth_aecuser aec ON aec.id = s.aecuser_ptr_id
+                    JOIN larcauth_classroom c ON c.id = s.s_classroom_id
+                    JOIN larcauth_level l ON l.id = c.fk_level_id
+                    JOIN larcauth_program p ON p.id = l.fk_program_id
+                    WHERE (se.event_type = %s OR se.event_type ILIKE %s OR se.event_type ILIKE %s)
+                      AND DATE(se.event_at) BETWEEN %s AND %s
+                      AND se.validated_by IS NULL
+                      AND c.enabled = TRUE {class_filter}
+                    ORDER BY c.label, aec.last_name
+                    LIMIT 50
+                """,
+                    ("absence", "Suivi > Absence%", "Absence%", date_from, date_to),
+                )
+                abs_rows = cur.fetchall()
+                self._absents_table.setRowCount(len(abs_rows))
+                for i, (name, cls, motif) in enumerate(abs_rows):
+                    self._absents_table.setItem(i, 0, QTableWidgetItem(name))
+                    self._absents_table.setItem(i, 1, QTableWidgetItem(cls))
+                    self._absents_table.setItem(i, 2, QTableWidgetItem(motif))
+                self._absents_group.setVisible(True)
+
+            # --- Table ---
+            self._stats_table.setRowCount(len(rows))
+            self._stats_table.setColumnCount(5)
+            self._stats_table.setHorizontalHeaderLabels(
+                [
+                    _("table.header.class"),
+                    _("table.header.events"),
+                    _("table.header.absences"),
+                    _("table.header.exits"),
+                    _("table.header.students"),
+                ]
+            )
+
+            for i, (cid, label, evts, absences, exits, students) in enumerate(rows):
+                items = [
+                    QTableWidgetItem(label),
+                    QTableWidgetItem(str(evts)),
+                    QTableWidgetItem(str(absences)),
+                    QTableWidgetItem(str(exits)),
+                    QTableWidgetItem(str(students)),
+                ]
+                for item in items:
+                    item.setFlags(item.flags() & ~Qt.ItemIsEditable)
+                for j, item in enumerate(items):
+                    item.setTextAlignment(Qt.AlignCenter)
+                    self._stats_table.setItem(i, j, item)
+            hh = self._stats_table.horizontalHeader()
+            total_w = self._stats_table.viewport().width()
+            col_w = max(80, total_w // 5)
+            for c in range(5):
+                hh.setSectionResizeMode(c, M3HeaderView.Fixed)
+                self._stats_table.setColumnWidth(c, col_w)
+
+            # --- Barres absences par classe ---
+            self._abs_bar.removeAllSeries()
+            for ax in self._abs_bar.axes():
+                self._abs_bar.removeAxis(ax)
+            abs_set = QBarSet(_("chart.serie_absences"))
+            abs_set.setColor(QColor(p.error))
+            cat_names = []
+            for r in rows:
+                abs_set << r[3]
+                cat_names.append(r[1])
+            if rows:
+                series = QBarSeries()
+                series.append(abs_set)
+                self._abs_bar.addSeries(series)
+                self._abs_bar.setTitle(_("chart.absences_by_class"))
+                self._abs_bar.setAnimationOptions(QChart.SeriesAnimations)
+                self._abs_bar.legend().setVisible(False)
+                axis_x = QBarCategoryAxis()
+                axis_x.append(cat_names)
+                axis_x.setLabelsAngle(-45)
+                self._abs_bar.addAxis(axis_x, Qt.AlignBottom)
+                series.attachAxis(axis_x)
+                axis_y = QValueAxis()
+                max_abs = max(r[3] for r in rows)
+                axis_y.setRange(0, max(max_abs + 2, 10))
+                self._abs_bar.addAxis(axis_y, Qt.AlignLeft)
+                series.attachAxis(axis_y)
+            else:
+                self._abs_bar.setTitle(_("chart.absences_by_class_empty"))
+
+            # --- Barres sorties par classe ---
+            self._exit_bar.removeAllSeries()
+            for ax in self._exit_bar.axes():
+                self._exit_bar.removeAxis(ax)
+            exit_set = QBarSet(_("chart.serie_exits"))
+            exit_set.setColor(QColor(p.tertiary))
+            for r in rows:
+                exit_set << r[4]
+            if rows:
+                exit_series = QBarSeries()
+                exit_series.append(exit_set)
+                self._exit_bar.addSeries(exit_series)
+                self._exit_bar.setTitle(_("chart.exits_by_class"))
+                self._exit_bar.setAnimationOptions(QChart.SeriesAnimations)
+                self._exit_bar.legend().setVisible(False)
+                ex_axis_x = QBarCategoryAxis()
+                ex_axis_x.append(cat_names)
+                ex_axis_x.setLabelsAngle(-45)
+                self._exit_bar.addAxis(ex_axis_x, Qt.AlignBottom)
+                exit_series.attachAxis(ex_axis_x)
+                ex_axis_y = QValueAxis()
+                max_exit = max(r[4] for r in rows)
+                ex_axis_y.setRange(0, max(max_exit + 2, 5))
+                self._exit_bar.addAxis(ex_axis_y, Qt.AlignLeft)
+                exit_series.attachAxis(ex_axis_y)
+            else:
+                self._exit_bar.setTitle(_("chart.exits_by_class_empty"))
+
+            # --- Tendance absences sur la période ---
+            self._trend_chart.removeAllSeries()
+            for ax in self._trend_chart.axes():
+                self._trend_chart.removeAxis(ax)
+            cur.execute(
+                f"""
+                SELECT DATE(se.event_at) AS d, COUNT(*) AS cnt
+                FROM student_event se
+                JOIN larcauth_student s ON s.aecuser_ptr_id = se.student_id
+                JOIN larcauth_classroom c ON c.id = s.s_classroom_id
+                JOIN larcauth_level l ON l.id = c.fk_level_id
+                JOIN larcauth_program p ON p.id = l.fk_program_id
+                WHERE (se.event_type = %s OR se.event_type ILIKE %s OR se.event_type ILIKE %s)
+                  AND c.enabled = TRUE {class_filter}
+                  AND DATE(se.event_at) BETWEEN %s AND %s
+                GROUP BY d ORDER BY d
+            """,
+                ("absence", "Suivi > Absence%", "Absence%", date_from, date_to),
+            )
+            trend_rows = cur.fetchall()
+            if trend_rows:
+                line = QLineSeries()
+                line.setColor(QColor(p.error))
+                line.setName(_("chart.serie_absences"))
+                for d, cnt in trend_rows:
+                    qd = QDate(d.year, d.month, d.day)
+                    dt = QDateTime(qd, QTime(0, 0))
+                    line.append(dt.toMSecsSinceEpoch(), cnt)
+                self._trend_chart.addSeries(line)
+                self._trend_chart.setTitle(_("chart.trend_absences"))
+                self._trend_chart.setAnimationOptions(QChart.SeriesAnimations)
+                self._trend_chart.legend().setVisible(False)
+                axis_x_dt = QDateTimeAxis()
+                axis_x_dt.setFormat("dd/MM")
+                axis_x_dt.setLabelsAngle(-45)
+                self._trend_chart.addAxis(axis_x_dt, Qt.AlignBottom)
+                line.attachAxis(axis_x_dt)
+                axis_y_t = QValueAxis()
+                max_t = max(r[1] for r in trend_rows)
+                axis_y_t.setRange(0, max_t + 2)
+                self._trend_chart.addAxis(axis_y_t, Qt.AlignLeft)
+                line.attachAxis(axis_y_t)
+            else:
+                self._trend_chart.setTitle(_("chart.trend_absences_empty"))
+
+            # --- Donut taux de présence ---
+            self._donut_chart.removeAllSeries()
+            cur.execute(
+                f"""
+                SELECT COUNT(DISTINCT s.aecuser_ptr_id) FILTER (
+                    WHERE NOT EXISTS (
+                        SELECT 1 FROM student_event se2
+                        WHERE se2.student_id = s.aecuser_ptr_id
+                          AND (se2.event_type = %s OR se2.event_type ILIKE %s OR se2.event_type ILIKE %s)
+                          AND DATE(se2.event_at) BETWEEN %s AND %s
+                    )
+                ) AS present,
+                COUNT(DISTINCT s.aecuser_ptr_id) FILTER (
+                    WHERE EXISTS (
+                        SELECT 1 FROM student_event se3
+                        WHERE se3.student_id = s.aecuser_ptr_id
+                          AND (se3.event_type = %s OR se3.event_type ILIKE %s OR se3.event_type ILIKE %s)
+                          AND DATE(se3.event_at) BETWEEN %s AND %s
+                    )
+                ) AS absent
+                FROM larcauth_student s
+                JOIN larcauth_classroom c ON c.id = s.s_classroom_id
+                JOIN larcauth_level l ON l.id = c.fk_level_id
+                JOIN larcauth_program p ON p.id = l.fk_program_id
+                WHERE s.enabled = TRUE AND c.enabled = TRUE {class_filter}
+            """,
+                (
+                    "absence",
+                    "Suivi > Absence%",
+                    "Absence%",
+                    date_from,
+                    date_to,
+                    "absence",
+                    "Suivi > Absence%",
+                    "Absence%",
+                    date_from,
+                    date_to,
+                ),
+            )
+            pres_row = cur.fetchone()
+            present_count = pres_row[0] if pres_row else 0
+            absent_count = pres_row[1] if pres_row else 0
+
+            if present_count > 0 or absent_count > 0:
+                donut = QPieSeries()
+                donut.setHoleSize(0.45)
+                if present_count > 0:
+                    donut.append(_("chart.present"), present_count)
+                    donut.slices()[-1].setColor(QColor(p.success))
+                    donut.slices()[-1].setLabelVisible(True)
+                    donut.slices()[-1].setLabel(f"{_('chart.present')} {present_count}")
+                    donut.slices()[-1].setLabelColor(QColor(p.text_strong))
+                if absent_count > 0:
+                    donut.append(_("chart.absent"), absent_count)
+                    donut.slices()[-1].setColor(QColor(p.error))
+                    donut.slices()[-1].setLabelVisible(True)
+                    donut.slices()[-1].setLabel(f"{_('chart.absent')} {absent_count}")
+                    donut.slices()[-1].setLabelColor(QColor(p.text_strong))
+                self._donut_chart.addSeries(donut)
+                self._donut_chart.setTitle(_("chart.presence_rate"))
+                self._donut_chart.legend().setVisible(False)
+                self._donut_chart.setAnimationOptions(QChart.SeriesAnimations)
+            else:
+                self._donut_chart.setTitle(_("chart.presence_rate_empty"))
+
+            self._top_bar.set_loading(False)
+
+        except Exception as e:
+            from larccommon.error_reporting import get_reporter
+            get_reporter().report_exception()
+            log(f"_load_group_stats: {e}")
+            self._top_bar.set_loading(False)
+
+    @safe_slot("MainWindow.on_filter_history")
+    def _on_filter_history(self):
+        self._load_global_history(self._current_group_mode)
+
+    def _load_global_history(self, mode: str):
+        if not db.is_server_connected:
+            return
+        self._top_bar.set_loading(True, _("topbar.loading_events"))
+        conn = db.server_conn
+        if not conn or not self._time_manager.term_id:
+            self._top_bar.set_loading(False)
+            return
+
+        try:
+            cur = conn.cursor()
+
+            # Populate filter combos
+            if self._history_filter_class.count() <= 1:
+                cur.execute("""
+                    SELECT c.id, c.label FROM larcauth_classroom c
+                    JOIN larcauth_level l ON l.id = c.fk_level_id
+                    JOIN larcauth_program p ON p.id = l.fk_program_id
+                    WHERE c.enabled = TRUE AND p.sigle IN ('PYP', 'PP', 'PEI', 'MYP', 'DPEn', 'DPFr')
+                    ORDER BY c.label
+                """)
+                for cid, clabel in cur.fetchall():
+                    self._history_filter_class.addItem(clabel, cid)
+                self._history_filter_class.model().sort(0)
+            if self._history_filter_type.count() == 0:
+                cur.execute("SELECT DISTINCT event_type FROM student_event ORDER BY event_type")
+                for (et,) in cur.fetchall():
+                    if et.lower() not in (
+                        "absence",
+                        "exit",
+                        "arrival",
+                        "departure",
+                        "return",
+                        "late",
+                        "justified",
+                    ):
+                        self._history_filter_type.addItem(et)
+                self._history_filter_type.setCurrentIndex(-1)
+                self._history_filter_type.lineEdit().setText("")
+
+            if mode == "grp_all":
+                class_filter = "AND p.sigle IN ('PYP', 'PP', 'PEI', 'MYP', 'DPEn', 'DPFr')"
+            elif mode == "grp_primaire":
+                class_filter = "AND (p.sigle ILIKE 'PYP' OR p.sigle ILIKE 'PP')"
+            elif mode == "grp_college":
+                class_filter = "AND (p.sigle ILIKE 'PEI' OR p.sigle ILIKE 'MYP')"
+            elif mode == "grp_lycee":
+                class_filter = "AND (p.sigle ILIKE 'DPEn' OR p.sigle ILIKE 'DPFr')"
+            else:
+                sigle = mode.split("_")[1]
+                class_filter = f"AND p.sigle ILIKE '{sigle}'"
+
+            # -- Filtres suppl. --
+            params = []
+            sel_class = self._history_filter_class.currentData()
+            sel_type = self._history_filter_type.currentText().strip()
+            date_from, date_to = self._time_manager.period_dates()
+
+            if sel_class:
+                class_filter += " AND c.id = %s"
+                params.append(sel_class)
+            if sel_type:
+                class_filter += " AND se.event_type ILIKE %s"
+                params.append(f"%{sel_type}%")
+
+            cur.execute(
+                f"""
+                SELECT se.event_id,
+                       aec.last_name || ' ' || aec.first_name AS student_name,
+                       c.label AS class_name,
+                       se.event_type, se.event_at, se.lieu_label, se.subject_label, se.note,
+                       u.last_name || ' ' || u.first_name AS created_by_name,
+                       se.validated_by
+                FROM student_event se
+                JOIN larcauth_student s ON s.aecuser_ptr_id = se.student_id
+                JOIN larcauth_aecuser aec ON aec.id = s.aecuser_ptr_id
+                JOIN larcauth_classroom c ON c.id = s.s_classroom_id
+                JOIN larcauth_level l ON l.id = c.fk_level_id
+                JOIN larcauth_program p ON p.id = l.fk_program_id
+                LEFT JOIN larcauth_aecuser u ON u.id = se.created_by
+                WHERE DATE(se.event_at) BETWEEN %s AND %s {class_filter}
+                ORDER BY se.event_at DESC
+                LIMIT 500
+            """,
+                (date_from, date_to, *params),
+            )
+
+            rows = cur.fetchall()
+            self._history_table.setRowCount(len(rows))
+            self._history_table.setColumnCount(10)
+            self._history_table.setHorizontalHeaderLabels(
+                [
+                    _("table.header.id"),
+                    _("table.header.student"),
+                    _("table.header.class"),
+                    _("table.header.type"),
+                    _("table.header.location"),
+                    _("table.header.subject"),
+                    _("table.header.time"),
+                    _("table.header.note"),
+                    _("table.header.created_by"),
+                    _("table.header.validated"),
+                ]
+            )
+            self._history_table.setColumnHidden(0, True)  # event_id
+
+            for i, row in enumerate(rows):
+                eid, name, cls_name, etype, e_at, lieu, subject, note, creator, validated = row
+                ei = event_icon(etype)
+                color = event_color(etype)
+                display_type = f"{ei} {etype}"
+
+                items = [
+                    QTableWidgetItem(str(eid)),
+                    QTableWidgetItem(name),
+                    QTableWidgetItem(cls_name),
+                    QTableWidgetItem(display_type),
+                    QTableWidgetItem(lieu or ""),
+                    QTableWidgetItem(subject or ""),
+                    QTableWidgetItem(e_at.strftime("%H:%M") if e_at else ""),
+                    QTableWidgetItem(note or ""),
+                    QTableWidgetItem(creator or ""),
+                    QTableWidgetItem("✓" if validated else ""),
+                ]
+                for j in range(len(items)):
+                    if j == 3:
+                        items[j].setForeground(QBrush(QColor(color)))
+                    if j == 9 and validated:
+                        items[j].setForeground(QBrush(QColor("#2e7d32")))
+                        items[j].setFont(QFont("Segoe UI", 10, QFont.Bold))
+                    if j not in (3, 7):
+                        items[j].setTextAlignment(Qt.AlignCenter)
+                    items[j].setFlags(items[j].flags() & ~Qt.ItemIsEditable)
+                    self._history_table.setItem(i, j, items[j])
+            hh = self._history_table.horizontalHeader()
+            hh.setSectionResizeMode(0, M3HeaderView.Fixed)
+            self._history_table.setColumnWidth(0, 0)
+            hh.setSectionResizeMode(1, M3HeaderView.Interactive)
+            self._history_table.setColumnWidth(1, 140)
+            hh.setSectionResizeMode(2, M3HeaderView.Interactive)
+            self._history_table.setColumnWidth(2, 100)
+            hh.setSectionResizeMode(3, M3HeaderView.Interactive)
+            self._history_table.setColumnWidth(3, 300)
+            hh.setSectionResizeMode(4, M3HeaderView.Interactive)
+            self._history_table.setColumnWidth(4, 120)
+            hh.setSectionResizeMode(5, M3HeaderView.Interactive)
+            self._history_table.setColumnWidth(5, 110)
+            hh.setSectionResizeMode(6, M3HeaderView.Interactive)
+            self._history_table.setColumnWidth(6, 100)
+            hh.setSectionResizeMode(7, M3HeaderView.Stretch)
+            hh.setSectionResizeMode(8, M3HeaderView.Interactive)
+            self._history_table.setColumnWidth(8, 200)
+            hh.setSectionResizeMode(9, M3HeaderView.Interactive)
+            self._history_table.setColumnWidth(9, 130)
+            self._top_bar.set_loading(False)
+
+        except Exception as e:
+            from larccommon.error_reporting import get_reporter
+            get_reporter().report_exception()
+            log(f"_load_global_history: {e}")
+            self._top_bar.set_loading(False)
+
+    # ---- Mode classe -------------------------------------------------------
+
+    def _show_class_mode(self, class_id: int):
+        self._content_stack.setCurrentIndex(1)
+        self._class_stack.setCurrentIndex(0)
+        self._top_bar.show_period_row(False)
+
+        p = theme_manager.palette
+        self._cards_title.setText(f"<b style='color:{p.text_strong}'>{_('main.students_of')} {self._current_class_label}</b>")
+        self._load_students(class_id)
+        self._selected_student_id = 0
+
+    def _load_students(self, class_id: int):
+        if not db.is_server_connected:
+            return
+        if getattr(self, "_loading_students", False):
+            return
+        self._loading_students = True
+        try:
+            self._top_bar.set_loading(True, _("topbar.loading_students"))
+            # Afficher le skeleton
+            self._class_stack.setCurrentIndex(1)
+            self._cards_skeleton.start()
+            QApplication.processEvents()
+            conn = db.server_conn
+            if not conn or not self._time_manager.term_id:
+                return
+
+            today = QDate.currentDate().toString("yyyy-MM-dd")
+
+            cur = conn.cursor()
+            cur.execute(
+                """
+                SELECT s.aecuser_ptr_id,
+                       aec.last_name, aec.first_name,
+                       COALESCE(s.validation, '{}'::jsonb) AS validation
+                FROM larcauth_student s
+                JOIN larcauth_aecuser aec ON aec.id = s.aecuser_ptr_id
+                WHERE s.s_classroom_id = %s AND s.enabled = TRUE
+                ORDER BY aec.last_name
+            """,
+                (class_id,),
+            )
+            rows = cur.fetchall()
+
+            self._students = [{"id": r[0], "last_name": r[1], "first_name": r[2],
+                              "validation": r[3]} for r in rows]
+
+            # Stats d'events pour chaque eleve
+            student_ids = [s["id"] for s in self._students]
+            period_from, period_to = self._time_manager.period_dates()
+            event_stats = {}
+            if student_ids:
+                ids_sql = ",".join(str(sid) for sid in student_ids)
+                # Sorties : sur la periode (trimestre, mois, etc.)
+                try:
+                    cur.execute(
+                        f"""
+                        SELECT se.student_id,
+                               COUNT(*) AS exit_count
+                         FROM student_event se
+                         WHERE se.student_id IN ({ids_sql})
+                            AND DATE(se.event_at) BETWEEN %s AND %s
+                            AND (se.event_type = %s OR se.event_type ILIKE %s OR se.event_type ILIKE %s OR se.event_type ILIKE %s)
+                         GROUP BY se.student_id
+                     """,
+                        (period_from, period_to, "exit", "Sortie%", "%Fuite%", "Fugue%"),
+                    )
+                    for sid, exit_count in cur.fetchall():
+                        event_stats.setdefault(sid, {})["exit"] = exit_count
+                except Exception as e:
+                    from larccommon.error_reporting import get_reporter
+                    get_reporter().report_exception()
+                    log(f"_load_students: exit_stats: {e}")
+                # Evenements totaux sur la periode (hors sorties)
+                try:
+                    cur.execute(
+                        f"""
+                        SELECT se.student_id,
+                               COUNT(*) AS total_events
+                         FROM student_event se
+                         WHERE se.student_id IN ({ids_sql})
+                            AND DATE(se.event_at) BETWEEN %s AND %s
+                         GROUP BY se.student_id
+                     """,
+                        (period_from, period_to),
+                    )
+                    for sid, total_events in cur.fetchall():
+                        event_stats.setdefault(sid, {})["total_events"] = total_events
+                except Exception as e:
+                    from larccommon.error_reporting import get_reporter
+                    get_reporter().report_exception()
+                    log(f"_load_students: event_stats: {e}")
+                # Presence : aujourd'hui uniquement
+                try:
+                    cur.execute(
+                        f"""
+                        SELECT se.student_id,
+                               CASE WHEN COUNT(*) FILTER (WHERE (se.event_type = %s
+                                   OR se.event_type ILIKE %s OR se.event_type ILIKE %s)
+                                   AND se.validated_by IS NULL) > 0 THEN 'Absent' ELSE 'Present' END AS presence
+                         FROM student_event se
+                         WHERE se.student_id IN ({ids_sql})
+                            AND DATE(se.event_at) = %s
+                         GROUP BY se.student_id
+                     """,
+                        ("absence", "Suivi > Absence%", "Absence%", today),
+                    )
+                    for sid, presence in cur.fetchall():
+                        event_stats.setdefault(sid, {})["presence"] = presence
+                except Exception as e:
+                    from larccommon.error_reporting import get_reporter
+                    get_reporter().report_exception()
+                    log(f"_load_students: presence_stats: {e}")
+
+            # Vider les cartes existantes
+            for i in reversed(range(self._cards_layout.count())):
+                w = self._cards_layout.itemAt(i).widget()
+                if w:
+                    w.deleteLater()
+
+            # Grille multi-colonnes avec scroll vertical
+            self._card_theme = session.card_theme
+            cfg = CARD_THEMES.get(self._card_theme)
+            card_w = cfg.card_w + cfg.margin * 2
+            avail_w = self._cards_scroll.viewport().width()
+            spacing = self._cards_layout.spacing()
+            cols = max(1, (avail_w + spacing) // (card_w + spacing)) if avail_w > 100 else 2
+            for idx, s in enumerate(self._students):
+                sid = s["id"]
+                card = StudentCard(sid, s["last_name"], s["first_name"], cfg=cfg)
+                card.set_role(StudentCard._ROLE_SUPERVISOR)
+                stats = event_stats.get(sid, {})
+                exit_count = stats.get("exit", 0)
+                total_events = stats.get("total_events", 0)
+                presence = stats.get("presence", "Present")
+                card.set_event_count(total_events)
+                card.set_exit_count(exit_count)
+                is_absent = presence == "Absent"
+                color = theme_manager.palette.error if is_absent else theme_manager.palette.success
+                card.set_status(presence, color)
+                card.set_absent(is_absent)
+                card.clicked.connect(self._on_student_selected)
+                self._cards_layout.addWidget(card, idx // cols, idx % cols, Qt.AlignCenter)
+
+            # --- Absents du jour pour cette classe ---
+            try:
+                cur.execute(
+                    """
+                    SELECT aec.last_name || ' ' || aec.first_name AS name, se.event_type
+                    FROM student_event se
+                    JOIN larcauth_student s ON s.aecuser_ptr_id = se.student_id
+                    JOIN larcauth_aecuser aec ON aec.id = s.aecuser_ptr_id
+                    WHERE s.s_classroom_id = %s
+                      AND (se.event_type = %s OR se.event_type ILIKE %s OR se.event_type ILIKE %s)
+                      AND DATE(se.event_at) = %s
+                      AND se.validated_by IS NULL
+                    ORDER BY aec.last_name
+                    LIMIT 30
+                """,
+                    (class_id, "absence", "Suivi > Absence%", "Absence%", today),
+                )
+                abs_rows = cur.fetchall()
+                self._class_absents_table.setRowCount(len(abs_rows))
+                for i, (name, motif) in enumerate(abs_rows):
+                    self._class_absents_table.setItem(i, 0, QTableWidgetItem(name))
+                    self._class_absents_table.setItem(i, 1, QTableWidgetItem(motif))
+                self._class_absents_group.setVisible(bool(abs_rows))
+            except Exception:
+                from larccommon.error_reporting import get_reporter
+                get_reporter().report_exception()
+                self._class_absents_group.setVisible(False)
+
+            self._top_bar.set_loading(False)
+
+        except Exception as e:
+            from larccommon.error_reporting import get_reporter
+            get_reporter().report_exception()
+            log(f"_load_students: {e}")
+            self._top_bar.set_loading(False)
+        finally:
+            self._cards_skeleton.stop()
+            self._class_stack.setCurrentIndex(0)
+            self._loading_students = False
+
+    @safe_slot("MainWindow.on_student_selected")
+    def _on_student_selected(self, student_id: int):
+        self._selected_student_id = student_id
+        self._top_bar.show_period_row(True)
+        self._load_student_detail(student_id)
+
+    @safe_slot("MainWindow.on_edit_timetable")
+    def _on_edit_timetable(self):
+        if not self._current_class_id:
+            return
+        # Trouver le label de la classe
+        label = ""
+        for cid, l, pid, sigle in self._classes:
+            if cid == self._current_class_id:
+                label = l
+                break
+        dlg = TimetableEditor(self._current_class_id, label, self._time_manager.term_id, self)
+        dlg.exec()
+
+    @safe_slot("MainWindow.on_back_to_cards")
+    def _on_back_to_cards(self):
+        self._student_detail.hide()
+        self._class_stack.setCurrentIndex(0)
+
+    @safe_slot("MainWindow.on_card_theme")
+    def _on_card_theme(self, key: str):
+        if not db.is_server_connected:
+            return
+        self._card_theme = key
+        session.card_theme = key
+        if session.user_id:
+            try:
+                cur = db.server_conn.cursor()
+                cur.execute(
+                    "INSERT INTO larcauth_config (key, value) VALUES (%s, %s) "
+                    "ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value",
+                    (f"user_{session.user_id}_card_theme", key),
+                )
+                db.server_conn.commit()
+            except Exception as e:
+                from larccommon.error_reporting import get_reporter
+                get_reporter().report_exception()
+                log(f"MainWindow._on_card_theme: save prefs: {e}")
+        if self._current_class_id:
+            self._load_students(self._current_class_id)
+
+    def _build_event_types_btn(self):
+        """Bouton sidebar 'Types d'événements' (ADMIN/COORD) → page 2 du stack."""
+        p = theme_manager.palette
+        btn = M3Button(_("event_types.title"))
+        btn.setIcon(md3_icon("event", color=p.text_strong, size=ds.icon_sm))
+        btn.setIconSize(QSize(ds.icon_sm, ds.icon_sm))
+        btn.setMinimumHeight(ds.button_height)
+        btn.clicked.connect(self._on_event_types_btn)
+        return btn
+
+    @safe_slot("MainWindow.on_event_types_btn")
+    def _on_event_types_btn(self):
+        self._content_stack.setCurrentIndex(2)
+
+    def _on_add_event(self):
+        if not db.is_server_connected:
+            return
+        sid = self._selected_student_id
+        if not sid:
+            return
+        dlg = EventGenerator(sid, self)
+        if dlg.exec():
+            data = dlg.get_data()
+            conn = db.server_conn
+            if not conn:
+                QMessageBox.warning(self, _("common.error"), _("main.error_no_db_connection"))
+                return
+            self._top_bar.set_loading(True, _("main.saving"))
+            try:
+                cur = conn.cursor()
+                cur.execute(
+                    "INSERT INTO student_event (student_id, event_type, event_at, lieu_label, subject_label, note, source, created_by, event_type_id) "
+                    "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                    (
+                        data["student_id"],
+                        data["event_type"],
+                        data["event_at"],
+                        data["lieu_label"],
+                        data.get("subject_label", ""),
+                        data["note"],
+                        data["source"],
+                        session.user_id,
+                        data.get("event_type_id"),
+                    ),
+                )
+                conn.commit()
+                self._top_bar.set_loading(False)
+            except Exception as e:
+                from larccommon.error_reporting import get_reporter
+                get_reporter().report_exception()
+                log(f"_on_add_event insert: {e}")
+                self._top_bar.set_loading(False)
+                conn.rollback()
+                QMessageBox.critical(
+                    self, _("common.error"), f"{_('main.error_save_failed')} : {e}"
+                )
+                return
+            self._load_student_detail(sid)
+
+    def _load_student_detail(self, student_id: int):
+        date_from, date_to = self._time_manager.period_dates()
+        trace(f" _load_student_detail: id={student_id}, période={self._time_manager.current_period}, dates={date_from} → {date_to}")
+        self._student_detail.set_period_dates(date_from, date_to)
+        self._student_detail.set_period_label(self._time_manager.current_period)
+        self._student_detail.load(student_id)
+        self._student_detail.show()
+        self._class_stack.setCurrentWidget(self._student_detail)
+
+    def _get_event_id_from_table(self, table: M3TableWidget) -> int | None:
+        idx = table.currentRow()
+        if idx < 0:
+            return None
+        item = table.item(idx, 0)
+        return int(item.text()) if item and item.text().isdigit() else None
+
+    @safe_slot("MainWindow.edit_event")
+    def _edit_event(self, event_id: int):
+        if not db.is_server_connected:
+            return
+        conn = db.server_conn
+        if not conn:
+            QMessageBox.warning(self, _("common.error"), _("main.error_no_db_connection"))
+            return
+        cur = conn.cursor()
+        cur.execute(
+            """
+            SELECT se.event_type, se.event_at, se.lieu_label, se.subject_label, se.note,
+                   aec.last_name || ' ' || aec.first_name AS student_name
+            FROM student_event se
+            JOIN larcauth_aecuser aec ON aec.id = se.student_id
+            WHERE se.event_id = %s
+        """,
+            (event_id,),
+        )
+        row = cur.fetchone()
+        if not row:
+            QMessageBox.warning(self, _("common.error"), _("main.error_event_not_found"))
+            return
+        etype, e_at, lieu, subject, note, student_name = row
+
+        dlg = QDialog(self)
+        dlg.setWindowTitle(f"{_('event.edit_title')} #{event_id}")
+        dlg.setMinimumSize(ds.window_width * 2 // 5, ds.window_height // 2)  # 1200*2/5=480, 800/2=400
+        layout = QVBoxLayout(dlg)
+        p = theme_manager.palette
+
+        # Infos
+        info = M3Label(
+            f"<b>{student_name}</b> — {etype}<br>"
+            f"<span style='color:{p.text_disabled};font-size:{theme_manager.font_size(10)}px;'>"
+            f"{e_at.strftime('%d/%m/%Y %H:%M') if e_at else ''} | {lieu or ''}"
+            f"{' | ' + subject if subject else ''}</span>"
+        )
+        info.setWordWrap(True)
+        info.setTextFormat(Qt.RichText)
+        layout.addWidget(info)
+
+        # Type
+        layout.addWidget(M3Label(_("event.edit_type")))
+        type_input = M3ComboBox()
+        cur2 = conn.cursor()
+        cur2.execute("SELECT DISTINCT event_type FROM student_event ORDER BY event_type")
+        type_input.addItems([et for (et,) in cur2.fetchall()])
+        type_input.setCurrentText(etype)
+        layout.addWidget(type_input)
+
+        # Note
+        layout.addWidget(M3Label(_("event.edit_note")))
+        note_input = M3TextEdit()
+        note_input.setText(note or "")
+        note_input.setMaximumHeight(ds.space_xxl + ds.space_lg)  # 84+32=116 (proche de 120)
+        layout.addWidget(note_input)
+
+        # Boutons
+        btn_row = QHBoxLayout()
+        save_btn = M3Button(_("event.save"))
+        d_save = theme_manager.design
+        save_btn.setStyleSheet(
+            f"QPushButton {{ background: {p.primary}; color: {p.on_primary}; "
+            f"border: none; border-radius: {d_save.radius}px; "
+            f"padding: {ds.space_xs}px {ds.space_md}px; font-weight: bold; }}"
+        )
+        save_btn.clicked.connect(
+            lambda checked: (
+                cur.execute(
+                    "UPDATE student_event SET event_type = %s, note = %s WHERE event_id = %s",
+                    (type_input.currentText(), note_input.toPlainText().strip(), event_id),
+                ),
+                conn.commit(),
+                dlg.accept(),
+            )
+        )
+        cancel_btn = M3Button(_("event.cancel"))
+        cancel_btn.clicked.connect(dlg.reject)
+        btn_row.addStretch()
+        btn_row.addWidget(save_btn)
+        btn_row.addWidget(cancel_btn)
+        layout.addLayout(btn_row)
+
+        if dlg.exec() == QDialog.Accepted:
+            self.refresh_all()
+
+    @safe_slot("MainWindow.on_history_dblclick")
+    def _on_history_dblclick(self, row: int, col: int):
+        table = self._history_table
+        item = table.item(row, 0)
+        eid = int(item.text()) if item and item.text().isdigit() else None
+        if eid:
+            self._edit_event(eid)
+
+    def eventFilter(self, obj, event):
+        if (
+            obj is self._history_table
+            and event.type() == QEvent.KeyPress
+            and event.key() in (Qt.Key_Return, Qt.Key_Enter)
+        ):
+            row = self._history_table.currentRow()
+            if row >= 0:
+                self._on_history_dblclick(row, 0)
+                return True
+        return super().eventFilter(obj, event)
+
+    def _show_event_context_menu(self, table: M3TableWidget, pos):
+        eid = self._get_event_id_from_table(table)
+        if not eid:
+            return
+        event = self._actions.get_event_by_id(eid)
+        is_validated = event is not None and event.get("validated_by") is not None
+        menu = M3Menu(self)
+        edit_action = menu.addAction(
+            md3_icon(
+                "edit", color=theme_manager.palette.text_strong, size=ds.icon_sm
+            ),
+            _("context_menu.edit"),
+        )
+        validate_action = menu.addAction(
+            md3_icon(
+                "lock" if is_validated else "check_circle",
+                color=theme_manager.palette.text_strong,
+                size=ds.icon_sm,
+            ),
+            _("context_menu.invalidate") if is_validated else _("context_menu.validate"),
+        )
+        delete_action = menu.addAction(
+            md3_icon(
+                "delete",
+                color=theme_manager.palette.text_strong,
+                size=ds.icon_sm,
+            ),
+            _("context_menu.delete"),
+        )
+        chosen = menu.exec(table.viewport().mapToGlobal(pos))
+        if chosen == edit_action:
+            self._edit_event(eid)
+        elif chosen == validate_action:
+            self._toggle_validation(eid)
+        elif chosen == delete_action:
+            self._delete_event(eid)
+
+    def _toggle_validation(self, event_id: int):
+        if not db.is_server_connected:
+            return
+        conn = db.server_conn
+        if not conn:
+            return
+        try:
+            cur = conn.cursor()
+            cur.execute("SELECT validated_by FROM student_event WHERE event_id = %s", (event_id,))
+            row = cur.fetchone()
+            if row and row[0] is not None:
+                cur.execute(
+                    "UPDATE student_event SET validated_by = NULL WHERE event_id = %s", (event_id,)
+                )
+            else:
+                cur.execute(
+                    "UPDATE student_event SET validated_by = %s WHERE event_id = %s",
+                    (session.user_id, event_id),
+                )
+            conn.commit()
+            self.refresh_all()
+        except Exception as e:
+            from larccommon.error_reporting import get_reporter
+            get_reporter().report_exception()
+            log(f"_toggle_validation: {e}")
+            conn.rollback()
+
+    def _delete_event(self, event_id: int):
+        if not db.is_server_connected:
+            return
+        reply = QMessageBox.question(
+            self,
+            _("main.confirm_delete_title"),
+            f"{_('main.confirm_delete_message')} #{event_id} ?",
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No,
+        )
+        if reply != QMessageBox.Yes:
+            return
+        conn = db.server_conn
+        if not conn:
+            return
+        try:
+            cur = conn.cursor()
+            cur.execute("DELETE FROM student_event WHERE event_id = %s", (event_id,))
+            conn.commit()
+            self.refresh_all()
+        except Exception as e:
+            from larccommon.error_reporting import get_reporter
+            get_reporter().report_exception()
+            log(f"_delete_event: {e}")
+            conn.rollback()
+            QMessageBox.critical(self, _("common.error"), f"{_('main.error_delete_failed')} : {e}")
+
+    def refresh_all(self):
+        self._event_types_panel.refresh()
+        self._top_bar.update_network()
+        if self._current_group_mode == "class":
+            if self._selected_student_id:
+                trace(f"refresh_all: reload student detail {self._selected_student_id}")
+                self._load_student_detail(self._selected_student_id)
+            else:
+                trace(f"refresh_all: show class mode {self._current_class_id}")
+                self._show_class_mode(self._current_class_id)
+        elif self._current_group_mode:
+            trace(f"refresh_all: show group mode {self._current_group_mode}")
+            self._show_group_mode(self._current_group_mode)
+
+    def _refresh_timer(self):
+        self._top_bar.update_network()
+        QTimer.singleShot(30000, self._refresh_timer)
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)

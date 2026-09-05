@@ -1,0 +1,1 @@
+from larccommon.widgets.avatar import make_avatar  # noqa: F401

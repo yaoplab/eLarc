@@ -1,0 +1,1 @@
+from larccommon.widgets.card import StudentCard  # noqa: F401

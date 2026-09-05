@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "larcforge"
+version = "0.1.0"
+description = "Poste de controle Larc : tests, linters, registre d'issues (larc_issue), regressions"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = []
+
+[project.optional-dependencies]
+db = ["psycopg2-binary>=2.9"]
+gui = ["PySide6>=6.6"]
+dev = ["pytest>=8", "pytest-qt>=4.4"]
+
+[tool.setuptools.packages.find]
+include = ["larcforge*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

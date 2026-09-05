@@ -1,0 +1,46 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "larccommon"
+version = "0.1.0"
+description = "Bibliothèque commune Larc — UI toolkit (PhiBuilder), infrastructure partagée (DB, auth, logger, l10n)"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+dependencies = [
+    "materialyoucolor>=3.0",
+    "PySide6>=6.5",
+    "psycopg2-binary>=2.9",
+    "python-docx>=1.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=9",
+    "pytest-qt>=4",
+    "ruff>=0.15",
+    "black>=26",
+    "pre-commit>=4",
+]
+
+[tool.setuptools.packages.find]
+include = ["larccommon*", "phibuilder*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W"]
+
+[tool.ruff.lint.per-file-ignores]
+"larccommon/icons.py" = ["E501"]  # SVG paths
+
+[tool.black]
+line-length = 100
+target-version = ["py310"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]

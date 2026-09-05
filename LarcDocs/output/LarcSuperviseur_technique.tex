@@ -1,0 +1,93 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[french]{babel}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{geometry}
+\geometry{margin=2.5cm}
+\usepackage{hyperref}
+\usepackage{xcolor}
+
+\definecolor{larcblue}{HTML}{1565C0}
+
+\title{\color{larcblue}Supervision des présences et événements — Documentation technique}
+\author{Les logiciels Larc — Arc-en-Ciel}
+\date{\today}
+
+\begin{document}
+\maketitle
+\tableofcontents
+\newpage
+
+\section{Architecture}
+
+LarcSuperviseur est une application \textbf{PySide6 (Qt6)} desktop,
+développée en Python~3. Elle utilise les widgets Material Design~3 via
+\texttt{phibuilder} et se connecte à PostgreSQL via \texttt{psycopg2}.
+
+\section{Fonctionnalités principales}
+
+\begin{itemize}
+  \item Suivi des absences et retards en temps réel
+  \item Génération d'événements (absence journée, retard, événements)
+  \item Statistiques par groupe, classe et élève
+  \item Tableau de bord avec KPIs et graphiques
+  \item Gestion des photos élèves
+  \item Éditeur d'emploi du temps
+\end{itemize}
+
+\section{Rôles utilisateurs}
+
+\begin{itemize}
+  \item \textbf{Superviseur (écriture)}
+  \item \textbf{Coordinateur (valider)}
+  \item \textbf{Administrateur (complet)}
+\end{itemize}
+
+\section{Base de données}
+
+Tables principales~:
+
+\begin{itemize}
+  \item \texttt{student\_event}
+  \item \texttt{larcauth\_type\_event}
+  \item \texttt{larcauth\_lieu}
+  \item \texttt{larcauth\_academicyear}
+\end{itemize}
+
+\section{Modules principaux}
+
+\begin{center}
+\begin{tabular}{|l|l|}
+\hline
+\textbf{Fichier} & \textbf{Rôle} \\ \hline
+    \texttt{main\_window.py} & Orchestrateur principal \\ \hline
+    \texttt{top\_bar.py} & Barre du haut (date, réseau, thème, périodes) \\ \hline
+    \texttt{sidebar.py} & Navigation gauche (programmes, classes) \\ \hline
+    \texttt{group\_panel.py} & Stats groupe : KPIs, charts, historique \\ \hline
+    \texttt{class\_panel.py} & Grille cartes élèves \\ \hline
+    \texttt{student\_detail.py} & Détail élève : photo, infos, événements \\ \hline
+    \texttt{data\_loader.py} & Requêtes DB (33 méthodes) \\ \hline
+    \texttt{event\_actions.py} & CRUD événements + menu contextuel \\ \hline
+    \texttt{event\_generator.py} & Wizard génération événement \\ \hline
+    \texttt{timetable\_editor.py} & Éditeur emploi du temps \\ \hline
+\end{tabular}
+\end{center}
+
+\section{Dépendances}
+
+\begin{itemize}
+  \item \textbf{PySide6} $\ge$ 6.5 — Framework Qt6
+  \item \textbf{psycopg2-binary} $\ge$ 2.9 — Driver PostgreSQL
+  \item \textbf{materialyoucolor} $\ge$ 3.0 — Moteur de couleurs Material Design~3
+  \item \textbf{LarcCommon} — Librairie partagée (thèmes, i18n, icônes, widgets)
+\end{itemize}
+
+\section{Connexion à la base de données}
+
+\begin{itemize}
+  \item \textbf{Intranet} : PostgreSQL \texttt{127.0.0.1:5432} — \texttt{NewLarcDB}
+  \item \textbf{Cloud} : Supabase \texttt{aws-1-eu-north-1.pooler.supabase.com:6543}
+  \item \texttt{autocommit = True} sur toutes les connexions
+\end{itemize}
+
+\end{document}

@@ -1,0 +1,68 @@
+{
+  "_comment": "Configuration de la grille PEI (notes 0–8). Éditable par l'utilisateur.",
+  "label": "PEI — Collège",
+  "student_column": {
+    "width": 210,
+    "min_width": 120,
+    "max_width": 400
+  },
+  "note_column": {
+    "default_width": 50,
+    "min_width": 35,
+    "max_width": 120
+  },
+  "remark_column": {
+    "default_width": 130,
+    "min_width": 80,
+    "max_width": 300
+  },
+  "note_on_7": {
+    "enabled": true,
+    "color": "#1565C0",
+    "bold": true
+  },
+  "grade_ranges": [
+    {
+      "min": 0,
+      "max": 2,
+      "bg": "#ffcdd2",
+      "fg": "#c62828",
+      "bold": false
+    },
+    {
+      "min": 3,
+      "max": 3,
+      "bg": "#ffe0b2",
+      "fg": "#e65100",
+      "bold": false
+    },
+    {
+      "min": 4,
+      "max": 4,
+      "bg": "#ffffff",
+      "fg": "#212121",
+      "bold": false
+    },
+    {
+      "min": 5,
+      "max": 5,
+      "bg": "#c8e6c9",
+      "fg": "#2e7d32",
+      "bold": false
+    },
+    {
+      "min": 6,
+      "max": 6,
+      "bg": "#a5d6a7",
+      "fg": "#1b5e20",
+      "bold": false
+    },
+    {
+      "min": 7,
+      "max": 8,
+      "bg": "#81c784",
+      "fg": "#1b5e20",
+      "bold": true
+    }
+  ]
+}

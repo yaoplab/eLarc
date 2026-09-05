@@ -1,0 +1,79 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.venv/
+venv/
+
+# Sensitive
+config.ini
+*.bak
+*.bak-*
+.env
+credentials.*
+
+# Build artifacts
+dist/
+
+# SQLite
+*.db-shm
+*.db-wal
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+*.log
+*.log.*
+
+# Graphe de connaissances (régénérable via graphify)
+graphify-out/
+
+# Temp
+*.tmp
+~*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Hors dépôt Larc — projets/outils externes dans D:\projets
+node_modules/
+horizon-mcp/
+
+# Config machine (chemins locaux, ex. horizon-mcp)
+.mcp.json
+
+# Caches photos — régénérables à partir de photos/
+**/photos/cache/
+
+# Sauvegardes & archives volumineuses
+*.zip
+
+# Données personnelles (dossiers RH/élèves : documents, photos d'identité)
+data/
+
+# Photos d'élèves / de staff (données personnelles)
+photos/
+
+# Médias / photos isolés + caches
+media/
+
+# Bases SQLite locales (données d'appareil, régénérables via sqlite_init)
+*.db
+*.sqlite
+*.sqlite3
+
+# Caches d'outils (Flutter, Aider) & spool d'erreurs runtime
+.dart_tool/
+.aider.tags.cache.v4/
+.error_spool/
+ephemeral/
+
+# État transitoire d'exécution
+_r_now.json
+
+# Dépôt imbriqué (versionné séparément — éviter un gitlink cassé)
+LarcPhibuilder/

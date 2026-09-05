@@ -1,0 +1,41 @@
+# hooks pour LarcCommon
+# Installation : pip install pre-commit && pre-commit install
+
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.15.20
+    hooks:
+      - id: ruff
+        args: [--fix]
+      - id: ruff-format
+  - repo: https://github.com/psf/black-pre-commit-mirror
+    rev: 26.5.1
+    hooks:
+      - id: black
+
+  - repo: local
+    hooks:
+      - id: lint-dlinter
+        name: 🎨 Linter Design System Larc (D1+J7+D3+D4+D5+D6+D7)
+        description: >
+          Vérifie le respect du design system : D1=HTML color, J7=WA_StyledBackground,
+          D3=hex hardcodés, D4=contraste, D5=text_soft inline,
+          D6=theme_changed.connect, D7=complétude _restyle()
+        entry: python C:/projets/scripts/lint_d1_color_checker.py --rule D1+J7+D3+D4+D5+D6+D7 --fix-only
+        language: system
+        files: \.py$
+        stages: [pre-commit]
+        verbose: true
+        pass_filenames: false
+      - id: lint-rlinter
+        name: 🔬 Linter QSS Larc (R + Q1+Q3 + Q2 — zéro hardcoding)
+        description: >
+          Vérifie le ZERO hardcoding pixels (Sous-système R) et la règle Q1+Q3
+          (tables interactives sans curseur main ni eventFilter) du skill
+          design-system-larc. Retourne 1 si une violation est détectée.
+        entry: python C:/projets/scripts/lint_qss_hardcoding.py --fix-only
+        language: system
+        files: \.py$
+        stages: [pre-commit]
+        verbose: true
+        pass_filenames: false

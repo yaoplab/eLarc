@@ -1,0 +1,93 @@
+# eLarcProf — Credentials (ne jamais committer)
+config.ini
+secrets.env
+elarc.db
+instance.ini
+SQLiteDB.db
+
+# Environnements virtuels
+.venv/
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# Python cache
+__pycache__/
+*.py[codz]
+*$py.class
+*.so
+*.pyd
+
+# Distribution / packaging
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+*.egg-info/
+*.egg
+MANIFEST
+
+# Tests / coverage
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+.pytest_cache/
+nosetests.xml
+coverage.xml
+*.cover
+
+# IDE
+.idea/
+.vscode/
+.spyderproject
+.ropeproject
+.claude/
+.obsidian/
+
+# mypy / pytype / pyre
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pytype/
+.pyre/
+
+# Divers
+*.log
+pip-log.txt
+*.spec
+*.manifest
+.ruff_cache/
+.aider*
+
+# Notes de réflexion (discussions, brouillons)
+Reflexion*.txt
+Reflexion*.html
+
+# Fichiers binaires / archives / DB (ne doivent pas être versionnés)
+*.db
+*.zip
+*.xlsx
+*.docx
+*.pdf
+
+# Notes de travail et historiques
+historique_demandes.txt
+tableConvert.md
+à_faire/
+
+# Algorithmes de migration / notes perso
+algorithme_creation_instance_cloud.md
+algorithme_creation_instance_intranet.md
+
+# Projets séparés (propres repos GitHub)
+LarcCloudSync/
+LarcSuperviseur/

@@ -1,0 +1,4 @@
+# Flutter — artefacts de build (régénérés par `flutter pub get` / `flutter build`)
+/windows/flutter/ephemeral/
+/build/
+/.dart_tool/
