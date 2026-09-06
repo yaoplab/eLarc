@@ -210,6 +210,8 @@ class EventTypesPanel(QWidget):
             locked = node["usage_count"] > 0
             for col in range(4):
                 item = self._table.item(row, col)
+                if item is None:
+                    continue
                 if locked:
                     item.setForeground(QBrush(QColor(p.text_disabled)))
                     item.setToolTip(_("event_types.locked_tooltip"))
