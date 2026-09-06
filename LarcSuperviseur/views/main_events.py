@@ -52,11 +52,12 @@ from LarcSuperviseur.common.session import session
 from LarcSuperviseur.common.theme import QssHelper, theme_manager
 from larccommon.theme import PROGRAM_STYLES
 from LarcSuperviseur.common.trace import trace
+from larccommon.dialogs import EventGeneratorDialog, EventData, MemberType
+from LarcSuperviseur.common.database import db
 from LarcSuperviseur.views.core.cardsList.card import StudentCard
 from LarcSuperviseur.views.core.cardsList.config import CARD_THEMES
 from LarcSuperviseur.views.core.event_actions import EventActions
 from LarcSuperviseur.views.core.time_manager import TimeManager
-from LarcSuperviseur.views.dialogs.event_generator import EventGenerator
 from LarcSuperviseur.views.dialogs.timetable_editor import TimetableEditor
 from LarcSuperviseur.views.panels.student_detail import StudentDetail
 from LarcSuperviseur.views.top_bar import TopBar
@@ -72,44 +73,50 @@ class EventsMixin:
         sid = self._selected_student_id
         if not sid:
             return
-        dlg = EventGenerator(sid, self)
-        if dlg.exec():
-            data = dlg.get_data()
-            conn = db.server_conn
-            if not conn:
-                QMessageBox.warning(self, _("common.error"), _("main.error_no_db_connection"))
-                return
-            self._top_bar.set_loading(True, _("main.saving"))
-            try:
-                cur = conn.cursor()
-                cur.execute(
-                    "INSERT INTO student_event (student_id, event_type, event_at, lieu_label, subject_label, note, source, created_by, event_type_id) "
-                    "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)",
-                    (
-                        data["student_id"],
-                        data["event_type"],
-                        data["event_at"],
-                        data["lieu_label"],
-                        data.get("subject_label", ""),
-                        data["note"],
-                        data["source"],
-                        session.user_id,
-                        data.get("event_type_id"),
-                    ),
-                )
-                conn.commit()
-                self._top_bar.set_loading(False)
-            except Exception as e:
-                from larccommon.error_reporting import get_reporter
-                get_reporter().report_exception()
-                log(f"_on_add_event insert: {e}")
-                self._top_bar.set_loading(False)
-                conn.rollback()
-                QMessageBox.critical(
-                    self, _("common.error"), f"{_('main.error_save_failed')} : {e}"
-                )
-                return
-            self._load_student_detail(sid)
+        dlg = EventGeneratorDialog(sid, MemberType.STUDENT, self)
+        dlg.event_created.connect(self._insert_student_event)
+        dlg.exec()
+
+    def _insert_student_event(self, evt: EventData):
+        """Insère l'événement créé dans la table student_event."""
+        conn = db.server_conn
+        if not conn:
+            QMessageBox.warning(self, _("common.error"), _("main.error_no_db_connection"))
+            return
+        self._top_bar.set_loading(True, _("main.saving"))
+        try:
+            cur = conn.cursor()
+            cur.execute(
+                """
+                INSERT INTO student_event
+                (student_id, event_type, event_at, lieu_label, subject_label, note,
+                 source, created_by, created_location)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                """,
+                (
+                    evt.member_id,
+                    evt.type_path,
+                    evt.event_at,
+                    evt.lieu_label,
+                    evt.subject_label,
+                    evt.note,
+                    "EventGeneratorDialog",
+                    session.user_id,
+                    evt.created_location,
+                ),
+            )
+            conn.commit()
+            self._top_bar.set_loading(False)
+            self._load_student_detail(evt.member_id)
+        except Exception as e:
+            from larccommon.error_reporting import get_reporter
+            get_reporter().report_exception()
+            log(f"_on_add_event insert: {e}")
+            self._top_bar.set_loading(False)
+            conn.rollback()
+            QMessageBox.critical(
+                self, _("common.error"), f"{_('main.error_save_failed')} : {e}"
+            )
 
     def _get_event_id_from_table(self, table: M3TableWidget) -> int | None:
         idx = table.currentRow()

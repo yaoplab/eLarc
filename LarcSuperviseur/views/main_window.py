@@ -58,7 +58,6 @@ from LarcSuperviseur.views.core.cardsList.card import StudentCard
 from LarcSuperviseur.views.core.cardsList.config import CARD_THEMES
 from LarcSuperviseur.views.core.event_actions import EventActions
 from LarcSuperviseur.views.core.time_manager import TimeManager
-from LarcSuperviseur.views.dialogs.event_generator import EventGenerator
 from LarcSuperviseur.views.dialogs.timetable_editor import TimetableEditor
 from LarcSuperviseur.views.panels.student_detail import StudentDetail
 from LarcSuperviseur.views.top_bar import TopBar

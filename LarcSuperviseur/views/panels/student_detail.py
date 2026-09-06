@@ -34,6 +34,8 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from larccommon.dialogs import EventGeneratorDialog, EventData, MemberType
+from LarcSuperviseur.common.database import db
 from LarcSuperviseur.common.event_helpers import event_color, event_icon
 from LarcSuperviseur.common.photos import get_photo_path
 from LarcSuperviseur.common.session import session
@@ -41,7 +43,6 @@ from LarcSuperviseur.common.theme import QssHelper, theme_manager
 from LarcSuperviseur.views.core.data_loader import DataLoader
 from LarcSuperviseur.views.core.event_actions import EventActions
 from LarcSuperviseur.views.core.event_dialog import EventEditDialog
-from LarcSuperviseur.views.dialogs.event_generator import EventGenerator
 
 
 class StudentDetail(ThemedWidget):
@@ -424,14 +425,48 @@ class StudentDetail(ThemedWidget):
         sid = self._student_id
         if not sid:
             return
-        dlg = EventGenerator(sid, self)
-        if dlg.exec():
-            data = dlg.get_data()
-            data["created_by"] = session.user_id
-            if not self._loader.insert_event(data):
-                QMessageBox.critical(self, _("common.dialog.error_title"), _("student.save_error"))
+        dlg = EventGeneratorDialog(sid, MemberType.STUDENT, self)
+        dlg.event_created.connect(self._insert_student_event)
+        dlg.exec()
+
+    @safe_slot("StudentDetail._insert_student_event")
+    def _insert_student_event(self, evt: EventData):
+        """Insère l'événement créé dans la table student_event."""
+        try:
+            conn = db.server_conn
+            if not conn:
+                QMessageBox.critical(self, _("common.dialog.error_title"), _("common.db_error"))
                 return
-            self.load(sid)
+
+            cur = conn.cursor()
+            cur.execute(
+                """
+                INSERT INTO student_event
+                (student_id, event_type, event_at, lieu_label, subject_label, note,
+                 created_by, created_location, source)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, 'EventGeneratorDialog')
+                """,
+                (
+                    evt.member_id,
+                    evt.type_path,
+                    evt.event_at,
+                    evt.lieu_label,
+                    evt.subject_label,
+                    evt.note,
+                    session.user_id,
+                    evt.created_location,
+                ),
+            )
+            conn.commit()
+            self.load(evt.member_id)
+        except Exception as e:
+            from larccommon.error_reporting import get_reporter
+            get_reporter().report_exception()
+            from larccommon.logger import log
+            log(f"StudentDetail._insert_student_event: {e}")
+            QMessageBox.critical(self, _("common.dialog.error_title"), _("student.save_error"))
+            if conn:
+                conn.rollback()
 
     def set_period_label(self, label: str):
         # Traduire la clé de période via le système l10n
