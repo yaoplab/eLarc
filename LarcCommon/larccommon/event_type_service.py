@@ -146,8 +146,8 @@ class EventTypeConfigService:
 
     def get_children(self, parent_id: int) -> List[EventTypeNode]:
         """Retourne les enfants directs d'un nœud."""
-        if self._cache is None:
-            self.load_hierarchy()
+        if self._cache is None and self._cached_language is not None:
+            self.load_hierarchy(self._cached_language)
 
         if not self._cache or parent_id not in self._cache:
             return []
@@ -156,8 +156,8 @@ class EventTypeConfigService:
 
     def get_by_code(self, code: str) -> Optional[EventTypeNode]:
         """Retourne un nœud par son code."""
-        if self._cache is None:
-            self.load_hierarchy()
+        if self._cache is None and self._cached_language is not None:
+            self.load_hierarchy(self._cached_language)
 
         if not self._cache:
             return None
@@ -170,8 +170,8 @@ class EventTypeConfigService:
 
     def get_by_id(self, node_id: int) -> Optional[EventTypeNode]:
         """Retourne un nœud par son ID."""
-        if self._cache is None:
-            self.load_hierarchy()
+        if self._cache is None and self._cached_language is not None:
+            self.load_hierarchy(self._cached_language)
 
         return self._cache.get(node_id) if self._cache else None
 
@@ -209,8 +209,8 @@ class EventTypeConfigService:
         Returns:
             str : chemin avec " > " comme séparateur
         """
-        if self._cache is None:
-            self.load_hierarchy()
+        if self._cache is None and self._cached_language is not None:
+            self.load_hierarchy(self._cached_language)
 
         path = [node.label]
         current = node

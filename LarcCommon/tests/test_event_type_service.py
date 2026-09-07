@@ -88,6 +88,47 @@ class TestEventTypeConfigServiceFourLevels:
         assert intermediate.code == "absence_school_sick"
         assert len(intermediate.children) == 1
 
+    def test_get_by_id_reloads_from_cached_language_when_cache_empty(self, monkeypatch):
+        """Si self._cache redevient None (ex. cache expiré/vidé) alors qu'un
+        chargement précédent a déjà mémorisé self._cached_language, les méthodes
+        de lecture doivent recharger dans cette langue plutôt que lever un
+        TypeError (fk_language est désormais un paramètre positionnel obligatoire
+        de load_hierarchy — un appel self.load_hierarchy() sans argument crashait).
+
+        Note : invalidate_cache() remet aussi self._cached_language à None (choix
+        de Task 2, cohérent puisque _hierarchies est vidé en même temps) — donc le
+        scénario "cache vide mais langue mémorisée" est simulé ici directement, en
+        vidant uniquement self._cache, pour isoler la garde ajoutée dans get_by_id/
+        get_by_code/get_children/get_path.
+        """
+        service = EventTypeConfigService()
+        monkeypatch.setattr(
+            "larccommon.event_type_service.db",
+            type("DB", (), {"server_conn": FakeConn(FOUR_LEVEL_ROWS)})(),
+        )
+        service.load_hierarchy(fk_language=1, force_refresh=True)
+        assert service._cached_language == 1
+
+        # Simule un cache vidé sans repasser par invalidate_cache() (qui efface
+        # aussi _cached_language) : reproduit précisément la précondition du bug
+        # (self._cache is None and self._cached_language is not None). Il faut
+        # aussi vider self._hierarchies : sinon le cache-hit de load_hierarchy()
+        # (basé sur self._hierarchies, pas self._cache) court-circuiterait le
+        # rechargement et laisserait self._cache à None.
+        service._cache = None
+        service._hierarchies = {}
+
+        # Ne doit pas lever TypeError et doit recharger dans la langue mémorisée
+        node = service.get_by_id(3)
+        assert node.code == "absence_school_sick"
+        assert service._cached_language == 1
+
+        # get_path() et get_by_code() aussi doivent pouvoir recharger dans ce cas
+        service._cache = None
+        service._hierarchies = {}
+        leaf = service.get_by_code("absence_school_sick_mild")
+        assert service.get_path(leaf) == "Absence > Absence de l'école > Maladie > Légère"
+
 
 class FakeLangCursor:
     def __init__(self, rows):
