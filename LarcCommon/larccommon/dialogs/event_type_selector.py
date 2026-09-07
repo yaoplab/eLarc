@@ -6,9 +6,9 @@ confirmation à chaque endroit où un type d'événement doit être choisi.
 """
 from __future__ import annotations
 
-from typing import Dict, Optional
+from typing import Dict
 
-from PySide6.QtCore import Qt, Signal
+from PySide6.QtCore import Signal
 from PySide6.QtWidgets import QVBoxLayout, QWidget
 
 from larccommon.design_system import ds
@@ -106,7 +106,7 @@ class EventTypeSelectorWidget(QWidget):
         chain = self._find_path(self._roots, node)
         if not chain:
             return
-        self._tree.select_node(node, chain)
+        self._tree.select_node(chain[-1], chain)
         self._on_selection_changed()
 
     def _find_path(self, nodes: list, target: EventTypeNode) -> list:

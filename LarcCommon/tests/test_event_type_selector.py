@@ -1,4 +1,6 @@
 """Tests EventTypeSelectorWidget — arbre + confirmation partagés (création + édition)."""
+import dataclasses
+
 import pytest
 
 # NOTE: `larccommon` must be imported before any `phibuilder.widgets.*` submodule.
@@ -74,3 +76,34 @@ class TestEventTypeSelectorWidget:
         widget = EventTypeSelectorWidget(hierarchies)
         widget.preselect(leaf)
         assert widget._tree.current_node() is leaf
+
+    def test_preselect_with_id_equal_but_distinct_object_selects_tree_native_node(self):
+        """Reproduit le cas réel (edit-flow) : l'appelant passe un EventTypeNode fraîchement
+        construit (ex. event_type_service.get_by_id()), distinct par identité de l'objet
+        attaché à l'arbre mais égal par .id. M3TreeWidget.select_node compare par identité
+        (`is`) : preselect() doit donc résoudre chain[-1] (l'objet arbre-natif), pas l'objet
+        passé par l'appelant, sous peine de ne rien sélectionner silencieusement."""
+        hierarchies, root, mid, leaf = make_hierarchy()
+        widget = EventTypeSelectorWidget(hierarchies)
+
+        distinct_copy = dataclasses.replace(leaf)
+        assert distinct_copy is not leaf
+        assert distinct_copy.id == leaf.id
+
+        widget.preselect(distinct_copy)
+
+        assert widget._tree.current_node() is leaf
+        assert widget._confirm_btn.isEnabled() is True
+
+    def test_preselect_with_unknown_id_degrades_gracefully(self):
+        """Un nœud dont l'id n'existe dans aucune branche de la hiérarchie ne doit ni lever
+        d'exception, ni modifier la sélection courante de l'arbre."""
+        hierarchies, root, mid, leaf = make_hierarchy()
+        widget = EventTypeSelectorWidget(hierarchies)
+
+        unknown = dataclasses.replace(leaf, id=999, code="does_not_exist")
+
+        widget.preselect(unknown)
+
+        assert widget._tree.current_node() is None
+        assert widget._confirm_btn.isEnabled() is False
