@@ -17,6 +17,7 @@ from PySide6.QtGui import QIcon, QKeyEvent
 from PySide6.QtWidgets import QAbstractItemView, QSizePolicy, QTreeWidget, QTreeWidgetItem
 
 from phibuilder.theme import Theme
+from phibuilder.phi.scale import SpacingToken
 
 
 class M3TreeWidget(QTreeWidget):
@@ -45,20 +46,22 @@ class M3TreeWidget(QTreeWidget):
     def _update_style(self):
         if self._theme is None:
             return
-        c, t = self._theme.colors, self._theme.typo
+        c, s, t = self._theme.colors, self._theme.spacing, self._theme.typo
+        padding = s.spacing(SpacingToken.MD)
+        radius = s.spacing(SpacingToken.SM)
 
         self.setStyleSheet(f"""
 M3TreeWidget {{
     background-color: {c.surface};
     border: 1px solid {c.outline};
-    border-radius: 8px;
+    border-radius: {radius}px;
     outline: none;
     font-family: '{t.family}';
     font-size: {t.body_medium.size}px;
     color: {c.on_surface};
 }}
 M3TreeWidget::item {{
-    padding: 8px;
+    padding: {padding}px;
     min-height: 32px;
 }}
 M3TreeWidget::item:selected {{
