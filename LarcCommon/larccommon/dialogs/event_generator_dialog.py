@@ -17,19 +17,20 @@ from PySide6.QtWidgets import (
     QMessageBox,
     QDateEdit,
     QTimeEdit,
+    QFrame,
 )
 
 from larccommon.database import db
 from larccommon.design_system import ds
 from larccommon.event_type_service import EventTypeNode, MemberType, event_type_service
-from larccommon.dialogs.event_type_selector import EventTypeSelectorWidget
+from larccommon.dialogs.event_type_selector import EventTypeSelectorWidget, category_color
 from larccommon.l10n import _
 from larccommon.logger import log
 from larccommon.safe_slot import safe_slot
 from larccommon.session import ConnMode, session
 from larccommon.theme import theme_manager
 from larccommon.widgets.themed_widget import ThemedDialog
-from phibuilder.widgets import M3Button, M3Card, M3Label, M3Splitter, M3TextField
+from phibuilder.widgets import M3Button, M3Card, M3ComboBox, M3Label, M3Splitter, M3TextField
 from phibuilder.widgets.button import ButtonVariant
 from phibuilder.widgets.card import CardVariant
 
@@ -65,12 +66,17 @@ class EventGeneratorDialog(ThemedDialog):
         self._member_id = member_id
         self._member_type = member_type
         self._selected_node: Optional[EventTypeNode] = None
-        self._selected_lieu_label: str = ""
-        self._selected_subject: str = ""
         self._locations: list = []
+        self._subjects: list = []
 
         self._selector: Optional[EventTypeSelectorWidget] = None
         self._detail_panel: Optional[QWidget] = None
+        self._accent_bar: Optional[QFrame] = None
+        self._path_label: Optional[M3Label] = None
+        self._lieu_label_w: Optional[M3Label] = None
+        self._lieu_combo: Optional[M3ComboBox] = None
+        self._subject_label_w: Optional[M3Label] = None
+        self._subject_combo: Optional[M3ComboBox] = None
         self._date_edit: Optional[QDateEdit] = None
         self._time_edit: Optional[QTimeEdit] = None
         self._note_input: Optional[M3TextField] = None
@@ -87,6 +93,7 @@ class EventGeneratorDialog(ThemedDialog):
         self.setMinimumHeight(ds.window_height * 3 // 4)
 
         self._load_locations()
+        self._load_subjects()
         self._init_ui()
         ds.theme_changed.connect(self._restyle_all)
         self._restyle_all()
@@ -129,6 +136,31 @@ class EventGeneratorDialog(ThemedDialog):
             log(f"EventGeneratorDialog._load_locations: {e}")
             self._locations = []
 
+    def _load_subjects(self):
+        """Matières de la classe de l'élève pour le terme courant — sans objet pour le staff."""
+        if self._member_type != MemberType.STUDENT:
+            return
+        try:
+            conn = db.server_conn
+            if not conn:
+                return
+            cur = conn.cursor()
+            cur.execute(
+                """
+                SELECT DISTINCT label FROM larcauth_classroom_termsubject
+                WHERE fk_classroom_id = (
+                          SELECT s_classroom_id FROM larcauth_student WHERE aecuser_ptr_id = %s
+                      )
+                  AND fk_term_id = %s AND enabled = TRUE
+                ORDER BY label
+                """,
+                (self._member_id, getattr(session, "term_id", None)),
+            )
+            self._subjects = [row[0] for row in cur.fetchall()]
+        except Exception as e:
+            log(f"EventGeneratorDialog._load_subjects: {e}")
+            self._subjects = []
+
     def _init_ui(self):
         self.setObjectName("evt_root")
         outer = QVBoxLayout(self)
@@ -157,6 +189,38 @@ class EventGeneratorDialog(ThemedDialog):
         cl = card.content_layout()
         cl.setSpacing(ds.space_md)
 
+        self._accent_bar = QFrame()
+        self._accent_bar.setFixedHeight(ds.space_xxs)
+        cl.addWidget(self._accent_bar)
+
+        self._path_label = M3Label("", style="title_medium")
+        self._path_label.setWordWrap(True)
+        cl.addWidget(self._path_label)
+
+        grid = QVBoxLayout()
+        grid.setSpacing(ds.space_sm)
+
+        row1 = QHBoxLayout()
+        row1.setSpacing(ds.space_md)
+        lieu_col = QVBoxLayout()
+        self._lieu_label_w = M3Label(_("event.location"), style="body_medium")
+        self._lieu_combo = M3ComboBox(
+            [loc[2] for loc in self._locations], theme=theme_manager.phi_theme
+        )
+        lieu_col.addWidget(self._lieu_label_w)
+        lieu_col.addWidget(self._lieu_combo)
+        row1.addLayout(lieu_col, 1)
+
+        subject_col = QVBoxLayout()
+        self._subject_label_w = M3Label(_("event.subject"), style="body_medium")
+        self._subject_combo = M3ComboBox(self._subjects, theme=theme_manager.phi_theme)
+        subject_col.addWidget(self._subject_label_w)
+        subject_col.addWidget(self._subject_combo)
+        row1.addLayout(subject_col, 1)
+        grid.addLayout(row1)
+        for w in (self._lieu_label_w, self._lieu_combo, self._subject_label_w, self._subject_combo):
+            w.hide()
+
         dr = QHBoxLayout()
         dr.setSpacing(ds.space_md)
         dr.addWidget(M3Label(_("event.date"), style="body_medium"))
@@ -168,7 +232,9 @@ class EventGeneratorDialog(ThemedDialog):
         self._time_edit = QTimeEdit(QTime.currentTime())
         self._time_edit.setDisplayFormat("HH:mm")
         dr.addWidget(self._time_edit, 1)
-        cl.addLayout(dr)
+        grid.addLayout(dr)
+
+        cl.addLayout(grid)
 
         self._note_label = M3Label(_("event.note"), style="body_medium")
         self._note_input = M3TextField(placeholder=_("event.note_placeholder"))
@@ -199,6 +265,19 @@ class EventGeneratorDialog(ThemedDialog):
         """Le professeur a cliqué 'Confirmer ce choix' (feuille ou nœud intermédiaire)."""
         self._selected_node = node
         self._validate_btn.setEnabled(True)
+
+        self._path_label.setText(event_type_service.get_path(node))
+        self._accent_bar.setStyleSheet(
+            f"background: {category_color(node.category)}; border-radius: {ds.radius_xs}px;"
+        )
+
+        show_lieu = node.requires_lieu
+        self._lieu_label_w.setVisible(show_lieu)
+        self._lieu_combo.setVisible(show_lieu)
+
+        show_subject = node.requires_subject and self._member_type == MemberType.STUDENT
+        self._subject_label_w.setVisible(show_subject)
+        self._subject_combo.setVisible(show_subject)
 
         is_leaf = EventTypeSelectorWidget.is_leaf(node)
         self._note_label.setVisible(is_leaf)
@@ -251,6 +330,7 @@ class EventGeneratorDialog(ThemedDialog):
 
         node = self._selected_node
         is_leaf = EventTypeSelectorWidget.is_leaf(node)
+        show_subject = node.requires_subject and self._member_type == MemberType.STUDENT
 
         event_data = EventData(
             member_id=self._member_id,
@@ -259,8 +339,8 @@ class EventGeneratorDialog(ThemedDialog):
             type_id=node.id,
             type_path=event_type_service.get_path(node),
             event_at=self._get_datetime_iso(),
-            lieu_label=self._selected_lieu_label if node.requires_lieu else None,
-            subject_label=self._selected_subject if node.requires_subject else None,
+            lieu_label=self._lieu_combo.currentText() if node.requires_lieu else None,
+            subject_label=self._subject_combo.currentText() if show_subject else None,
             note=(self._note_input.text() if is_leaf and self._note_input else ""),
             created_location="cloud" if session.conn_mode == ConnMode.CLOUD else "intranet",
         )

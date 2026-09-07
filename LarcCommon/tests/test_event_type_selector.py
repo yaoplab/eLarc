@@ -10,9 +10,10 @@ import pytest
 # re-entering the still-initializing phibuilder.widgets package). Importing
 # larccommon first fully resolves that cycle before phibuilder.widgets starts.
 import larccommon  # noqa: F401,E402
+from PySide6.QtCore import Qt  # noqa: E402
 from PySide6.QtWidgets import QApplication  # noqa: E402
 
-from larccommon.dialogs.event_type_selector import EventTypeSelectorWidget  # noqa: E402
+from larccommon.dialogs.event_type_selector import EventTypeSelectorWidget, category_color  # noqa: E402
 from larccommon.event_type_service import EventTypeNode  # noqa: E402
 
 
@@ -41,6 +42,81 @@ def make_hierarchy():
         children=[mid],
     )
     return {"absence": root}, root, mid, leaf
+
+
+def make_multi_category_hierarchy():
+    """Deux catégories (Absence, Sortie) pour tester les chips + le filtrage scopé."""
+    absence_hierarchies, absence_root, absence_mid, absence_leaf = make_hierarchy()
+
+    sortie_leaf = EventTypeNode(
+        id=13, code="sortie_class_toilets", label="Toilettes", category="sortie",
+        icon_code=None, parent_id=12, applicable_to="student,staff",
+        requires_validation=True, requires_lieu=False, requires_subject=False,
+    )
+    sortie_mid = EventTypeNode(
+        id=12, code="sortie_class", label="Sortie du cours", category="sortie",
+        icon_code=None, parent_id=11, applicable_to="student,staff",
+        requires_validation=True, requires_lieu=False, requires_subject=True,
+        children=[sortie_leaf],
+    )
+    sortie_root = EventTypeNode(
+        id=11, code="sortie", label="Sortie", category="sortie",
+        icon_code=None, parent_id=None, applicable_to="student,staff",
+        requires_validation=True, requires_lieu=False, requires_subject=False,
+        children=[sortie_mid],
+    )
+    hierarchies = {**absence_hierarchies, "sortie": sortie_root}
+    return hierarchies, absence_root, sortie_root, sortie_leaf
+
+
+class TestCategoryColor:
+    def test_known_categories_have_distinct_colors(self):
+        colors = {category_color(c) for c in ("absence", "retard", "sortie", "evenement")}
+        assert len(colors) == 4
+
+    def test_unknown_category_degrades_to_a_default_color(self):
+        assert category_color("custom") == category_color("does_not_exist")
+
+
+class TestEventTypeSelectorWidgetCategoryChips:
+    def test_tree_starts_scoped_to_first_category_only(self):
+        hierarchies, absence_root, sortie_root, _ = make_multi_category_hierarchy()
+        widget = EventTypeSelectorWidget(hierarchies)
+        # _CATEGORY_ORDER place "absence" avant "sortie".
+        assert widget._tree.topLevelItemCount() == 1
+        assert widget._tree.topLevelItem(0).data(0, Qt.UserRole) is absence_root
+
+    def test_switching_chip_rescopes_tree_to_other_category(self):
+        hierarchies, absence_root, sortie_root, _ = make_multi_category_hierarchy()
+        widget = EventTypeSelectorWidget(hierarchies)
+        sortie_index = widget._roots.index(sortie_root)
+
+        widget._chip_bar.set_current(sortie_index)
+
+        assert widget._tree.topLevelItemCount() == 1
+        assert widget._tree.current_node() is None  # sélection réinitialisée par le changement de catégorie
+
+    def test_search_with_no_match_in_active_category_switches_and_filters(self):
+        hierarchies, absence_root, sortie_root, sortie_leaf = make_multi_category_hierarchy()
+        widget = EventTypeSelectorWidget(hierarchies)
+        assert widget._chip_bar.current_index() == 0  # démarre sur Absence
+
+        widget._search.setText("toilettes")  # n'existe que sous Sortie
+
+        assert widget._chip_bar.current_index() == widget._roots.index(sortie_root)
+        root_item = widget._tree.topLevelItem(0)
+        # "Sortie du cours" (parent) reste visible car il contient un match ; "Toilettes" matche.
+        assert root_item.child(0).isHidden() is False
+
+    def test_preselect_switches_to_the_node_category(self):
+        hierarchies, absence_root, sortie_root, sortie_leaf = make_multi_category_hierarchy()
+        widget = EventTypeSelectorWidget(hierarchies)
+        assert widget._chip_bar.current_index() == 0
+
+        widget.preselect(sortie_leaf)
+
+        assert widget._chip_bar.current_index() == widget._roots.index(sortie_root)
+        assert widget._tree.current_node() is sortie_leaf
 
 
 class TestEventTypeSelectorWidget:

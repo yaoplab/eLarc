@@ -19,6 +19,7 @@ from PySide6.QtWidgets import QApplication  # noqa: E402
 
 from larccommon.database import db  # noqa: E402
 from larccommon.dialogs.event_generator_dialog import EventGeneratorDialog  # noqa: E402
+from larccommon.dialogs.event_type_selector import category_color  # noqa: E402
 from larccommon.event_type_service import EventTypeNode, MemberType, event_type_service  # noqa: E402
 
 
@@ -50,6 +51,16 @@ def make_hierarchy():
     return {"absence": root}, root, mid, leaf
 
 
+def make_hierarchy_with_lieu_and_subject():
+    """Racine unique avec requires_lieu=True et requires_subject=True (feuille)."""
+    leaf = EventTypeNode(
+        id=23, code="sortie_class_toilets", label="Toilettes", category="sortie",
+        icon_code=None, parent_id=None, applicable_to="student,staff",
+        requires_validation=True, requires_lieu=True, requires_subject=True,
+    )
+    return {"sortie": leaf}, leaf
+
+
 @pytest.fixture
 def dialog():
     hierarchies, root, mid, leaf = make_hierarchy()
@@ -61,6 +72,28 @@ def dialog():
             patch.object(event_type_service, "get_path", return_value="Absence > Maladie"):
         dlg = EventGeneratorDialog(member_id=1, member_type=MemberType.STUDENT)
         yield dlg, root, mid, leaf
+        dlg.deleteLater()
+
+
+@pytest.fixture
+def dialog_with_lieu_subject():
+    hierarchies, leaf = make_hierarchy_with_lieu_and_subject()
+    with patch.object(type(db), "server_conn", new_callable=PropertyMock, return_value=None), \
+            patch.object(event_type_service, "filter_applicable", return_value=hierarchies), \
+            patch.object(event_type_service, "get_path", return_value="Sortie > Toilettes"):
+        dlg = EventGeneratorDialog(member_id=1, member_type=MemberType.STUDENT)
+        yield dlg, leaf
+        dlg.deleteLater()
+
+
+@pytest.fixture
+def staff_dialog_with_lieu_subject():
+    hierarchies, leaf = make_hierarchy_with_lieu_and_subject()
+    with patch.object(type(db), "server_conn", new_callable=PropertyMock, return_value=None), \
+            patch.object(event_type_service, "filter_applicable", return_value=hierarchies), \
+            patch.object(event_type_service, "get_path", return_value="Sortie > Toilettes"):
+        dlg = EventGeneratorDialog(member_id=1, member_type=MemberType.STAFF)
+        yield dlg, leaf
         dlg.deleteLater()
 
 
@@ -155,3 +188,46 @@ class TestEventGeneratorDialogSmoke:
         assert event_data.note == "Fièvre depuis ce matin"
         assert event_data.member_id == 1
         assert event_data.member_type == MemberType.STUDENT
+
+    def test_confirming_node_requiring_lieu_and_subject_shows_both_fields_for_student(
+        self, dialog_with_lieu_subject
+    ):
+        dlg, leaf = dialog_with_lieu_subject
+        assert leaf.requires_lieu and leaf.requires_subject
+
+        dlg._on_type_confirmed(leaf)
+
+        assert dlg._lieu_combo.isHidden() is False
+        assert dlg._subject_combo.isHidden() is False
+
+    def test_confirming_node_requiring_subject_hides_it_for_staff(
+        self, staff_dialog_with_lieu_subject
+    ):
+        """La matière n'a pas de sens pour un staff (pas de classe) même si le nœud la requiert."""
+        dlg, leaf = staff_dialog_with_lieu_subject
+
+        dlg._on_type_confirmed(leaf)
+
+        assert dlg._lieu_combo.isHidden() is False
+        assert dlg._subject_combo.isHidden() is True
+
+    def test_validate_reads_lieu_and_subject_from_combos(self, dialog_with_lieu_subject):
+        dlg, leaf = dialog_with_lieu_subject
+        dlg._on_type_confirmed(leaf)
+        dlg._lieu_combo.addItem("Cour de récréation")
+        dlg._lieu_combo.setCurrentText("Cour de récréation")
+        dlg._subject_combo.addItem("Mathématiques")
+        dlg._subject_combo.setCurrentText("Mathématiques")
+
+        received = []
+        dlg.event_created.connect(received.append)
+        dlg._on_validate()
+
+        assert len(received) == 1
+        assert received[0].lieu_label == "Cour de récréation"
+        assert received[0].subject_label == "Mathématiques"
+
+    def test_accent_bar_reflects_category_color(self, dialog_with_lieu_subject):
+        dlg, leaf = dialog_with_lieu_subject
+        dlg._on_type_confirmed(leaf)
+        assert category_color(leaf.category) in dlg._accent_bar.styleSheet()

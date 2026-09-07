@@ -13,10 +13,12 @@ class M3ChipBar(QFrame):
 
     current_changed = Signal(int)
 
-    def __init__(self, items: list[str], theme: Theme | None = None, parent=None):
+    def __init__(self, items: list[str], theme: Theme | None = None, parent=None,
+                 colors: list[str] | None = None):
         super().__init__(parent)
         self._theme = theme
         self._items = items
+        self._colors = colors
         self._buttons: list[M3Button] = []
         self._current = 0
         self._build()
@@ -28,7 +30,8 @@ class M3ChipBar(QFrame):
         layout.setSpacing(_SCALE.spacing(SpacingToken.XXS))  # 4px
         for i, label in enumerate(self._items):
             variant = ButtonVariant.FILLED if i == 0 else ButtonVariant.OUTLINED
-            btn = M3Button(label, theme=self._theme, variant=variant)
+            accent = self._colors[i] if self._colors else None
+            btn = M3Button(label, theme=self._theme, variant=variant, accent_color=accent)
             btn.setCursor(Qt.PointingHandCursor)
             btn.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed)
             btn.clicked.connect(lambda checked, idx=i: self.set_current(idx))
