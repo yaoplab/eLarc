@@ -57,21 +57,27 @@ class EventTypeConfigService:
         self._initialized = True
         self._cache = None
         self._hierarchies = {}
+        self._cached_language: Optional[int] = None
 
-    def load_hierarchy(self, force_refresh: bool = False) -> Dict[str, EventTypeNode]:
+    def load_hierarchy(self, fk_language: int, force_refresh: bool = False) -> Dict[str, EventTypeNode]:
         """
-        Charge la hiérarchie depuis DB, avec cache.
+        Charge la hiérarchie depuis DB pour une langue donnée, avec cache.
+
+        Le cache est mono-langue : un changement de langue déclenche un rechargement
+        transparent (pas de cache multi-langue simultané — inutile, une session UI ne
+        travaille jamais dans deux langues à la fois).
 
         Retourne dict : {category: root_node}
         Exemple : {"absence": Node(...), "retard": Node(...), ...}
 
         Args:
+            fk_language: id de la langue (larcauth_language.id)
             force_refresh: Invalider le cache et recharger depuis DB
 
         Returns:
             Dict[str, EventTypeNode] : racines par catégorie, ou {} si erreur
         """
-        if self._hierarchies and not force_refresh:
+        if self._hierarchies and self._cached_language == fk_language and not force_refresh:
             return self._hierarchies
 
         try:
@@ -86,14 +92,15 @@ class EventTypeConfigService:
                 SELECT id, code, label, category, icon_code, parent_id,
                        applicable_to, requires_validation, requires_lieu, requires_subject
                 FROM larcauth_event_type_config
-                WHERE is_active = TRUE
+                WHERE is_active = TRUE AND fk_language = %s
                 ORDER BY category, parent_id NULLS FIRST, label
-            """
+                """,
+                (fk_language,),
             )
 
             rows = cur.fetchall()
             if not rows:
-                log("EventTypeConfigService.load_hierarchy: aucun type chargé")
+                log(f"EventTypeConfigService.load_hierarchy: aucun type chargé (langue={fk_language})")
                 return {}
 
             # Réinitialiser le cache
@@ -126,9 +133,10 @@ class EventTypeConfigService:
                 if node.parent_id is None:  # Racine
                     self._hierarchies[node.category] = node
 
+            self._cached_language = fk_language
             log(
                 f"EventTypeConfigService: loaded {len(self._cache)} types, "
-                f"{len(self._hierarchies)} roots"
+                f"{len(self._hierarchies)} roots (langue={fk_language})"
             )
             return self._hierarchies
 
@@ -168,18 +176,19 @@ class EventTypeConfigService:
         return self._cache.get(node_id) if self._cache else None
 
     def filter_applicable(
-        self, member_type: MemberType
+        self, member_type: MemberType, fk_language: int
     ) -> Dict[str, EventTypeNode]:
         """
-        Filtre les types applicables pour un type de membre.
+        Filtre les types applicables pour un type de membre, dans une langue donnée.
 
         Args:
             member_type: MemberType.STUDENT ou MemberType.STAFF
+            fk_language: id de la langue (larcauth_language.id)
 
         Returns:
             Dict[str, EventTypeNode] : racines applicables par catégorie
         """
-        hierarchies = self.load_hierarchy()
+        hierarchies = self.load_hierarchy(fk_language)
         result = {}
 
         for cat, root in hierarchies.items():
@@ -219,6 +228,7 @@ class EventTypeConfigService:
         """Invalide le cache (appelé si config DB change)."""
         self._cache = None
         self._hierarchies = {}
+        self._cached_language = None
         log("EventTypeConfigService: cache invalidated")
 
 
