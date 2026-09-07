@@ -5,9 +5,11 @@ from larccommon.dialogs.event_generator_dialog import (
     EventData,
     MemberType,
 )
+from larccommon.dialogs.event_type_selector import EventTypeSelectorWidget
 
 __all__ = [
     "EventGeneratorDialog",
     "EventData",
     "MemberType",
+    "EventTypeSelectorWidget",
 ]
