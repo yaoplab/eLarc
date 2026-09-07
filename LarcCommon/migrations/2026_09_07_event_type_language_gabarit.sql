@@ -17,8 +17,11 @@ ALTER TABLE larcauth_event_type_config ALTER COLUMN fk_language SET NOT NULL;
 ALTER TABLE larcauth_event_type_config
     DROP CONSTRAINT IF EXISTS larcauth_event_type_config_code_key;
 
-ALTER TABLE larcauth_event_type_config
-    ADD CONSTRAINT larcauth_event_type_config_code_fklang_key UNIQUE (code, fk_language);
+DO $$ BEGIN
+    ALTER TABLE larcauth_event_type_config
+        ADD CONSTRAINT larcauth_event_type_config_code_fklang_key UNIQUE (code, fk_language);
+EXCEPTION WHEN duplicate_object OR duplicate_table THEN NULL;
+END $$;
 
 -- ----------------------------------------------------------------------------
 -- 2. Duplication FR (fk_language=2) -> EN (fk_language=1)
