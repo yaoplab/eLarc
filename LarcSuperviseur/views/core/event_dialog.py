@@ -1,6 +1,8 @@
 from larccommon.design_system import ds
+from larccommon.dialogs import EventTypeSelectorWidget
+from larccommon.event_type_service import event_type_service, MemberType
 from larccommon.l10n import _
-from phibuilder.widgets import M3Button, M3ComboBox, M3Dialog, M3Label, M3TextEdit
+from phibuilder.widgets import M3Button, M3Dialog, M3Label, M3TextEdit
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QHBoxLayout,
@@ -18,13 +20,13 @@ class EventEditDialog(M3Dialog):
         super().__init__(parent)
         self._event_id = event_id
         self._conn = db.server_conn
+        self._selected_node = None
         self.setWindowTitle(_("event_dialog.title").format(id=event_id))
-        self.setMinimumSize(ds.window_width * 2 // 5, ds.window_height // 2)  # 480×400
+        self.setMinimumSize(ds.window_width * 3 // 5, ds.window_height * 4 // 5)
         self._setup_ui()
         self._load_event()
 
     def _setup_ui(self):
-        p = theme_manager.palette
         layout = QVBoxLayout(self)
         if not db.is_server_connected:
             return
@@ -34,18 +36,23 @@ class EventEditDialog(M3Dialog):
         self._info.setTextFormat(Qt.RichText)
         layout.addWidget(self._info)
 
-        layout.addWidget(M3Label(_("event_dialog.type")))
-        self._type_input = M3ComboBox()
-        layout.addWidget(self._type_input)
+        hierarchies = event_type_service.filter_applicable(MemberType.STUDENT)
+        self._selector = EventTypeSelectorWidget(hierarchies)
+        self._selector.type_confirmed.connect(self._on_type_confirmed)
+        layout.addWidget(self._selector, 1)
 
-        layout.addWidget(M3Label(_("event_dialog.note")))
+        self._note_label = M3Label(_("event_dialog.note"))
         self._note_input = M3TextEdit()
-        self._note_input.setMaximumHeight(ds.window_height * 3 // 20)  # 120px
+        self._note_input.setMaximumHeight(ds.window_height * 3 // 20)
         self._note_input.setAccessibleName(_("event_dialog.note"))
         self._note_input.setToolTip(_("event.note_tooltip"))
         self._note_input.textChanged.connect(self._on_note_changed)
+        layout.addWidget(self._note_label)
         layout.addWidget(self._note_input)
+        self._note_label.hide()
+        self._note_input.hide()
 
+        p = theme_manager.palette
         btn_row = QHBoxLayout()
         save_btn = M3Button(_("event_dialog.save_button"))
         save_btn.setStyleSheet(
@@ -70,7 +77,8 @@ class EventEditDialog(M3Dialog):
         cur = conn.cursor()
         cur.execute(
             """
-            SELECT se.event_type, se.event_at, se.lieu_label, se.subject_label, se.note,
+            SELECT se.event_type, se.event_type_config_id, se.event_at, se.lieu_label,
+                   se.subject_label, se.note,
                    aec.last_name || ' ' || aec.first_name AS student_name
             FROM student_event se
             JOIN larcauth_aecuser aec ON aec.id = se.student_id
@@ -83,7 +91,7 @@ class EventEditDialog(M3Dialog):
             QMessageBox.warning(self, _("common.dialog.error"), _("event_dialog.not_found"))
             self.reject()
             return
-        etype, e_at, lieu, subject, note, student_name = row
+        etype, etype_config_id, e_at, lieu, subject, note, student_name = row
         p = theme_manager.palette
         s = theme_manager.font_size
         self._info.setText(
@@ -92,11 +100,24 @@ class EventEditDialog(M3Dialog):
             f"{e_at.strftime('%d/%m/%Y %H:%M') if e_at else ''} | {lieu or ''}"
             f"{' | ' + subject if subject else ''}</span>"
         )
-        cur2 = conn.cursor()
-        cur2.execute("SELECT DISTINCT event_type FROM student_event ORDER BY event_type")
-        self._type_input.addItems([et for (et,) in cur2.fetchall()])
-        self._type_input.setCurrentText(etype)
         self._note_input.setText(note or "")
+        if etype_config_id:
+            node = event_type_service.get_by_id(etype_config_id)
+            if node:
+                self._selected_node = node
+                self._selector.preselect(node)
+                is_leaf = EventTypeSelectorWidget.is_leaf(node)
+                self._note_label.setVisible(is_leaf)
+                self._note_input.setVisible(is_leaf)
+
+    @safe_slot("EventEditDialog._on_type_confirmed")
+    def _on_type_confirmed(self, node):
+        self._selected_node = node
+        is_leaf = EventTypeSelectorWidget.is_leaf(node)
+        self._note_label.setVisible(is_leaf)
+        self._note_input.setVisible(is_leaf)
+        if not is_leaf:
+            self._note_input.clear()
 
     @safe_slot("EventEditDialog._on_note_changed")
     def _on_note_changed(self):
@@ -116,12 +137,17 @@ class EventEditDialog(M3Dialog):
         conn = self._conn
         if not conn:
             return
+        if not self._selected_node:
+            QMessageBox.warning(self, _("common.dialog.error"), _("event.error_no_type"))
+            return
+        is_leaf = EventTypeSelectorWidget.is_leaf(self._selected_node)
         cur = conn.cursor()
         cur.execute(
-            "UPDATE student_event SET event_type = %s, note = %s WHERE event_id = %s",
+            "UPDATE student_event SET event_type = %s, event_type_config_id = %s, note = %s WHERE event_id = %s",
             (
-                self._type_input.currentText(),
-                self._note_input.toPlainText().strip(),
+                event_type_service.get_path(self._selected_node),
+                self._selected_node.id,
+                self._note_input.toPlainText().strip() if is_leaf else "",
                 self._event_id,
             ),
         )
