@@ -26,6 +26,7 @@ from larccommon.dialogs.event_type_selector import EventTypeSelectorWidget
 from larccommon.l10n import _
 from larccommon.logger import log
 from larccommon.safe_slot import safe_slot
+from larccommon.session import ConnMode, session
 from larccommon.theme import theme_manager
 from larccommon.widgets.themed_widget import ThemedDialog
 from phibuilder.widgets import M3Button, M3Card, M3Label, M3Splitter, M3TextField
@@ -122,7 +123,7 @@ class EventGeneratorDialog(ThemedDialog):
             if not conn:
                 return
             cur = conn.cursor()
-            cur.execute("SELECT lieu_id, site_id, lieu_name FROM larcauth_lieu WHERE is_active = TRUE")
+            cur.execute('SELECT "IDLieu", "s_IDLieu", "Lieu" FROM larcauth_lieu')
             self._locations = cur.fetchall()
         except Exception as e:
             log(f"EventGeneratorDialog._load_locations: {e}")
@@ -212,7 +213,7 @@ class EventGeneratorDialog(ThemedDialog):
                 return True
             date = self._date_edit.date().toPython()
             cur = conn.cursor()
-            cur.execute("SELECT working_day FROM larcauth_agenda WHERE agenda_date = %s", (date,))
+            cur.execute("SELECT working_day FROM larcauth_agenda WHERE date_all = %s", (date,))
             row = cur.fetchone()
             return bool(row[0]) if row else True
         except Exception as e:
@@ -261,7 +262,7 @@ class EventGeneratorDialog(ThemedDialog):
             lieu_label=self._selected_lieu_label if node.requires_lieu else None,
             subject_label=self._selected_subject if node.requires_subject else None,
             note=(self._note_input.text() if is_leaf and self._note_input else ""),
-            created_location="intranet",
+            created_location="cloud" if session.conn_mode == ConnMode.CLOUD else "intranet",
         )
 
         self.event_created.emit(event_data)

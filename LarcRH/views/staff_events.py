@@ -50,7 +50,7 @@ def _is_working_day() -> bool:
         today = datetime.now().date()
         cur = conn.cursor()
         cur.execute(
-            "SELECT working_day FROM larcauth_agenda WHERE agenda_date = %s",
+            "SELECT working_day FROM larcauth_agenda WHERE date_all = %s",
             (today,),
         )
         row = cur.fetchone()
@@ -74,7 +74,7 @@ def _insert_staff_event(evt: EventData, parent=None):
             INSERT INTO staff_event
             (staff_id, event_type, event_type_config_id, event_at, note, created_by,
              created_location, source)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, 'EventGeneratorDialog')
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
             """,
             (
                 evt.member_id,
@@ -83,6 +83,7 @@ def _insert_staff_event(evt: EventData, parent=None):
                 evt.event_at,
                 evt.note,
                 session.user_id,
+                evt.created_location,
                 evt.created_location,
             ),
         )

@@ -2207,7 +2207,7 @@ EOF
 
 **Files:** aucun fichier de code — validation transverse.
 
-- [ ] **Step 1 : Lints ciblés sur les fichiers touchés**
+- [x] **Step 1 : Lints ciblés sur les fichiers touchés**
 
 ```bash
 cd D:\projets
@@ -2222,7 +2222,7 @@ python scripts/lint_file_size.py
 Attendu : aucune erreur bloquante (`sys.exit(1)`) ; des avertissements non bloquants sont
 acceptables (cf. les scripts eux-mêmes : `sys.exit(1 if errors else 0)`).
 
-- [ ] **Step 2 : Suite de tests complète LarcCommon**
+- [x] **Step 2 : Suite de tests complète LarcCommon**
 
 ```bash
 cd D:\projets\LarcCommon && pytest tests/ -v
@@ -2230,7 +2230,7 @@ cd D:\projets\LarcCommon && pytest tests/ -v
 Attendu : tous les tests passent, y compris les nouveaux (`test_event_type_service.py`,
 `test_m3_tree_widget.py`, `test_event_type_selector.py`).
 
-- [ ] **Step 3 : Régénérer le graphe de connaissances (changement structurel : nouveau widget +
+- [x] **Step 3 : Régénérer le graphe de connaissances (changement structurel : nouveau widget +
   nouvelle migration + nouveau module)**
 
 ```bash
@@ -2239,22 +2239,56 @@ graphify extract . --code-only --force
 graphify cluster-only .
 ```
 
-- [ ] **Step 4 : Checklist manuelle finale**
+- [x] **Step 4 : Checklist manuelle finale**
 
-- [ ] `EventGeneratorDialog` (LarcSuperviseur, élève) : vue scindée, recherche, sélection à tout
-  niveau, note conditionnelle — OK
-- [ ] `EventGeneratorDialog` (LarcRH, staff) : idem, `event_type_config_id` renseigné — OK
-- [ ] Édition depuis `main_events.py` (historique global) : arbre pré-positionné, note
-  conditionnelle — OK
-- [ ] Édition depuis `student_detail.py` (fiche élève) : idem via `EventEditDialog` — OK
-- [ ] `LarcConfig` : panel Types d'événements affiche la nouvelle hiérarchie à 4 niveaux — OK
-- [ ] Un événement créé en s'arrêtant à un niveau intermédiaire, puis rouvert et précisé jusqu'à
-  une feuille : la note redevient éditable et se sauvegarde — OK
-- [ ] `Sortie du cours > Mauvais comportement > Insolence` et
+> Note : les items ci-dessous ont été vérifiés par simulation DB directe (psql + exécution
+> réelle d'`EventTypeConfigService`/`get_event_types()` contre la base réellement configurée
+> dans `config.ini`, port 55517/`NewLarcDb`) plutôt que par pilotage GUI complet — voir
+> "Bugs trouvés et corrigés pendant la validation" ci-dessous pour le détail.
+
+- [x] `EventGeneratorDialog` (LarcSuperviseur, élève) : vue scindée, recherche, sélection à tout
+  niveau, note conditionnelle — OK (couvert par tests unitaires `test_event_type_selector.py`)
+- [x] `EventGeneratorDialog` (LarcRH, staff) : idem, `event_type_config_id` renseigné — OK
+  (vérifié par INSERT simulé + ROLLBACK contre la base réelle)
+- [x] Édition depuis `main_events.py` (historique global) : arbre pré-positionné, note
+  conditionnelle — OK ; **bug corrigé** : `event_type_config_id` était bien présent mais la
+  colonne `source` recevait le littéral `"EventGeneratorDialog"` au lieu de `intranet`/`cloud`,
+  ce qui violait `student_event_source_check` (confirmé en conditions réelles dans
+  `LarcCommon/superviseur.log` du 2026-09-06)
+- [x] Édition depuis `student_detail.py` (fiche élève) : idem via `EventEditDialog` — OK ;
+  **bug corrigé** : `_insert_student_event` n'incluait pas `event_type_config_id` dans l'INSERT
+  (incohérent avec `main_events.py`) et avait le même bug de `source`
+- [x] `LarcConfig` : panel Types d'événements affiche la nouvelle hiérarchie à 4 niveaux — OK
+  (vérifié via `get_event_types()` exécuté contre la base réelle : 105 lignes, profondeur 0-3)
+- [x] Un événement créé en s'arrêtant à un niveau intermédiaire, puis rouvert et précisé jusqu'à
+  une feuille : la note redevient éditable et se sauvegarde — OK (logique couverte par
+  `test_event_type_selector.py` ; persistance vérifiée par simulation INSERT)
+- [x] `Sortie du cours > Mauvais comportement > Insolence` et
   `Événement > Comportement > Négatif > Insolence` apparaissent bien comme deux entrées
-  distinctes sélectionnables séparément — OK
+  distinctes sélectionnables séparément — OK (vérifié par requête SQL directe : deux codes
+  distincts `sortie_class_misbehavior_insolence` et `event_behavior_negative_insolence`)
 
-- [ ] **Step 5 : Commit final (si des ajustements ont été faits pendant la checklist)**
+### Bugs trouvés et corrigés pendant la validation
+
+1. **Migration Task 1 jamais appliquée** — ni sur la base de test (port 55515/`NewLarcDB`), ni
+   sur la base réellement utilisée par l'app (port 55517/`NewLarcDb`, celle de `config.ini`).
+   Appliquée aux deux (idempotence vérifiée par rejeu).
+2. **`source` invalide** (`LarcSuperviseur/views/main_events.py`,
+   `LarcSuperviseur/views/panels/student_detail.py`, `LarcRH/views/staff_events.py`) : littéral
+   `"EventGeneratorDialog"` envoyé dans la colonne `source` (CHECK `intranet`/`cloud`) — remplacé
+   par `evt.created_location`. Confirmé bloquant par erreur réelle en log
+   (`student_event_source_check`).
+3. **`event_type_config_id` manquant** dans l'INSERT de `student_detail.py` — ajouté (incohérence
+   avec `main_events.py` qui l'avait déjà).
+4. **Colonnes SQL erronées** dans `EventGeneratorDialog._load_locations`
+   (`lieu_id/site_id/lieu_name` → `"IDLieu"/"s_IDLieu"/"Lieu"`) et
+   `_check_working_day`/`staff_events._is_working_day` (`agenda_date` → `date_all`) — ces erreurs
+   étaient déjà présentes dans le code d'exemple du plan (Task 7) lui-même, avalées silencieusement
+   par les `try/except`.
+5. **`created_location` toujours `"intranet"`** dans `EventGeneratorDialog._on_validate` (ne
+   reflétait jamais le mode Cloud réel) — dérivé de `session.conn_mode`.
+
+- [x] **Step 5 : Commit final (si des ajustements ont été faits pendant la checklist)**
 
 ```bash
 git add -A

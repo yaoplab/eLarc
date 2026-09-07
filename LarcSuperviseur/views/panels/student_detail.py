@@ -442,18 +442,20 @@ class StudentDetail(ThemedWidget):
             cur.execute(
                 """
                 INSERT INTO student_event
-                (student_id, event_type, event_at, lieu_label, subject_label, note,
-                 created_by, created_location, source)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, 'EventGeneratorDialog')
+                (student_id, event_type, event_type_config_id, event_at, lieu_label,
+                 subject_label, note, created_by, created_location, source)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 """,
                 (
                     evt.member_id,
                     evt.type_path,
+                    evt.type_id,
                     evt.event_at,
                     evt.lieu_label,
                     evt.subject_label,
                     evt.note,
                     session.user_id,
+                    evt.created_location,
                     evt.created_location,
                 ),
             )

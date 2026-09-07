@@ -101,7 +101,7 @@ class EventsMixin:
                     evt.lieu_label,
                     evt.subject_label,
                     evt.note,
-                    "EventGeneratorDialog",
+                    evt.created_location,
                     session.user_id,
                     evt.created_location,
                 ),
