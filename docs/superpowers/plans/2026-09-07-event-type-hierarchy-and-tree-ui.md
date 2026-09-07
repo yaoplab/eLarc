@@ -1066,6 +1066,7 @@ from PySide6.QtWidgets import QVBoxLayout, QWidget
 from larccommon.design_system import ds
 from larccommon.event_type_service import EventTypeNode, event_type_service
 from larccommon.l10n import _
+from larccommon.safe_slot import safe_slot
 from larccommon.theme import theme_manager
 from phibuilder.widgets import M3Button, M3Card, M3Label, M3TextField, M3TreeWidget
 from phibuilder.widgets.button import ButtonVariant
@@ -1120,9 +1121,11 @@ class EventTypeSelectorWidget(QWidget):
         """Un nœud est une feuille (y compris 'Autre') s'il n'a aucun enfant."""
         return len(node.children) == 0
 
+    @safe_slot("EventTypeSelectorWidget._on_search_changed")
     def _on_search_changed(self, text: str):
         self._tree.filter_text(text)
 
+    @safe_slot("EventTypeSelectorWidget._on_selection_changed")
     def _on_selection_changed(self):
         node = self._tree.current_node()
         self._confirm_btn.setEnabled(node is not None)
@@ -1132,11 +1135,13 @@ class EventTypeSelectorWidget(QWidget):
         else:
             self._badge.hide()
 
+    @safe_slot("EventTypeSelectorWidget._on_node_activated")
     def _on_node_activated(self, node: EventTypeNode):
         """Espace/Entrée sur une feuille = raccourci clavier équivalent au bouton Confirmer."""
         if node is not None and self.is_leaf(node):
             self.type_confirmed.emit(node)
 
+    @safe_slot("EventTypeSelectorWidget._on_confirm_clicked")
     def _on_confirm_clicked(self):
         node = self._tree.current_node()
         if node is not None:
