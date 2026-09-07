@@ -108,13 +108,25 @@ class TestEventGeneratorDialogSmoke:
 
     def test_validate_intermediate_choice_saves_empty_note_even_if_field_had_stale_text(self, dialog):
         """Un choix intermédiaire doit être sauvegardé avec note vide, même si le champ
-        note masqué contient un texte périmé d'une sélection précédente."""
+        note contient un texte périmé au moment de la validation.
+
+        `_on_type_confirmed` vide déjà le champ note quand le nœud confirmé n'est pas
+        une feuille (`self._note_input.clear()`) — cela ne suffit pas à prouver que
+        `_on_validate` a son propre garde-fou : si ce test se contentait d'appeler
+        `_on_type_confirmed(mid)` puis d'asserter `note == ""`, il passerait même en
+        supprimant entièrement la vérification `is_leaf` dans `_on_validate` (puisque
+        le champ serait déjà vide de toute façon). Pour isoler et prouver le
+        garde-fou de `_on_validate` lui-même, on réinjecte du texte dans le widget
+        APRÈS la confirmation — simulant un futur bug hypothétique dans le clear-on-
+        confirm, ou une race condition — puis on vérifie que `_on_validate` force
+        quand même `note == ""` malgré un champ non vide au moment de l'appel.
+        """
         dlg, root, mid, leaf = dialog
 
-        dlg._on_type_confirmed(leaf)
-        dlg._note_input.setText("texte périmé d'un choix précédent")
-
-        dlg._on_type_confirmed(mid)  # remonte à un choix intermédiaire
+        dlg._on_type_confirmed(mid)  # choix intermédiaire : _note_input.clear() a déjà tourné
+        # Réinjection délibérée : le widget contient du texte périmé au moment de valider,
+        # indépendamment de ce que _on_type_confirmed a fait — isole le garde-fou de _on_validate.
+        dlg._note_input.setText("stale text that should never be saved")
 
         received = []
         dlg.event_created.connect(received.append)
