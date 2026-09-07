@@ -104,7 +104,7 @@ class EventGeneratorDialog(ThemedDialog):
         s = theme_manager.font_size
         return f"""
             EventGeneratorDialog#evt_root {{
-                background: {p.surface};
+                background: {p.surface_variant};
             }}
             QDateEdit, QTimeEdit {{
                 padding: {ds.space_md}px;
@@ -213,10 +213,6 @@ class EventGeneratorDialog(ThemedDialog):
         cl = card.content_layout()
         cl.setSpacing(ds.space_md)
 
-        self._accent_bar = QFrame()
-        self._accent_bar.setFixedHeight(ds.space_xxs)
-        cl.addWidget(self._accent_bar)
-
         self._path_label = M3Label("", style="title_medium")
         self._path_label.setWordWrap(True)
         cl.addWidget(self._path_label)
@@ -268,7 +264,14 @@ class EventGeneratorDialog(ThemedDialog):
         self._note_label.hide()
         self._note_input.hide()
 
-        fl.addWidget(card, 1)
+        card_row = QHBoxLayout()
+        card_row.setSpacing(0)
+        self._accent_bar = QFrame()
+        self._accent_bar.setFixedWidth(ds.space_xxs)
+        card_row.addWidget(self._accent_bar)
+        card_row.addWidget(card, 1)
+
+        fl.addLayout(card_row, 1)
         fl.addStretch()
 
         ar = QHBoxLayout()

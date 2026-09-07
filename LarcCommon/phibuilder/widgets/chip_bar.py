@@ -34,6 +34,9 @@ class M3ChipBar(QFrame):
             btn = M3Button(label, theme=self._theme, variant=variant, accent_color=accent)
             btn.setCursor(Qt.PointingHandCursor)
             btn.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed)
+            # Anneau de focus réservé à la navigation clavier (Tab) — un chip cliqué à la
+            # souris ne doit pas rester encadré, seule la navigation clavier en a besoin.
+            btn.setFocusPolicy(Qt.TabFocus)
             btn.clicked.connect(lambda checked, idx=i: self.set_current(idx))
             layout.addWidget(btn)
             self._buttons.append(btn)
