@@ -27,6 +27,7 @@ from phibuilder.widgets.sidebar_nav import M3SidebarNav
 from phibuilder.widgets.chip_bar import M3ChipBar
 from phibuilder.widgets.passwordedit import PasswordLineEdit
 from phibuilder.widgets.scrollarea import AdaptiveScrollArea
+from phibuilder.widgets.tree import M3TreeWidget
 
 __all__ = [
     "M3Button", "ButtonVariant", "M3Card", "CardVariant",
@@ -39,5 +40,5 @@ __all__ = [
     "M3HeaderView", "M3DialogButtonBox", "M3TextEdit",
     "M3ProgressBar", "M3GroupBox", "M3Splitter",
     "M3ProfileButton", "M3SidebarNav", "M3ChipBar",
-    "PasswordLineEdit", "AdaptiveScrollArea",
+    "PasswordLineEdit", "AdaptiveScrollArea", "M3TreeWidget",
 ]
