@@ -21,7 +21,7 @@ class TypesPanel(M3ScrollArea):
 
         table = M3TableWidget(theme=phi)
         table.setColumnCount(5)
-        table.setHorizontalHeaderLabels(["ID", "Categorie", "Niveau 2", "Niveau 3", "Actif"])
+        table.setHorizontalHeaderLabels(["ID", "Catégorie", "Libellé", "Code", "Actif"])
         h = table.horizontalHeader()
         for i in range(5):
             h.setSectionResizeMode(i, QHeaderView.Stretch)
@@ -30,10 +30,11 @@ class TypesPanel(M3ScrollArea):
         rows = get_event_types()
         table.setRowCount(len(rows))
         for i, r in enumerate(rows):
+            indent = "    " * r['depth']
             table.setItem(i, 0, QTableWidgetItem(str(r['id'])))
-            table.setItem(i, 1, QTableWidgetItem(r['cat'] or ''))
-            table.setItem(i, 2, QTableWidgetItem(r.get('niv2', '') or ''))
-            table.setItem(i, 3, QTableWidgetItem(r.get('niv3', '') or ''))
+            table.setItem(i, 1, QTableWidgetItem(r['category'] or ''))
+            table.setItem(i, 2, QTableWidgetItem(f"{indent}{r['label'] or ''}"))
+            table.setItem(i, 3, QTableWidgetItem(r['code'] or ''))
             table.setItem(i, 4, QTableWidgetItem('Oui' if r.get('enabled') else 'Non'))
 
         l.addWidget(table)
