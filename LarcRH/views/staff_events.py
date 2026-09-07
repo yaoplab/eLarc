@@ -72,12 +72,14 @@ def _insert_staff_event(evt: EventData, parent=None):
         cur.execute(
             """
             INSERT INTO staff_event
-            (staff_id, event_type, event_at, note, created_by, created_location, source)
-            VALUES (%s, %s, %s, %s, %s, %s, 'EventGeneratorDialog')
+            (staff_id, event_type, event_type_config_id, event_at, note, created_by,
+             created_location, source)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, 'EventGeneratorDialog')
             """,
             (
                 evt.member_id,
                 evt.type_path,
+                evt.type_id,
                 evt.event_at,
                 evt.note,
                 session.user_id,
