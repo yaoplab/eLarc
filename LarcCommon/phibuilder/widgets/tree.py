@@ -47,9 +47,10 @@ class M3TreeWidget(QTreeWidget):
         if self._theme is None:
             return
         c, s, t = self._theme.colors, self._theme.spacing, self._theme.typo
-        padding = s.spacing(SpacingToken.MD)
+        padding_v = s.spacing(SpacingToken.XXS)
+        padding_h = s.spacing(SpacingToken.XS)
         radius = s.spacing(SpacingToken.SM)
-        row_height = 32  # F(5) Fibonacci, matches M3TableWidget
+        row_height = 24  # dense — évite de scroller sur les catégories chargées (~25 nœuds)
 
         self.setStyleSheet(f"""
 M3TreeWidget {{
@@ -62,7 +63,7 @@ M3TreeWidget {{
     color: {c.on_surface};
 }}
 M3TreeWidget::item {{
-    padding: {padding}px;
+    padding: {padding_v}px {padding_h}px;
     min-height: {row_height}px;
 }}
 M3TreeWidget::item:selected {{

@@ -157,6 +157,30 @@ class EventGeneratorDialog(ThemedDialog):
                 (self._member_id, getattr(session, "term_id", None)),
             )
             self._subjects = [row[0] for row in cur.fetchall()]
+            if not self._subjects:
+                # Repli : les données de matières du terme courant ne sont pas encore
+                # saisies (cf. audit 2026-08-14, créneaux 2026-2027 non générés) — plutôt
+                # qu'un champ vide inutilisable, on retombe sur le terme le plus récent
+                # pour lequel la classe a des matières.
+                cur.execute(
+                    """
+                    SELECT DISTINCT label FROM larcauth_classroom_termsubject
+                    WHERE fk_classroom_id = (
+                              SELECT s_classroom_id FROM larcauth_student WHERE aecuser_ptr_id = %s
+                          )
+                      AND enabled = TRUE
+                      AND fk_term_id = (
+                              SELECT MAX(fk_term_id) FROM larcauth_classroom_termsubject
+                              WHERE fk_classroom_id = (
+                                        SELECT s_classroom_id FROM larcauth_student
+                                        WHERE aecuser_ptr_id = %s
+                                    )
+                          )
+                    ORDER BY label
+                    """,
+                    (self._member_id, self._member_id),
+                )
+                self._subjects = [row[0] for row in cur.fetchall()]
         except Exception as e:
             log(f"EventGeneratorDialog._load_subjects: {e}")
             self._subjects = []
@@ -174,8 +198,8 @@ class EventGeneratorDialog(ThemedDialog):
 
         self._detail_panel = self._build_detail_panel()
         splitter.addWidget(self._detail_panel)
-        splitter.setStretchFactor(0, 35)
-        splitter.setStretchFactor(1, 65)
+        splitter.setStretchFactor(0, 45)
+        splitter.setStretchFactor(1, 55)
 
         outer.addWidget(splitter, 1)
 
@@ -274,6 +298,10 @@ class EventGeneratorDialog(ThemedDialog):
         show_lieu = node.requires_lieu
         self._lieu_label_w.setVisible(show_lieu)
         self._lieu_combo.setVisible(show_lieu)
+        if show_lieu:
+            default_idx = self._lieu_combo.findText(_("event.default_lieu"))
+            if default_idx >= 0:
+                self._lieu_combo.setCurrentIndex(default_idx)
 
         show_subject = node.requires_subject and self._member_type == MemberType.STUDENT
         self._subject_label_w.setVisible(show_subject)

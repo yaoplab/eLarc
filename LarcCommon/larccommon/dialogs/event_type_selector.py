@@ -8,7 +8,8 @@ from __future__ import annotations
 
 from typing import Dict
 
-from PySide6.QtCore import Signal
+from PySide6.QtCore import Qt, Signal
+from PySide6.QtGui import QBrush, QColor
 from PySide6.QtWidgets import QVBoxLayout, QWidget
 
 from larccommon.design_system import ds
@@ -96,6 +97,7 @@ class EventTypeSelectorWidget(QWidget):
             children_fn=lambda n: n.children,
             label_fn=lambda n: n.label,
         )
+        self._colorize_root_item()
         layout.addWidget(self._tree, 1)
 
         self._badge = M3Card(variant=CardVariant.FILLED, parent=self)
@@ -135,7 +137,20 @@ class EventTypeSelectorWidget(QWidget):
             children_fn=lambda n: n.children,
             label_fn=lambda n: n.label,
         )
+        self._colorize_root_item()
         self._tree.filter_text(self._search.text())
+
+    def _colorize_root_item(self):
+        """Teinte le nœud racine de la couleur de sa catégorie — repère visuel fort
+        pour savoir en un coup d'œil dans quelle catégorie on navigue."""
+        if self._tree.topLevelItemCount() == 0 or self._active_root is None:
+            return
+        item = self._tree.topLevelItem(0)
+        color = QColor(category_color(self._active_root.category))
+        item.setForeground(0, QBrush(color))
+        font = item.font(0)
+        font.setBold(True)
+        item.setFont(0, font)
 
     @safe_slot("EventTypeSelectorWidget._on_selection_changed")
     def _on_selection_changed(self):
