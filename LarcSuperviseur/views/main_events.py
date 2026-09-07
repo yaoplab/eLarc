@@ -8,7 +8,6 @@ from larccommon.safe_slot import safe_slot
 from larccommon.session import UserRole
 from phibuilder.widgets import (
     M3Button,
-    M3ComboBox,
     M3Frame,
     M3HeaderView,
     M3Label,
@@ -52,7 +51,8 @@ from LarcSuperviseur.common.session import session
 from LarcSuperviseur.common.theme import QssHelper, theme_manager
 from larccommon.theme import PROGRAM_STYLES
 from LarcSuperviseur.common.trace import trace
-from larccommon.dialogs import EventGeneratorDialog, EventData, MemberType
+from larccommon.dialogs import EventGeneratorDialog, EventData, MemberType, EventTypeSelectorWidget
+from larccommon.event_type_service import event_type_service
 from LarcSuperviseur.common.database import db
 from LarcSuperviseur.views.core.cardsList.card import StudentCard
 from LarcSuperviseur.views.core.cardsList.config import CARD_THEMES
@@ -89,13 +89,14 @@ class EventsMixin:
             cur.execute(
                 """
                 INSERT INTO student_event
-                (student_id, event_type, event_at, lieu_label, subject_label, note,
-                 source, created_by, created_location)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                (student_id, event_type, event_type_config_id, event_at, lieu_label,
+                 subject_label, note, source, created_by, created_location)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 """,
                 (
                     evt.member_id,
                     evt.type_path,
+                    evt.type_id,
                     evt.event_at,
                     evt.lieu_label,
                     evt.subject_label,
@@ -136,7 +137,8 @@ class EventsMixin:
         cur = conn.cursor()
         cur.execute(
             """
-            SELECT se.event_type, se.event_at, se.lieu_label, se.subject_label, se.note,
+            SELECT se.event_type, se.event_type_config_id, se.event_at, se.lieu_label,
+                   se.subject_label, se.note,
                    aec.last_name || ' ' || aec.first_name AS student_name
             FROM student_event se
             JOIN larcauth_aecuser aec ON aec.id = se.student_id
@@ -148,15 +150,14 @@ class EventsMixin:
         if not row:
             QMessageBox.warning(self, _("common.error"), _("main.error_event_not_found"))
             return
-        etype, e_at, lieu, subject, note, student_name = row
+        etype, etype_config_id, e_at, lieu, subject, note, student_name = row
 
         dlg = QDialog(self)
         dlg.setWindowTitle(f"{_('event.edit_title')} #{event_id}")
-        dlg.setMinimumSize(ds.window_width * 2 // 5, ds.window_height // 2)  # 1200*2/5=480, 800/2=400
+        dlg.setMinimumSize(ds.window_width * 3 // 5, ds.window_height * 4 // 5)
         layout = QVBoxLayout(dlg)
         p = theme_manager.palette
 
-        # Infos
         info = M3Label(
             f"<b>{student_name}</b> — {etype}<br>"
             f"<span style='color:{p.text_disabled};font-size:{theme_manager.font_size(10)}px;'>"
@@ -167,41 +168,63 @@ class EventsMixin:
         info.setTextFormat(Qt.RichText)
         layout.addWidget(info)
 
-        # Type
-        layout.addWidget(M3Label(_("event.edit_type")))
-        type_input = M3ComboBox()
-        cur2 = conn.cursor()
-        cur2.execute("SELECT DISTINCT event_type FROM student_event ORDER BY event_type")
-        type_input.addItems([et for (et,) in cur2.fetchall()])
-        type_input.setCurrentText(etype)
-        layout.addWidget(type_input)
+        hierarchies = event_type_service.filter_applicable(MemberType.STUDENT)
+        selector = EventTypeSelectorWidget(hierarchies)
+        existing_node = event_type_service.get_by_id(etype_config_id) if etype_config_id else None
+        if existing_node:
+            selector.preselect(existing_node)
+        layout.addWidget(selector, 1)
 
-        # Note
-        layout.addWidget(M3Label(_("event.edit_note")))
+        note_label = M3Label(_("event.edit_note"))
         note_input = M3TextEdit()
         note_input.setText(note or "")
-        note_input.setMaximumHeight(ds.space_xxl + ds.space_lg)  # 84+32=116 (proche de 120)
+        note_input.setMaximumHeight(ds.space_xxl + ds.space_lg)
+        note_label.setVisible(existing_node is not None and EventTypeSelectorWidget.is_leaf(existing_node))
+        note_input.setVisible(note_label.isVisible())
+        layout.addWidget(note_label)
         layout.addWidget(note_input)
 
-        # Boutons
+        state = {"node": existing_node}
+
+        @safe_slot("MainWindow.edit_event.on_type_confirmed")
+        def on_type_confirmed(node):
+            state["node"] = node
+            is_leaf = EventTypeSelectorWidget.is_leaf(node)
+            note_label.setVisible(is_leaf)
+            note_input.setVisible(is_leaf)
+            if not is_leaf:
+                note_input.clear()
+
+        selector.type_confirmed.connect(on_type_confirmed)
+
         btn_row = QHBoxLayout()
         save_btn = M3Button(_("event.save"))
-        d_save = theme_manager.design
         save_btn.setStyleSheet(
             f"QPushButton {{ background: {p.primary}; color: {p.on_primary}; "
-            f"border: none; border-radius: {d_save.radius}px; "
+            f"border: none; border-radius: {theme_manager.design.radius}px; "
             f"padding: {ds.space_xs}px {ds.space_md}px; font-weight: bold; }}"
         )
-        save_btn.clicked.connect(
-            lambda checked: (
-                cur.execute(
-                    "UPDATE student_event SET event_type = %s, note = %s WHERE event_id = %s",
-                    (type_input.currentText(), note_input.toPlainText().strip(), event_id),
+
+        @safe_slot("MainWindow.edit_event.save")
+        def on_save():
+            node = state["node"]
+            if not node:
+                QMessageBox.warning(dlg, _("common.error"), _("event.error_no_type"))
+                return
+            is_leaf = EventTypeSelectorWidget.is_leaf(node)
+            cur.execute(
+                "UPDATE student_event SET event_type = %s, event_type_config_id = %s, note = %s WHERE event_id = %s",
+                (
+                    event_type_service.get_path(node),
+                    node.id,
+                    note_input.toPlainText().strip() if is_leaf else "",
+                    event_id,
                 ),
-                conn.commit(),
-                dlg.accept(),
             )
-        )
+            conn.commit()
+            dlg.accept()
+
+        save_btn.clicked.connect(on_save)
         cancel_btn = M3Button(_("event.cancel"))
         cancel_btn.clicked.connect(dlg.reject)
         btn_row.addStretch()
