@@ -59,17 +59,33 @@ def get_roles():
 
 
 def get_event_types():
+    """Types d'événements — larcauth_event_type_config (arbre à 4 niveaux)."""
     c = _conn()
     if not c:
         return []
     try:
         cur = c.cursor()
         cur.execute("""
-            SELECT idtypeevent, type_event, "Event_Niveau2", "Event_Niveau3", "Enabled"
-            FROM larcauth_type_event ORDER BY idtypeevent
+            WITH RECURSIVE tree AS (
+                SELECT id, code, label, category, parent_id, is_active, 0 AS depth
+                FROM larcauth_event_type_config
+                WHERE parent_id IS NULL
+                UNION ALL
+                SELECT te.id, te.code, te.label, te.category, te.parent_id, te.is_active,
+                       tree.depth + 1
+                FROM larcauth_event_type_config te
+                JOIN tree ON te.parent_id = tree.id
+            )
+            SELECT id, code, label, category, parent_id, depth, is_active
+            FROM tree
+            ORDER BY category, depth,
+                     COALESCE(parent_id, 0), id
         """)
-        return [dict(zip(['id', 'cat', 'niv2', 'niv3', 'enabled'], r)) for r in cur.fetchall()]
-    except:
+        return [
+            dict(zip(['id', 'code', 'label', 'category', 'parent_id', 'depth', 'enabled'], r))
+            for r in cur.fetchall()
+        ]
+    except Exception:
         return []
 
 
