@@ -537,8 +537,8 @@ class TestGetEventTypes:
     def test_filters_by_language_and_resolves_parent_label(self):
         cur = FakeCursor()
         cur._next_fetchall = [
-            (1, 'absence', 'Absence', None, 0, True, None),
-            (2, 'absence_school', "Absent de l'école", 1, 1, True, 'Absence'),
+            (1, 'absence', 'Absence', 'absence', None, 0, True, None),
+            (2, 'absence_school', "Absent de l'école", 'absence', 1, 1, True, 'Absence'),
         ]
         conn = FakeConn()
         conn._cur = cur
@@ -631,14 +631,14 @@ def get_event_types(fk_language: int):
                 FROM larcauth_event_type_config te
                 JOIN tree ON te.parent_id = tree.id
             )
-            SELECT t.id, t.code, t.label, t.parent_id, t.depth, t.is_active, p.label
+            SELECT t.id, t.code, t.label, t.category, t.parent_id, t.depth, t.is_active, p.label
             FROM tree t
             LEFT JOIN larcauth_event_type_config p ON p.id = t.parent_id
             ORDER BY t.depth, COALESCE(t.parent_id, 0), t.id
         """, (fk_language,))
         return [
             dict(zip(
-                ['id', 'code', 'label', 'parent_id', 'depth', 'enabled', 'parent_label'],
+                ['id', 'code', 'label', 'category', 'parent_id', 'depth', 'enabled', 'parent_label'],
                 r,
             ))
             for r in cur.fetchall()
