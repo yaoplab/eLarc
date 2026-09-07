@@ -433,16 +433,23 @@ EOF
 
 ---
 
-## Task 3 : `EventGeneratorDialog` — passer `session.fk_language`
+## Task 3 : Les 3 appelants de `filter_applicable`/`get_by_id` — passer `fk_language`
+
+**Découvert au scan de revue de la Task 2** (pas seulement `EventGeneratorDialog`) :
+`grep -rn "filter_applicable" --include=*.py .` depuis la racine du worktree montre 3 call
+sites, tous cassés de la même façon (appellent `filter_applicable(member_type)` sans langue) —
+les 3 doivent être corrigés dans cette tâche, pas seulement le premier.
 
 **Files:**
 - Modify: `LarcCommon/larccommon/dialogs/event_generator_dialog.py`
+- Modify: `LarcSuperviseur/views/main_events.py`
+- Modify: `LarcSuperviseur/views/core/event_dialog.py`
 - Test: `LarcCommon/tests/test_event_generator_dialog_smoke.py`
 
 **Interfaces:**
 - Consumes : `EventTypeConfigService.filter_applicable(member_type, fk_language)` (Task 2).
 
-- [ ] **Step 1 : Modifier l'appel dans `__init__`**
+- [ ] **Step 1 : `LarcCommon/larccommon/dialogs/event_generator_dialog.py`**
 
 Dans `EventGeneratorDialog.__init__`, remplacer :
 ```python
@@ -455,9 +462,41 @@ par :
         )
 ```
 (défaut `2` = français, cohérent avec `EventGeneratorDialog._load_subjects` qui utilise déjà
-`getattr(session, "fk_language", ...)` de la même façon ailleurs dans ce fichier).
+`getattr(session, "fk_language", ...)` de la même façon ailleurs dans ce fichier — `session` y
+est déjà importé).
 
-- [ ] **Step 2 : Mettre à jour le mock du test existant**
+- [ ] **Step 2 : `LarcSuperviseur/views/main_events.py:171`**
+
+`session` est déjà importé (`from LarcSuperviseur.common.session import session`, ligne 50).
+Remplacer :
+```python
+        hierarchies = event_type_service.filter_applicable(MemberType.STUDENT)
+```
+par :
+```python
+        hierarchies = event_type_service.filter_applicable(
+            MemberType.STUDENT, getattr(session, "fk_language", 2)
+        )
+```
+
+- [ ] **Step 3 : `LarcSuperviseur/views/core/event_dialog.py:39`**
+
+`session` n'y est **pas encore importé** — l'ajouter :
+```python
+from LarcSuperviseur.common.session import session
+```
+Puis remplacer :
+```python
+        hierarchies = event_type_service.filter_applicable(MemberType.STUDENT)
+```
+par :
+```python
+        hierarchies = event_type_service.filter_applicable(
+            MemberType.STUDENT, getattr(session, "fk_language", 2)
+        )
+```
+
+- [ ] **Step 4 : Mettre à jour le mock du test existant**
 
 Dans `LarcCommon/tests/test_event_generator_dialog_smoke.py`, la fixture `dialog` patche déjà
 `event_type_service.filter_applicable` via
@@ -465,19 +504,25 @@ Dans `LarcCommon/tests/test_event_generator_dialog_smoke.py`, la fixture `dialog
 `return_value` ignore les arguments reçus, donc **aucun changement requis** dans le test : il
 continue de passer tel quel avec la nouvelle signature à 2 arguments.
 
-- [ ] **Step 3 : Lancer la suite et vérifier qu'elle passe toujours**
+- [ ] **Step 5 : Lancer les suites et vérifier qu'elles passent toujours**
 
 ```bash
 cd D:\projets\LarcCommon && pytest tests/test_event_generator_dialog_smoke.py -v
 ```
-Attendu : les 10 tests existants passent sans modification.
+Attendu : les 10 tests existants passent sans modification (`main_events.py`/`event_dialog.py`
+n'ont pas de suite de tests dédiée dans ce repo — vérification par lecture de code + lancement
+de l'application concernée si possible).
 
-- [ ] **Step 4 : Commit**
+- [ ] **Step 6 : Commit**
 
 ```bash
-git add LarcCommon/larccommon/dialogs/event_generator_dialog.py
+git add LarcCommon/larccommon/dialogs/event_generator_dialog.py LarcSuperviseur/views/main_events.py LarcSuperviseur/views/core/event_dialog.py
 git commit -m "$(cat <<'EOF'
-fix(larccommon): EventGeneratorDialog charge la hiérarchie dans la langue de la session
+fix(larccommon,larcsuperviseur): les 3 sélecteurs de type chargent la hiérarchie dans la langue de la session
+
+EventGeneratorDialog, main_events.py (édition historique global) et
+event_dialog.py (EventEditDialog) appelaient tous filter_applicable() sans
+langue — les 3 sont corrigés, pas seulement le premier découvert.
 
 Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>
 EOF
