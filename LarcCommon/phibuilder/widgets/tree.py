@@ -49,6 +49,7 @@ class M3TreeWidget(QTreeWidget):
         c, s, t = self._theme.colors, self._theme.spacing, self._theme.typo
         padding = s.spacing(SpacingToken.MD)
         radius = s.spacing(SpacingToken.SM)
+        row_height = 32  # F(5) Fibonacci, matches M3TableWidget
 
         self.setStyleSheet(f"""
 M3TreeWidget {{
@@ -62,7 +63,7 @@ M3TreeWidget {{
 }}
 M3TreeWidget::item {{
     padding: {padding}px;
-    min-height: 32px;
+    min-height: {row_height}px;
 }}
 M3TreeWidget::item:selected {{
     background-color: {c.primary_container};
