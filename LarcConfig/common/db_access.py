@@ -58,8 +58,8 @@ def get_roles():
         return []
 
 
-def get_event_types():
-    """Types d'événements — larcauth_event_type_config (arbre à 4 niveaux)."""
+def get_event_types(fk_language: int):
+    """Types d'événements — larcauth_event_type_config, une langue, avec parent résolu."""
     c = _conn()
     if not c:
         return []
@@ -69,24 +69,117 @@ def get_event_types():
             WITH RECURSIVE tree AS (
                 SELECT id, code, label, category, parent_id, is_active, 0 AS depth
                 FROM larcauth_event_type_config
-                WHERE parent_id IS NULL
+                WHERE parent_id IS NULL AND fk_language = %s
                 UNION ALL
                 SELECT te.id, te.code, te.label, te.category, te.parent_id, te.is_active,
                        tree.depth + 1
                 FROM larcauth_event_type_config te
                 JOIN tree ON te.parent_id = tree.id
             )
-            SELECT id, code, label, category, parent_id, depth, is_active
-            FROM tree
-            ORDER BY category, depth,
-                     COALESCE(parent_id, 0), id
-        """)
+            SELECT t.id, t.code, t.label, t.category, t.parent_id, t.depth, t.is_active, p.label
+            FROM tree t
+            LEFT JOIN larcauth_event_type_config p ON p.id = t.parent_id
+            ORDER BY t.depth, COALESCE(t.parent_id, 0), t.id
+        """, (fk_language,))
         return [
-            dict(zip(['id', 'code', 'label', 'category', 'parent_id', 'depth', 'enabled'], r))
+            dict(zip(
+                ['id', 'code', 'label', 'category', 'parent_id', 'depth', 'enabled', 'parent_label'],
+                r,
+            ))
             for r in cur.fetchall()
         ]
     except Exception:
         return []
+
+
+def set_event_type_active(event_type_id: int, enabled: bool) -> bool:
+    """Active/désactive un type — jamais de suppression (principe gabarit)."""
+    c = _conn()
+    if not c:
+        return False
+    try:
+        cur = c.cursor()
+        cur.execute(
+            "UPDATE larcauth_event_type_config SET is_active = %s WHERE id = %s",
+            (enabled, event_type_id),
+        )
+        return True
+    except Exception:
+        return False
+
+
+def set_event_type_label(event_type_id: int, label: str) -> bool:
+    """Renomme le libellé d'un type, pour la langue de la ligne visée."""
+    c = _conn()
+    if not c:
+        return False
+    try:
+        cur = c.cursor()
+        cur.execute(
+            "UPDATE larcauth_event_type_config SET label = %s WHERE id = %s",
+            (label, event_type_id),
+        )
+        return True
+    except Exception:
+        return False
+
+
+def activate_event_type(
+    parent_code: str | None, code_suffix: str, label_fr: str, label_en: str,
+) -> bool:
+    """Active le 1er slot potentiel libre sous `parent_code`, dans les 2 langues à la fois.
+
+    'Libre' = is_active=FALSE ET code LIKE 'type_niv%%' (jamais encore assigné) — même
+    mécanisme que le slot élève ('Name of %%'), cf. spec. Le code final
+    (`{parent_code}_{code_suffix}` ou juste `code_suffix` pour une racine) est identique dans
+    les 2 langues — c'est le lien conceptuel entre les deux arbres.
+    """
+    c = _conn()
+    if not c:
+        return False
+    try:
+        cur = c.cursor()
+        final_code = f"{parent_code}_{code_suffix}" if parent_code else code_suffix
+
+        for fk_language, label in ((2, label_fr), (1, label_en)):
+            if parent_code:
+                cur.execute(
+                    "SELECT id FROM larcauth_event_type_config "
+                    "WHERE code = %s AND fk_language = %s",
+                    (parent_code, fk_language),
+                )
+                parent_row = cur.fetchone()
+                if not parent_row:
+                    return False
+                parent_id = parent_row[0]
+                cur.execute(
+                    "SELECT id FROM larcauth_event_type_config "
+                    "WHERE parent_id = %s AND fk_language = %s "
+                    "AND is_active = FALSE AND code LIKE 'type_niv%%' "
+                    "ORDER BY id LIMIT 1",
+                    (parent_id, fk_language),
+                )
+            else:
+                cur.execute(
+                    "SELECT id FROM larcauth_event_type_config "
+                    "WHERE parent_id IS NULL AND fk_language = %s "
+                    "AND is_active = FALSE AND code LIKE 'type_niv%%' "
+                    "ORDER BY id LIMIT 1",
+                    (fk_language,),
+                )
+            slot_row = cur.fetchone()
+            if not slot_row:
+                return False  # plus de slot potentiel disponible à ce niveau
+            slot_id = slot_row[0]
+
+            cur.execute(
+                "UPDATE larcauth_event_type_config "
+                "SET code = %s, label = %s, is_active = TRUE WHERE id = %s",
+                (final_code, label, slot_id),
+            )
+        return True
+    except Exception:
+        return False
 
 
 def get_locations():
