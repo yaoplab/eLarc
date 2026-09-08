@@ -89,3 +89,43 @@ class TestActivateEventType:
         # 2 UPDATE (un par langue) après les 2 SELECT de résolution de slot
         update_calls = [e for e in cur.executed if e[0].strip().startswith("UPDATE")]
         assert len(update_calls) == 2
+
+    def test_no_free_slot_in_second_language_leaves_no_update_committed(self):
+        """Non-régression : slot FR trouvé mais AUCUN slot libre en EN.
+
+        Avant le correctif (2 phases), l'UPDATE FR était exécuté avant même
+        de savoir si l'EN allait réussir — et comme toutes les connexions
+        sont en autocommit=True, ce UPDATE restait committé même si la
+        fonction retournait False ensuite (état incohérent permanent,
+        principe gabarit interdisant tout DELETE pour réparer).
+
+        Avec le correctif, la résolution (parent + slot) se fait pour les 2
+        langues AVANT tout UPDATE : si l'EN échoue à ce stade, aucun UPDATE
+        n'a encore été exécuté, ni pour le FR ni pour l'EN.
+        """
+        cur = FakeCursor()
+        conn = FakeConn()
+        conn._cur = cur
+
+        # 1er appel (résolution parent FR) -> id 10
+        # 2e appel (slot libre FR) -> id 11 (trouvé)
+        # 3e appel (résolution parent EN) -> id 20
+        # 4e appel (slot libre EN) -> None (aucun slot libre)
+        responses = iter([(10,), (11,), (20,), None])
+
+        def fake_fetchone():
+            return next(responses, None)
+
+        cur.fetchone = fake_fetchone
+
+        with patch.object(db_access, "_conn", return_value=conn):
+            ok = db_access.activate_event_type(
+                parent_code="absence_school", code_suffix="allergie",
+                label_fr="Allergie", label_en="Allergy",
+            )
+
+        assert ok is False
+        # Preuve qu'aucune mutation n'a eu lieu du tout — même pas le FR,
+        # dont le slot avait pourtant été trouvé avec succès.
+        update_calls = [e for e in cur.executed if e[0].strip().startswith("UPDATE")]
+        assert update_calls == []

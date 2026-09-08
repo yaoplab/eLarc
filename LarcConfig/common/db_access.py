@@ -141,6 +141,14 @@ def activate_event_type(
         cur = c.cursor()
         final_code = f"{parent_code}_{code_suffix}" if parent_code else code_suffix
 
+        # Phase 1 — résolution seule : parent (si fourni) + slot libre pour
+        # CHAQUE langue, sans exécuter le moindre UPDATE. Si une langue échoue
+        # ici (parent introuvable ou plus de slot libre), on retourne False
+        # avant toute mutation — comme toutes les connexions sont en
+        # autocommit=True, un UPDATE déjà exécuté ne peut pas être annulé, et
+        # le principe gabarit interdit tout DELETE pour réparer un état
+        # incohérent (ex. FR activé, EN resté gabarit inerte).
+        resolved = []
         for fk_language, label in ((2, label_fr), (1, label_en)):
             if parent_code:
                 cur.execute(
@@ -170,15 +178,23 @@ def activate_event_type(
             slot_row = cur.fetchone()
             if not slot_row:
                 return False  # plus de slot potentiel disponible à ce niveau
-            slot_id = slot_row[0]
+            resolved.append((slot_row[0], label))
 
+        # Phase 2 — mutation : les 2 langues sont résolues avec succès, les 2
+        # UPDATE peuvent s'exécuter sans risque d'incohérence "une seule
+        # langue committée" (seule une vraie erreur DB imprévue pourrait
+        # encore survenir ici — risque résiduel accepté, cf. task-4 review).
+        for slot_id, label in resolved:
             cur.execute(
                 "UPDATE larcauth_event_type_config "
                 "SET code = %s, label = %s, is_active = TRUE WHERE id = %s",
                 (final_code, label, slot_id),
             )
         return True
-    except Exception:
+    except Exception as e:
+        from larccommon.error_reporting import get_reporter
+        get_reporter().report_exception()
+        log_error(f"activate_event_type: {e}")
         return False
 
 
