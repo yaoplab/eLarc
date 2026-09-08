@@ -292,8 +292,6 @@ class LoginWindow(QWidget):
 
     @safe_slot("LoginWindow.on_intranet")
     def _on_intranet(self):
-        if not db.is_server_connected:
-            return
         trace("_on_intranet: START")
         email = self._edt_i_email.text().strip()
         password = self._edt_i_pwd.text()
