@@ -13,10 +13,11 @@ class ButtonVariant(str, Enum):
 class M3Button(QPushButton):
     def __init__(self, text: str = "", theme: Theme | None = None,
                  variant: ButtonVariant = ButtonVariant.FILLED, parent=None,
-                 text_align: str = "center"):
+                 text_align: str = "center", accent_color: str | None = None):
         super().__init__(text, parent)
         self._theme = theme
         self._variant = variant
+        self._accent_color = accent_color
         # K26 (sidebar-spec) : "left" pour les boutons icône+texte — sans quoi
         # Qt centre le groupe icône+texte et l'icône dérive selon la longueur
         # du libellé. Gap icône↔texte natif Qt = ds.space_xs (8px).
@@ -31,17 +32,21 @@ class M3Button(QPushButton):
         t, c = self._theme, self._theme.colors
         # Radius boutons = F₅ (skill data-entry-ui)
         p, h, r = t.spacing.spacing(SpacingToken.MD), t.spacing.spacing(SpacingToken.MD) * 2, RADIUS_BTN  # p=20, h=40, r=5
+        # accent_color surcharge la couleur primaire du thème (ex: chip de catégorie),
+        # sans affecter les boutons qui ne le passent pas (défaut None).
+        primary = self._accent_color or c.primary
+        outline_color = primary if self._accent_color else c.outline
         styles = {
-            "filled":  (c.primary, c.on_primary, "none"),
+            "filled":  (primary, c.on_primary, "none"),
             "tonal":   (c.secondary_container, c.on_secondary_container, "none"),
-            "outlined":("transparent", c.primary, f"1px solid {c.outline}"),
-            "text":    ("transparent", c.primary, "none"),
+            "outlined":("transparent", primary, f"1px solid {outline_color}"),
+            "text":    ("transparent", primary, "none"),
         }
         bg, fg, brd = styles[self._variant]
-        hov_bg, hov_fg = {"filled": (c.primary_container, c.on_primary_container),
+        hov_bg, hov_fg = {"filled": (primary, c.on_primary) if self._accent_color else (c.primary_container, c.on_primary_container),
             "tonal": (c.primary_container, c.on_primary_container),
-            "outlined": ("rgba(0,0,0,0.05)", c.primary),
-            "text": ("rgba(0,0,0,0.05)", c.primary)}[self._variant]
+            "outlined": ("rgba(0,0,0,0.05)", primary),
+            "text": ("rgba(0,0,0,0.05)", primary)}[self._variant]
         self.setStyleSheet(f"""
 M3Button {{ padding: 0 {p}px; height: {h}px; border-radius: {r}px;
   text-align: {self._text_align};
