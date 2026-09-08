@@ -161,8 +161,14 @@ class _DesignSystem(QObject):
     # 2b. PHI TOKENS (Nouvelle architecture — fondation Fibonacci)
     # =========================================================================
     @property
-    def phi(self):
-        """Accès au PhiScale pour tokens spacing/sizing/sections."""
+    def phi_scale(self):
+        """Accès au PhiScale pour tokens spacing/sizing/sections.
+
+        Nommé `phi_scale` (et non `phi`) pour ne pas entrer en collision avec
+        la propriété `phi` ci-dessus qui retourne le `Theme` M3
+        (`self._tm.phi_theme`) documenté et utilisé dans toute la suite
+        d'applications (pattern `M3Button(theme=ds.phi, ...)`).
+        """
         return self._phi
 
     @property
