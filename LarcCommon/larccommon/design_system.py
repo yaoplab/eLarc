@@ -8,6 +8,8 @@ from PySide6.QtCore import QMargins, QObject, Signal
 from larccommon.safe_slot import safe_slot
 from larccommon.theme import theme_manager
 from phibuilder.phi.scale import SpacingToken
+from phibuilder.phi.phi_scale import phi_scale
+from phibuilder.phi.phi_grid import PhiGrid
 from phibuilder.widgets.button import ButtonVariant
 from phibuilder.widgets.card import CardVariant
 
@@ -23,7 +25,9 @@ class _DesignSystem(QObject):
     def __init__(self):
         super().__init__()
         self._tm = theme_manager
-        
+        self._phi = phi_scale()
+        self._phi_grid = PhiGrid()
+
         # Constantes fondamentales
         self.GOLDEN = 1.618033988749895
         self.border_width = 1
@@ -47,6 +51,44 @@ class _DesignSystem(QObject):
         self.CARD_ELEVATED = CardVariant.ELEVATED
         self.CARD_FILLED   = CardVariant.FILLED
         self.CARD_OUTLINED = CardVariant.OUTLINED
+
+        # =========================================================================
+        # ACCESSIBILITY TOKENS (WCAG AAA)
+        # =========================================================================
+        # Touch targets (Apple/Google standard)
+        self.touch_target_min = 44  # px (minimum clickable size)
+        self.touch_target_comfortable = 48  # px (comfortable)
+
+        # Focus states (visible focus outlines)
+        self.focus_outline_width = 2  # px (focus border thickness)
+        self.focus_outline_offset = 2  # px (space between element and focus)
+        self.focus_outline_style = "solid"
+
+        # Contrast requirements
+        self.contrast_mode = "AAA"  # "AA" (4.5:1) or "AAA" (7:1)
+        self.min_contrast_ratio_aa = 4.5  # WCAG AA
+        self.min_contrast_ratio_aaa = 7.0  # WCAG AAA
+
+        # =========================================================================
+        # MOTION TOKENS (Material Design 3 motion)
+        # =========================================================================
+        # Durations (milliseconds) — follow Fibonacci for rhythm
+        self.motion_quick = 100      # Hover feedback, tooltip appear
+        self.motion_normal = 300     # Standard transition (button, card)
+        self.motion_slow = 500       # Page transition, major layout changes
+        self.motion_extra_slow = 800  # Complex animations
+
+        # Easing functions (cubic-bezier)
+        self.easing_standard = "cubic-bezier(0.4, 0, 0.2, 1)"      # Standard curve
+        self.easing_emphasized = "cubic-bezier(0.4, 0, 0.6, 1)"    # Emphasized (stronger)
+        self.easing_decelerated = "cubic-bezier(0, 0, 0.2, 1)"     # Decelerated (easing out)
+        self.easing_accelerated = "cubic-bezier(0.4, 0, 1, 1)"     # Accelerated (easing in)
+
+        # =========================================================================
+        # KEYBOARD & NAVIGATION
+        # =========================================================================
+        self.tab_order_visible = True  # Ensure Tab order is visible
+        self.escape_key_closes = True  # Esc closes dialogs/modals
 
         # Relayer theme_changed de theme_manager vers ds
         self._tm.theme_changed.connect(self._relay_theme_changed)
@@ -78,7 +120,20 @@ class _DesignSystem(QObject):
     # 2. MICRO-PROPORTIONS : ESPACEMENTS FIBONACCI (px)
     # =========================================================================
     def sp(self, token: SpacingToken) -> int:
-        return self.phi.spacing.spacing(token)
+        """Compatibilité ancien code: convert SpacingToken enum to pixel value."""
+        # SpacingToken values: XXS=1, XS=2, SM=3, MD=5, LG=8, XL=13, XXL=21, XXXL=34
+        # Mappé à Fibonacci base 4: 4, 8, 12, 20, 32, 52, 84, 136
+        mapping = {
+            1: 4,       # XXS
+            2: 8,       # XS
+            3: 12,      # SM
+            5: 20,      # MD (note: token=5, pas 4)
+            8: 32,      # LG (note: token=8, pas 6)
+            13: 52,     # XL
+            21: 84,     # XXL
+            34: 136,    # XXXL
+        }
+        return mapping.get(int(token), 4)  # Défaut: 4px (XXS)
 
     @property
     def space_xxs(self) -> int: return self.sp(SpacingToken.XXS)
@@ -101,6 +156,63 @@ class _DesignSystem(QObject):
         """16px — M3 card/dialog/field padding.
         Valeur M3 ×8 pure (non-Fibonacci) pour compatibilité."""
         return 16
+
+    # =========================================================================
+    # 2b. PHI TOKENS (Nouvelle architecture — fondation Fibonacci)
+    # =========================================================================
+    @property
+    def phi(self):
+        """Accès au PhiScale pour tokens spacing/sizing/sections."""
+        return self._phi
+
+    @property
+    def phi_grid(self):
+        """Accès à PhiGrid pour layouts golden ratio."""
+        return self._phi_grid
+
+    # Raccourcis directs aux spacing tokens Phi
+    @property
+    def phi_space_xxs(self) -> int: return self._phi.spacing.xxs
+    @property
+    def phi_space_xs(self) -> int: return self._phi.spacing.xs
+    @property
+    def phi_space_sm(self) -> int: return self._phi.spacing.sm
+    @property
+    def phi_space_md(self) -> int: return self._phi.spacing.md
+    @property
+    def phi_space_lg(self) -> int: return self._phi.spacing.lg
+    @property
+    def phi_space_xl(self) -> int: return self._phi.spacing.xl
+    @property
+    def phi_space_xxl(self) -> int: return self._phi.spacing.xxl
+    @property
+    def phi_space_xxxl(self) -> int: return self._phi.spacing.xxxl
+
+    # Raccourcis directs aux sizing tokens Phi
+    @property
+    def phi_size_xs(self) -> int: return self._phi.sizing.xs
+    @property
+    def phi_size_sm(self) -> int: return self._phi.sizing.sm
+    @property
+    def phi_size_base(self) -> int: return self._phi.sizing.base
+    @property
+    def phi_size_md(self) -> int: return self._phi.sizing.md
+    @property
+    def phi_size_lg(self) -> int: return self._phi.sizing.lg
+    @property
+    def phi_size_xl(self) -> int: return self._phi.sizing.xl
+    @property
+    def phi_size_xxl(self) -> int: return self._phi.sizing.xxl  # 144 (card width)
+    @property
+    def phi_size_xxxl(self) -> int: return self._phi.sizing.xxxl  # 233 (card height)
+    @property
+    def phi_size_huge(self) -> int: return self._phi.sizing.huge  # 377
+
+    # Raccourcis pour tailles utiles
+    @property
+    def card_width(self) -> int: return self._phi.sizing.xxl  # 144
+    @property
+    def card_height(self) -> int: return self._phi.sizing.xxxl  # 233
 
     # =========================================================================
     # 3. MACRO-PROPORTIONS : RATIO D'OR (Phi ≈ 1.618)

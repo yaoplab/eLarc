@@ -1,22 +1,23 @@
-from phibuilder.phi.constants import PHI, PHI_INV, PHI_SQUARED, SQRT5, Angle
-from phibuilder.phi.sequence import fibonacci, fibonacci_sequence, is_fibonacci, nearest_fibonacci
-from phibuilder.phi.scale import PhiScale, PhiSpacing, PhiTypography
+"""Phi & Fibonacci: Fondation du design system LARC.
 
-class Phi:
-    PHI = PHI
-    PHI_INV = PHI_INV
-    PHI_SQUARED = PHI_SQUARED
-    fibonacci = staticmethod(fibonacci)
-    fibonacci_sequence = staticmethod(fibonacci_sequence)
-    is_fibonacci = staticmethod(is_fibonacci)
-    nearest_fibonacci = staticmethod(nearest_fibonacci)
-    Scale = PhiScale
-    Spacing = PhiSpacing
-    Typography = PhiTypography
-    Angle = Angle
+Modules:
+- phi_scale.py: Générateur de tokens (spacing, sizing, sections)
+- phi_grid.py: Layouts basés golden ratio
+- m3_phi_bridge.py: Material Design 3 + Phi fusion
+"""
+
+# New Phi system (v2)
+from phibuilder.phi.phi_scale import PhiScale, phi_scale
+from phibuilder.phi.phi_grid import PhiGrid, GridLayout, SplitLayout
+from phibuilder.phi.m3_phi_bridge import M3PhiBridge, M3ColorScheme, ColorGenerator
 
 __all__ = [
-    "Phi", "PHI", "PHI_INV", "PHI_SQUARED",
-    "fibonacci", "fibonacci_sequence", "is_fibonacci", "nearest_fibonacci",
-    "PhiScale", "PhiSpacing", "PhiTypography", "Angle",
+    'PhiScale',
+    'phi_scale',
+    'PhiGrid',
+    'GridLayout',
+    'SplitLayout',
+    'M3PhiBridge',
+    'M3ColorScheme',
+    'ColorGenerator',
 ]
