@@ -11,6 +11,7 @@ from PySide6.QtWidgets import (
 )
 
 from LarcSuperviseur.common.database import db
+from LarcSuperviseur.common.session import session
 from LarcSuperviseur.common.theme import theme_manager
 from larccommon.safe_slot import safe_slot
 
@@ -36,7 +37,9 @@ class EventEditDialog(M3Dialog):
         self._info.setTextFormat(Qt.RichText)
         layout.addWidget(self._info)
 
-        hierarchies = event_type_service.filter_applicable(MemberType.STUDENT)
+        hierarchies = event_type_service.filter_applicable(
+            MemberType.STUDENT, getattr(session, "fk_language", 2)
+        )
         self._selector = EventTypeSelectorWidget(hierarchies)
         self._selector.type_confirmed.connect(self._on_type_confirmed)
         layout.addWidget(self._selector, 1)

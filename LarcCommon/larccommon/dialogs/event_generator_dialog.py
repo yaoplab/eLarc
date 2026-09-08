@@ -83,7 +83,9 @@ class EventGeneratorDialog(ThemedDialog):
         self._note_label: Optional[M3Label] = None
         self._validate_btn: Optional[M3Button] = None
 
-        self._type_hierarchies = event_type_service.filter_applicable(member_type)
+        self._type_hierarchies = event_type_service.filter_applicable(
+            member_type, getattr(session, "fk_language", 2)
+        )
         if not self._type_hierarchies:
             log(f"EventGeneratorDialog: aucun type pour {member_type.value}")
 

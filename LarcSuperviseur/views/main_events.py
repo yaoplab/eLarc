@@ -168,7 +168,9 @@ class EventsMixin:
         info.setTextFormat(Qt.RichText)
         layout.addWidget(info)
 
-        hierarchies = event_type_service.filter_applicable(MemberType.STUDENT)
+        hierarchies = event_type_service.filter_applicable(
+            MemberType.STUDENT, getattr(session, "fk_language", 2)
+        )
         selector = EventTypeSelectorWidget(hierarchies)
         existing_node = event_type_service.get_by_id(etype_config_id) if etype_config_id else None
         if existing_node:
