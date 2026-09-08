@@ -100,7 +100,7 @@ class EventTypeSelectorWidget(QWidget):
         self._colorize_root_item()
         layout.addWidget(self._tree, 1)
 
-        self._badge = M3Card(variant=CardVariant.FILLED, parent=self)
+        self._badge = M3Card(theme=theme_manager.phi_theme, variant=CardVariant.FILLED, parent=self)
         badge_layout = self._badge.content_layout()
         badge_layout.setContentsMargins(ds.space_md, ds.space_xs, ds.space_md, ds.space_xs)
         self._badge_text = M3Label("", style="body_medium")

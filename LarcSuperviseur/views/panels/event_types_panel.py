@@ -50,7 +50,7 @@ class EventTypeEditDialog(ThemedDialog):
         outer.setSpacing(ds.space_md)
         outer.setContentsMargins(ds.space_lg, ds.space_lg, ds.space_lg, ds.space_lg)
 
-        card = M3Card(variant=CardVariant.ELEVATED, parent=self)
+        card = M3Card(theme=theme_manager.phi_theme, variant=CardVariant.ELEVATED, parent=self)
         cl = card.content_layout()
         cl.setSpacing(ds.space_sm)
 

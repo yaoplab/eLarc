@@ -215,7 +215,7 @@ class EventGeneratorDialog(ThemedDialog):
         fl.setContentsMargins(0, 0, 0, 0)
         fl.setSpacing(ds.space_md)
 
-        card = M3Card(variant=CardVariant.ELEVATED)
+        card = M3Card(theme=theme_manager.phi_theme, variant=CardVariant.ELEVATED)
         cl = card.content_layout()
         cl.setSpacing(ds.space_md)
 
