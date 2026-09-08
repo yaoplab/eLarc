@@ -114,6 +114,11 @@ class EventTypeSelectorWidget(QWidget):
         self._confirm_btn.clicked.connect(self._on_confirm_clicked)
         layout.addWidget(self._confirm_btn)
 
+        # Qt donne le focus initial au premier widget "tab-focusable" du layout à l'ouverture
+        # (les chips le sont, pour l'accessibilité clavier) — sans ceci, le 1er chip afficherait
+        # son anneau de focus au chargement, sans aucune interaction utilisateur.
+        self._search.setFocus()
+
     @staticmethod
     def is_leaf(node: EventTypeNode) -> bool:
         """Un nœud est une feuille (y compris 'Autre') s'il n'a aucun enfant."""
