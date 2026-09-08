@@ -51,6 +51,12 @@ class M3Button(QPushButton):
     def _update_style(self):
         """Génère QSS avec tokens Phi + accessibilité."""
         if self._theme is None:
+            import warnings
+            warnings.warn(
+                f"{type(self).__name__} cree sans theme= -- aucun style applique. "
+                f"Passer theme=theme_manager.phi_theme.",
+                stacklevel=2,
+            )
             return
 
         t, c = self._theme, self._theme.colors

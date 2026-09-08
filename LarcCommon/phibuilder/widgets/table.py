@@ -49,6 +49,12 @@ class M3TableWidget(QTableWidget):
     def _update_style(self):
         """Génère QSS avec motion & accessibility."""
         if self._theme is None:
+            import warnings
+            warnings.warn(
+                f"{type(self).__name__} cree sans theme= -- aucun style applique. "
+                f"Passer theme=theme_manager.phi_theme.",
+                stacklevel=2,
+            )
             return
 
         c, s, t = self._theme.colors, self._theme.spacing, self._theme.typo
