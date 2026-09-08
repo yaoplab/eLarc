@@ -68,7 +68,9 @@ class TypesPanel(M3ScrollArea):
             self._table.setItem(i, 0, self._readonly_item(str(r['id'])))
             self._table.setItem(i, 1, self._readonly_item(r['category'] or ''))
             self._table.setItem(i, 2, self._readonly_item(r['parent_label'] or ''))
-            self._table.setItem(i, 3, QTableWidgetItem(f"{indent}{r['label'] or ''}"))
+            label_item = QTableWidgetItem(f"{indent}{r['label'] or ''}")
+            label_item.setData(Qt.UserRole, r['label'] or '')
+            self._table.setItem(i, 3, label_item)
             self._table.setItem(i, 4, self._readonly_item(r['code'] or ''))
             active_item = QTableWidgetItem()
             active_item.setFlags(active_item.flags() | Qt.ItemIsUserCheckable)
@@ -96,8 +98,25 @@ class TypesPanel(M3ScrollArea):
             set_event_type_active(event_type_id, item.checkState() == Qt.Checked)
         elif item.column() == 3:
             depth = self._rows[row]['depth']
-            new_label = item.text()[len("    " * depth):]
+            indent = "    " * depth
+            text = item.text()
+            # Le texte affiché contient un préfixe d'indentation visuel qui ne
+            # fait pas partie du libellé réel. Une édition normale (sélection
+            # totale + retype) remplace tout le texte de la cellule, y compris
+            # ce préfixe : on ne peut donc pas se fier à un simple slice des N
+            # premiers caractères du texte final. On ne retire le préfixe que
+            # s'il est effectivement encore présent ; sinon le texte tapé est
+            # pris tel quel, en entier.
+            new_label = text[len(indent):] if text.startswith(indent) else text
             set_event_type_label(event_type_id, new_label)
+            self._rows[row]['label'] = new_label
+            # Ré-applique l'indentation visuelle proprement et resynchronise
+            # la référence (Qt.UserRole) pour qu'une 2e édition consécutive
+            # reparte du bon texte, pas de l'ancien.
+            self._loading = True
+            item.setText(f"{indent}{new_label}")
+            item.setData(Qt.UserRole, new_label)
+            self._loading = False
 
     @safe_slot("TypesPanel._on_create_type")
     def _on_create_type(self):
