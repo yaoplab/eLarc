@@ -101,6 +101,8 @@ class TypesPanel(M3ScrollArea):
 
     @safe_slot("TypesPanel._on_create_type")
     def _on_create_type(self):
+        from PySide6.QtWidgets import QMessageBox
+
         dlg = QDialog(self)
         dlg.setWindowTitle("Créer un type d'événement")
         form = QFormLayout(dlg)
@@ -114,7 +116,23 @@ class TypesPanel(M3ScrollArea):
         form.addRow("Libellé FR :", label_fr_edit)
         form.addRow("Libellé EN :", label_en_edit)
         ok_btn = M3Button("Créer")
-        ok_btn.clicked.connect(dlg.accept)
+
+        def _validate_and_accept():
+            if not suffix_edit.text().strip():
+                QMessageBox.warning(
+                    dlg, "Champ requis",
+                    "Le suffixe de code est obligatoire.",
+                )
+                return
+            if not label_fr_edit.text().strip() or not label_en_edit.text().strip():
+                QMessageBox.warning(
+                    dlg, "Champ requis",
+                    "Le libellé FR et le libellé EN sont obligatoires.",
+                )
+                return
+            dlg.accept()
+
+        ok_btn.clicked.connect(_validate_and_accept)
         form.addRow(ok_btn)
         if dlg.exec() == QDialog.Accepted:
             ok = activate_event_type(
@@ -124,7 +142,6 @@ class TypesPanel(M3ScrollArea):
                 label_en=label_en_edit.text().strip(),
             )
             if not ok:
-                from PySide6.QtWidgets import QMessageBox
                 QMessageBox.warning(
                     self, "Erreur",
                     "Aucun slot potentiel libre sous ce parent, dans l'une des 2 langues.",
