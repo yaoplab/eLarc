@@ -7,7 +7,7 @@ trigger: audit design, vérifie le design, check design, revue design, design re
 
 # Design Review — Audit Design System Larc
 
-Lancer les 3 linters design et produire un rapport consolidé.
+Lancer les linters design et produire un rapport consolidé.
 
 ## Procédure
 

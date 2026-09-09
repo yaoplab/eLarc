@@ -6,7 +6,7 @@ Features:
 - Focus visible: 2px outline on selected row
 - Accessibility: ARIA tree, screen reader support
 - Motion: smooth row selection (300ms)
-- Touch target: 44px minimum row height
+- Touch target: 32px minimum row height (ds.table_row_min)
 """
 
 from PySide6.QtWidgets import QTableWidget, QHeaderView, QSizePolicy, QAbstractItemView, QTableWidgetItem

@@ -26,6 +26,13 @@ silencieux, présent dans 22 des 25 widgets `phibuilder`. Depuis, ce cas émet
 un `UserWarning` explicite (`LarcCommon/phibuilder/widgets/*.py`) — si un
 écran affiche des widgets sans style, chercher ce warning en premier.
 
+**Exception connue — `M3Dialog` (`phibuilder/widgets/dialog.py`) :** son
+`__init__` garde une forme différente du garde-fou, `if theme is None: return`
+directement sur le paramètre du constructeur (pas sur `self._theme` dans
+`_update_style()`) — donc un `M3Dialog` construit sans `theme=` n'a ni layout
+ni warning, silencieusement. Pas encore couvert par le `UserWarning`
+ci-dessus ; corrigé dans un futur passage, pas dans celui du 2026-09-08.
+
 La question des tons `surface_container` (secondaire, aussi corrigée) ne se
 posait même pas ici : `M3Card.ELEVATED` utilise `c.surface`, pas
 `c.surface_container` — deux bugs différents découverts dans la même session.
