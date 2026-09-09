@@ -110,6 +110,8 @@ DETECT_PATTERNS = {
         re.compile(r'setFixedHeight\((\d+)\)'),
         # setFixedWidth(N)  où N > 10
         re.compile(r'setFixedWidth\((\d+)\)'),
+        # addSpacing(N) -- espacement vertical/horizontal en dur (QBoxLayout)
+        re.compile(r'addSpacing\((\d+)\)'),
     ],
     "P1": [
         # padding: Npx (dans QSS)
