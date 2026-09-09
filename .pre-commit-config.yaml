@@ -81,3 +81,21 @@ repos:
         stages: [pre-commit]
         verbose: true
         pass_filenames: false
+      - id: lint-widget-purity
+        name: 🧩 Widgets phibuilder uniquement (W1)
+        description: RE GLE ABSOLUE CLAUDE.md -- pas de PySide6.QtWidgets direct
+        entry: python D:/projets/scripts/lint_widget_purity.py --check-baseline
+        language: system
+        files: \.py$
+        stages: [pre-commit]
+        verbose: true
+        pass_filenames: false
+      - id: audit-design-system-baseline
+        name: 📐 Audit design system (baseline)
+        description: Hardcodings P0/P1/P2 -- bloque seulement le NOUVEAU
+        entry: python D:/projets/scripts/audit_design_system.py --check-baseline
+        language: system
+        files: \.py$
+        stages: [pre-commit]
+        verbose: true
+        pass_filenames: false

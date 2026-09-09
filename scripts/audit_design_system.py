@@ -26,12 +26,6 @@ from datetime import datetime
 from pathlib import Path
 from collections import defaultdict, Counter
 
-# Force UTF-8 (Windows cp1252 fix)
-if hasattr(sys.stdout, 'buffer'):
-    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
-if hasattr(sys.stderr, 'buffer'):
-    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
-
 # =========================================================================
 # CONFIGURATION
 # =========================================================================
@@ -43,6 +37,11 @@ PROJECT_ROOTS = [
     ROOT / "LarcSecretaire",
     ROOT / "LarcCommon",
 ]
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from _baseline import load_baseline, save_baseline, split_new
+
+BASELINE_PATH = ROOT / "scripts" / ".design_system_baseline.json"
 
 EXCLUDE_DIRS = {
     '.git', '.venv', '__pycache__', '.ruff_cache', '.aider.tags.cache.v4',
@@ -736,6 +735,13 @@ class AuditeurDesignSystem:
 # =========================================================================
 
 def main():
+    # Force UTF-8 (Windows cp1252 fix) -- uniquement en execution CLI reelle,
+    # jamais a l'import (casse la capture stdout de pytest sinon).
+    if hasattr(sys.stdout, 'buffer'):
+        sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+    if hasattr(sys.stderr, 'buffer'):
+        sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
+
     import argparse
     parser = argparse.ArgumentParser(
         description="Audit et correction Design System pour projets PySide6 Larc",
@@ -757,6 +763,10 @@ def main():
                         help='Inclure les dossiers tests/')
     parser.add_argument('--quiet', action='store_true',
                         help='Mode silencieux (pas de sortie texte)')
+    parser.add_argument('--baseline', action='store_true',
+                        help='(Re)genere la baseline avec les violations actuelles')
+    parser.add_argument('--check-baseline', action='store_true',
+                        help="N'echoue que sur les violations absentes de la baseline (pre-commit)")
 
     args = parser.parse_args()
 
@@ -768,6 +778,20 @@ def main():
         racines = PROJECT_ROOTS
 
     issues = auditeur.scanner(racines)
+
+    if args.baseline:
+        save_baseline(BASELINE_PATH, issues)
+        print(f"[baseline] {len(issues)} violation(s) figee(s) dans {BASELINE_PATH}")
+        return 0
+
+    if args.check_baseline:
+        baseline = load_baseline(BASELINE_PATH)
+        new, known = split_new(issues, baseline)
+        print(f"audit_design_system: {len(new)} nouvelle(s) violation(s), {len(known)} connue(s) (baseline, non bloquant)")
+        for iss in new:
+            rel = auditeur._rel_path(iss['fichier'])
+            print(f"  [{iss['categorie']}] {rel}:{iss['ligne']}  {iss['code']}")
+        return 1 if new else 0
 
     if not args.quiet:
         print(auditeur.resumer())
