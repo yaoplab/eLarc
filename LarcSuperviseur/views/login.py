@@ -128,7 +128,11 @@ class LoginWindow(QWidget):
         self.setObjectName("root")
         self.setStyleSheet(QssHelper.login_qss(theme_manager.palette))
         W = 420
-        H = int(W * 1.618033988749895)
+        # H : la formule golden-ratio (W*phi=679) ne suffit plus depuis que les
+        # widgets M3 sont correctement stylés (theme= posé) - leur padding réel
+        # porte le contenu a ~809px de haut (mesure sizeHint), contre du texte
+        # non stylé et compact auparavant. Valeur fixe avec marge de confort.
+        H = 830
         self.setFixedSize(W, H)
 
         phi = theme_manager.phi_theme
@@ -234,7 +238,6 @@ class LoginWindow(QWidget):
         layout.addWidget(email_lbl)
         email = M3TextField(theme=phi)
         email.setPlaceholderText(_("login.email_placeholder"))
-        email.setFixedHeight(ds.field_height)
         self._edt_i_email = email
         layout.addWidget(email)
 
@@ -245,7 +248,6 @@ class LoginWindow(QWidget):
         pwd = M3TextField(theme=phi)
         pwd.setEchoMode(M3TextField.Password)
         pwd.setPlaceholderText(_("login.password_placeholder"))
-        pwd.setFixedHeight(ds.field_height)
         pwd.returnPressed.connect(self._on_intranet)
         self._edt_i_pwd = pwd
         layout.addWidget(pwd)
