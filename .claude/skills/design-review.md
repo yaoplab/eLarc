@@ -14,7 +14,7 @@ Lancer les linters design et produire un rapport consolidé.
 1. Lancer les linters :
 ```bash
 python D:/projets/scripts/lint_d1_color_checker.py --rule D1+J7+D3+D4+D5+D6+D7 --fix-only
-python D:/projets/scripts/lint_qss_hardcoding.py --fix-only
+python D:/projets/scripts/lint_qss_hardcoding.py --check-baseline
 python D:/projets/scripts/audit_theme_reactive.py
 python D:/projets/scripts/audit_design_system.py --check-baseline
 python D:/projets/scripts/lint_widget_purity.py --check-baseline

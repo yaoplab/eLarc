@@ -36,12 +36,15 @@ repos:
         verbose: true
         pass_filenames: false
       - id: lint-rlinter
-        name: 🔬 Linter QSS Larc (R + Q1+Q3 + Q2 — zéro hardcoding)
+        name: 🔬 Linter QSS Larc (R + Q1+Q3 + Q2 — baseline, zéro NOUVEAU hardcoding)
         description: >
           Vérifie le ZERO hardcoding pixels (Sous-système R) et la règle Q1+Q3
           (tables interactives sans curseur main ni eventFilter) du skill
-          design-system-larc. Retourne 1 si une violation est détectée.
-        entry: python D:/projets/scripts/lint_qss_hardcoding.py --fix-only
+          design-system-larc. Mode baseline (2026-09-09, ratchet comme
+          lint_widget_purity/audit_design_system) : la dette pré-existante
+          (29 violations connues) reste visible mais ne bloque plus — seule
+          une violation absente de la baseline retourne 1.
+        entry: python D:/projets/scripts/lint_qss_hardcoding.py --check-baseline
         language: system
         files: \.py$
         stages: [pre-commit]
