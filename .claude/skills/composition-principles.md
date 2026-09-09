@@ -1,8 +1,8 @@
 ---
 name: composition-principles
-description: 3 principes de composition transverses (contraste de surface, états vides, espace mort) — au-delà de la conformité aux tokens
+description: 4 principes de composition transverses (contraste de surface, états vides, espace mort, taille fixe mesurée) — au-delà de la conformité aux tokens
 category: design
-trigger: composition, écran vide, espace mort, état vide, carte invisible, hiérarchie visuelle
+trigger: composition, écran vide, espace mort, état vide, carte invisible, hiérarchie visuelle, chevauchement, overlap, setFixedSize, taille fixe
 ---
 
 # Principes de composition — au-delà de la conformité aux tokens
@@ -11,7 +11,8 @@ Trouvé le 2026-09-08 : un écran peut utiliser 100% les bons widgets et tokens
 (`phibuilder`, `ds.*`) et rester visuellement faible. La conformité au
 vocabulaire du design system (`lint_widget_purity`, `audit_design_system`) ne
 garantit pas la qualité de la composition — ce sont deux axes différents.
-Ces 3 principes viennent de patterns déjà documentés mais jamais généralisés.
+Ces 4 principes viennent de patterns déjà documentés mais jamais généralisés
+(les 3 premiers), plus un trouvé en corrigeant un écran existant (le 4e).
 
 ## 1. Contraste de surface obligatoire
 
@@ -39,6 +40,26 @@ panneau droit était vide après le champ Note, à cause de deux `addStretch()`
 successifs (`cl.addStretch()` puis `fl.addStretch()`). Alternative : centrer
 le contenu verticalement plutôt que l'ancrer en haut avec du vide en dessous,
 ou dimensionner le conteneur à son contenu plutôt que l'inverse.
+
+## 4. Une taille fixe doit être mesurée, pas héritée d'une ancienne formule
+
+Trouvé le 2026-09-09 sur `login.py` : une fenêtre `setFixedSize()` calculée
+par une formule (ex. ratio doré `H = W * 1.618`) au moment où les widgets
+n'avaient pas encore de vrai style peut devenir trop petite une fois `theme=`
+correctement posé — le padding/min-height réel des widgets M3 (souvent plus
+généreux qu'un `QLineEdit`/`QLabel` nu) fait grossir le contenu. Une fenêtre
+trop petite avec un layout `Qt.AlignCenter` ne se comprime pas proprement :
+**les widgets se chevauchent visuellement**, sans erreur ni avertissement.
+
+Avant de figer une taille (`setFixedSize`, `setFixedHeight`...) sur un écran
+qui vient de recevoir `theme=` pour la première fois, mesurer le besoin réel
+plutôt que réutiliser l'ancienne valeur :
+```python
+win.show(); app.processEvents()
+print(win.layout().sizeHint())  # taille réellement nécessaire
+```
+Si la taille fixe existante est inférieure à ce `sizeHint()`, l'agrandir
+(avec une marge de confort) plutôt que de laisser un chevauchement.
 
 ## Ce qui reste hors de portée d'un linter
 

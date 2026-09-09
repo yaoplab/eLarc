@@ -37,6 +37,37 @@ La question des tons `surface_container` (secondaire, aussi corrigée) ne se
 posait même pas ici : `M3Card.ELEVATED` utilise `c.surface`, pas
 `c.surface_container` — deux bugs différents découverts dans la même session.
 
+## Le piège inverse (2026-09-09) : ajouter `theme=` casse un style qui marchait
+
+Corriger le bug ci-dessus sur un fichier existant en ajoutant juste `theme=`
+partout **peut introduire une régression visuelle silencieuse**, pas
+seulement réparer un style manquant. Trouvé sur `LarcSuperviseur/views/login.py` :
+
+- `M3Label._update_style()` fait `self.setStyleSheet(f"M3Label {{ ... }}")`
+  dès que `theme=` est posé — un style **posé directement sur le widget**.
+  Un ancien QSS parent du type `QLabel#hdrTitle {{ font-weight: bold; }}`
+  (souvent posé une fois sur la fenêtre via un `QssHelper.*_qss()`) est
+  **écrasé** par ce style local, silencieusement — pas d'erreur, pas
+  d'avertissement, juste un titre qui n'est plus en gras.
+- Le style par défaut de `M3Label` est `style="body_medium"` (14px, normal) —
+  si l'ancien QSS donnait un rôle typographique différent (titre, libellé),
+  poser `theme=` sans `style=` fait perdre ce rôle.
+
+**La bonne pratique — ne jamais mélanger les deux mécanismes :**
+- Toujours passer `style=` (`title_large`, `body_medium`, `label_medium`...
+  voir `phibuilder/theme/typo.py` pour la liste) pour le rôle typographique.
+- Utiliser `.set_color(couleur)` pour la couleur sémantique (`p.text_strong`,
+  `p.text_soft`, `p.error`...) — ça préserve le `style=` déjà posé,
+  contrairement à un `setStyleSheet("color: ...")` qui l'écraserait à son tour.
+- Ne **plus** compter sur un QSS parent par nom d'objet (`#hdrTitle`, etc.)
+  pour styliser un widget `phibuilder` une fois que `theme=` lui est passé —
+  ce mécanisme ne fonctionne que tant que le widget est resté sans style
+  (c'est-à-dire cassé). Idem pour `M3Button` : utiliser `variant=`/
+  `accent_color=`, pas un QSS `#objectName { background: ... }` sur l'ancêtre.
+- **Vérifier visuellement avant/après** (capture d'écran) tout ajout de
+  `theme=` sur du code existant qui avait déjà un style par QSS ancêtre —
+  ce n'est jamais un changement purement mécanique.
+
 ## Correspondances universelles (web ↔ Qt/PySide6)
 
 | Principe | Web (CSS/JS) | Qt/PySide6 (LARC) |
