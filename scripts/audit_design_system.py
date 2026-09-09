@@ -730,6 +730,21 @@ class AuditeurDesignSystem:
                 print(f"      ... et {len(items) - 3} autres")
 
 
+def _issues_relative_to_root(auditeur: 'AuditeurDesignSystem', issues: list[dict]) -> list[dict]:
+    """Copie superficielle des issues avec 'fichier' relativise a ROOT.
+
+    Utilise uniquement pour les cles de baseline (--baseline/--check-baseline) :
+    des chemins absolus rendraient la baseline invalide des que le repo change
+    d'emplacement (worktree -> chemin final). Le reste du pipeline (auto-fix,
+    rapports, CSV) continue d'utiliser le chemin absolu d'origine dans
+    `auditeur.issues`, inchange.
+    """
+    return [
+        {**iss, 'fichier': auditeur._rel_path(iss['fichier'])}
+        for iss in issues
+    ]
+
+
 # =========================================================================
 # POINT D'ENTREE
 # =========================================================================
@@ -780,17 +795,18 @@ def main():
     issues = auditeur.scanner(racines)
 
     if args.baseline:
-        save_baseline(BASELINE_PATH, issues)
+        baseline_issues = _issues_relative_to_root(auditeur, issues)
+        save_baseline(BASELINE_PATH, baseline_issues)
         print(f"[baseline] {len(issues)} violation(s) figee(s) dans {BASELINE_PATH}")
         return 0
 
     if args.check_baseline:
         baseline = load_baseline(BASELINE_PATH)
-        new, known = split_new(issues, baseline)
+        baseline_issues = _issues_relative_to_root(auditeur, issues)
+        new, known = split_new(baseline_issues, baseline)
         print(f"audit_design_system: {len(new)} nouvelle(s) violation(s), {len(known)} connue(s) (baseline, non bloquant)")
         for iss in new:
-            rel = auditeur._rel_path(iss['fichier'])
-            print(f"  [{iss['categorie']}] {rel}:{iss['ligne']}  {iss['code']}")
+            print(f"  [{iss['categorie']}] {iss['fichier']}:{iss['ligne']}  {iss['code']}")
         return 1 if new else 0
 
     if not args.quiet:

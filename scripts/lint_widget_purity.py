@@ -58,6 +58,16 @@ SUGGESTIONS = {
 INSTANTIATION_RE = re.compile(r'\b(' + '|'.join(SUGGESTIONS) + r')\s*\(')
 
 
+def _rel_to_root(filepath: Path) -> str:
+    """Chemin relatif a ROOT pour que les cles de baseline survivent un
+    deplacement du repo (worktree -> emplacement final). Retombe sur le
+    chemin tel quel si le fichier est hors ROOT (ex: fichiers de test tmp_path)."""
+    try:
+        return str(filepath.resolve().relative_to(ROOT))
+    except ValueError:
+        return str(filepath)
+
+
 def find_violations(filepath: Path) -> list[dict]:
     results = []
     try:
@@ -75,9 +85,11 @@ def find_violations(filepath: Path) -> list[dict]:
         if not m:
             continue
         widget = m.group(1)
+        if widget in ALLOWED:
+            continue  # exceptions CLAUDE.md -- defense en profondeur (deja hors SUGGESTIONS)
         suggestion = SUGGESTIONS.get(widget)
         results.append({
-            "file": str(filepath),
+            "file": _rel_to_root(filepath),
             "line": lineno,
             "rule": "W1",
             "widget": widget,
