@@ -1,5 +1,6 @@
 from typing import Optional
 
+from larccommon.design_system import ds
 from larccommon.icons import icon as md3_icon
 from larccommon.l10n import _
 from phibuilder.widgets import M3Menu, M3TableWidget
@@ -122,7 +123,7 @@ class EventActions:
     def get_context_menu(self, event_id: int, parent=None) -> M3Menu:
         event = self.get_event_by_id(event_id)
         is_validated = event is not None and event.get("validated_by") is not None
-        menu = M3Menu(parent)
+        menu = M3Menu(theme=theme_manager.phi_theme, parent=parent)
         p = theme_manager.palette
         menu.addAction(
             md3_icon("edit", color=p.text_strong, size=ds.icon_sm),
