@@ -51,3 +51,24 @@ def test_toggle_validation_mock_db(qtbot, mock_db, mock_session, mock_theme):
     assert updates, "aucun UPDATE student_event émis"
     assert updates[0][1] == (1, 42)  # session.user_id + event_id
     assert mock_db.server_conn.commit.called
+
+
+def test_edit_event_dialog_no_theme_warning(qtbot, mock_db, mock_session, mock_theme, recwarn, monkeypatch):
+    from datetime import datetime
+    from PySide6.QtWidgets import QDialog
+
+    monkeypatch.setattr(QDialog, "exec", lambda self: QDialog.Rejected)
+
+    w = _make_window(qtbot, mock_db, mock_session)
+    fake = mock_db.server_conn.cursor.return_value
+    fake.fetchone.return_value = (
+        "Absence cours", None, datetime(2026, 7, 8, 8, 30),
+        "Salle de cours", "Maths", "", "Dupont Jean",
+    )
+    fake.fetchall.return_value = [("Absence cours",), ("Sortie",)]
+    recwarn.clear()
+
+    w._edit_event(42)
+
+    theme_warnings = [x for x in recwarn.list if "cree sans theme=" in str(x.message)]
+    assert not theme_warnings, [str(x.message) for x in theme_warnings]

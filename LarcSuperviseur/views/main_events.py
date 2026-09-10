@@ -18,6 +18,7 @@ from phibuilder.widgets import (
     M3TabWidget,
     M3TextEdit,
 )
+from phibuilder.widgets.button import ButtonVariant
 from PySide6.QtCharts import (
     QBarCategoryAxis,
     QBarSeries,
@@ -162,7 +163,8 @@ class EventsMixin:
             f"<b>{student_name}</b> — {etype}<br>"
             f"<span style='color:{p.text_disabled};font-size:{theme_manager.font_size(10)}px;'>"
             f"{e_at.strftime('%d/%m/%Y %H:%M') if e_at else ''} | {lieu or ''}"
-            f"{' | ' + subject if subject else ''}</span>"
+            f"{' | ' + subject if subject else ''}</span>",
+            theme=theme_manager.phi_theme,
         )
         info.setWordWrap(True)
         info.setTextFormat(Qt.RichText)
@@ -177,8 +179,8 @@ class EventsMixin:
             selector.preselect(existing_node)
         layout.addWidget(selector, 1)
 
-        note_label = M3Label(_("event.edit_note"))
-        note_input = M3TextEdit()
+        note_label = M3Label(_("event.edit_note"), theme=theme_manager.phi_theme)
+        note_input = M3TextEdit(theme=theme_manager.phi_theme)
         note_input.setText(note or "")
         note_input.setMaximumHeight(ds.space_xxl + ds.space_lg)
         note_label.setVisible(existing_node is not None and EventTypeSelectorWidget.is_leaf(existing_node))
@@ -200,7 +202,7 @@ class EventsMixin:
         selector.type_confirmed.connect(on_type_confirmed)
 
         btn_row = QHBoxLayout()
-        save_btn = M3Button(_("event.save"))
+        save_btn = M3Button(_("event.save"), theme=theme_manager.phi_theme)
         save_btn.setStyleSheet(
             f"QPushButton {{ background: {p.primary}; color: {p.on_primary}; "
             f"border: none; border-radius: {theme_manager.design.radius}px; "
@@ -227,7 +229,7 @@ class EventsMixin:
             dlg.accept()
 
         save_btn.clicked.connect(on_save)
-        cancel_btn = M3Button(_("event.cancel"))
+        cancel_btn = M3Button(_("event.cancel"), theme=theme_manager.phi_theme, variant=ButtonVariant.OUTLINED)
         cancel_btn.clicked.connect(dlg.reject)
         btn_row.addStretch()
         btn_row.addWidget(save_btn)
@@ -263,7 +265,7 @@ class EventsMixin:
             return
         event = self._actions.get_event_by_id(eid)
         is_validated = event is not None and event.get("validated_by") is not None
-        menu = M3Menu(self)
+        menu = M3Menu(theme=theme_manager.phi_theme, parent=self)
         edit_action = menu.addAction(
             md3_icon(
                 "edit", color=theme_manager.palette.text_strong, size=ds.icon_sm
