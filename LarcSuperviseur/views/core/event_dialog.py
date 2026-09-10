@@ -3,6 +3,7 @@ from larccommon.dialogs import EventTypeSelectorWidget
 from larccommon.event_type_service import event_type_service, MemberType
 from larccommon.l10n import _
 from phibuilder.widgets import M3Button, M3Dialog, M3Label, M3TextEdit
+from phibuilder.widgets.button import ButtonVariant
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QHBoxLayout,
@@ -24,6 +25,8 @@ class EventEditDialog(M3Dialog):
         self._selected_node = None
         self.setWindowTitle(_("event_dialog.title").format(id=event_id))
         self.setMinimumSize(ds.window_width * 3 // 5, ds.window_height * 4 // 5)
+        p = theme_manager.palette
+        self.setStyleSheet(f"EventEditDialog {{ background-color: {p.surface}; border-radius: {ds.radius_lg}px; }}")
         self._setup_ui()
         self._load_event()
 
@@ -32,7 +35,7 @@ class EventEditDialog(M3Dialog):
         if not db.is_server_connected:
             return
 
-        self._info = M3Label()
+        self._info = M3Label(theme=theme_manager.phi_theme)
         self._info.setWordWrap(True)
         self._info.setTextFormat(Qt.RichText)
         layout.addWidget(self._info)
@@ -44,8 +47,8 @@ class EventEditDialog(M3Dialog):
         self._selector.type_confirmed.connect(self._on_type_confirmed)
         layout.addWidget(self._selector, 1)
 
-        self._note_label = M3Label(_("event_dialog.note"))
-        self._note_input = M3TextEdit()
+        self._note_label = M3Label(_("event_dialog.note"), theme=theme_manager.phi_theme)
+        self._note_input = M3TextEdit(theme=theme_manager.phi_theme)
         self._note_input.setMaximumHeight(ds.window_height * 3 // 20)
         self._note_input.setAccessibleName(_("event_dialog.note"))
         self._note_input.setToolTip(_("event.note_tooltip"))
@@ -57,14 +60,14 @@ class EventEditDialog(M3Dialog):
 
         p = theme_manager.palette
         btn_row = QHBoxLayout()
-        save_btn = M3Button(_("event_dialog.save_button"))
+        save_btn = M3Button(_("event_dialog.save_button"), theme=theme_manager.phi_theme)
         save_btn.setStyleSheet(
             f"QPushButton {{ background: {p.primary}; color: {p.on_primary}; "
             f"border: none; border-radius: {ds.radius_sm}px; "
             f"padding: {ds.space_xs}px {ds.space_md}px; font-weight: bold; }}"
         )
         save_btn.clicked.connect(self._save)
-        cancel_btn = M3Button(_("event_dialog.cancel_button"))
+        cancel_btn = M3Button(_("event_dialog.cancel_button"), theme=theme_manager.phi_theme, variant=ButtonVariant.OUTLINED)
         cancel_btn.clicked.connect(self.reject)
         btn_row.addStretch()
         btn_row.addWidget(save_btn)

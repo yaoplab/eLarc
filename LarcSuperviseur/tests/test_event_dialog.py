@@ -86,3 +86,30 @@ def test_save_updates_and_accepts(qtbot, mock_db, mock_session, mock_theme):
     updates = [c.args for c in fake.execute.call_args_list if "UPDATE student_event" in c.args[0]]
     assert updates[0][1] == ("Absence cours", "Justifiée", 42)
     assert mock_db.server_conn.commit.called
+
+
+def test_no_theme_warning(qtbot, mock_db, mock_session, mock_theme, recwarn):
+    fake = mock_db.server_conn.cursor.return_value
+    fake.fetchone.return_value = (
+        "Absence cours",
+        None,
+        datetime(2026, 7, 8, 8, 30),
+        "Salle de cours",
+        "Maths",
+        "",
+        "Dupont Jean",
+    )
+    fake.fetchall.return_value = [("Absence cours",), ("Sortie",)]
+    recwarn.clear()
+
+    _make_dlg(qtbot, mock_db)
+
+    # Only warnings raised from LarcSuperviseur's own widget sites are in scope here.
+    # EventTypeSelectorWidget (LarcCommon/larccommon/dialogs/event_type_selector.py)
+    # has its own separate, out-of-scope theme= defects tracked elsewhere.
+    theme_warnings = [
+        x
+        for x in recwarn.list
+        if "cree sans theme=" in str(x.message) and "LarcSuperviseur" in str(x.filename)
+    ]
+    assert not theme_warnings, [str(x.message) for x in theme_warnings]
