@@ -55,6 +55,8 @@ def test_toggle_validation_mock_db(qtbot, mock_db, mock_session, mock_theme):
 
 def test_edit_event_dialog_no_theme_warning(qtbot, mock_db, mock_session, mock_theme, recwarn, monkeypatch):
     from datetime import datetime
+    import warnings
+
     from PySide6.QtWidgets import QDialog
 
     monkeypatch.setattr(QDialog, "exec", lambda self: QDialog.Rejected)
@@ -68,7 +70,84 @@ def test_edit_event_dialog_no_theme_warning(qtbot, mock_db, mock_session, mock_t
     fake.fetchall.return_value = [("Absence cours",), ("Sortie",)]
     recwarn.clear()
 
+    # pytest's recwarn fixture uses the "default" warning filter, which dedups
+    # by (message, category, module, lineno) — NOT reset by recwarn.clear()
+    # (only pytest's own captured list is cleared). _make_window() above builds
+    # SidebarWidget (LarcCommon, out-of-scope), whose M3Button already fired the
+    # "cree sans theme=" warning from button.py's _update_style() BEFORE
+    # recwarn.clear(). Without "always", a later M3Button warning from this
+    # exact same call site — e.g. a regression on main_events.py's own
+    # save_btn/cancel_btn — would be silently deduped against that earlier
+    # warning and never reach recwarn.list. See commit 7be90be for the
+    # identical mechanism found in test_event_dialog.py.
+    warnings.simplefilter("always")
+
     w._edit_event(42)
+
+    # A plain "no warnings at all" assertion does NOT hold here: _edit_event
+    # constructs EventTypeSelectorWidget (LarcCommon/larccommon/dialogs/
+    # event_type_selector.py), which unconditionally emits exactly 3 known,
+    # out-of-scope warnings (one M3TextField from _search, one M3Label from
+    # _badge_text, one M3Button from _confirm_btn) — tracked separately, not
+    # part of this task. main_events.py's own widget sites in _edit_event
+    # (info, note_label, note_input, save_btn, cancel_btn) all pass
+    # theme=theme_manager.phi_theme and must contribute 0 warnings on top of
+    # that baseline. Verified empirically: with a plain "not theme_warnings"
+    # assertion, this test fails even on the fully-fixed code because of
+    # EventTypeSelectorWidget's baseline — so the multiset comparison below is
+    # required, mirroring test_event_dialog.py::test_no_theme_warning.
+    theme_warnings = [str(x.message) for x in recwarn.list if "cree sans theme=" in str(x.message)]
+    classes = sorted(msg.split()[0] for msg in theme_warnings)
+    assert classes == ["M3Button", "M3Label", "M3TextField"], theme_warnings
+
+
+def test_show_event_context_menu_no_theme_warning(qtbot, mock_db, mock_session, mock_theme, recwarn, monkeypatch):
+    import warnings
+    from unittest.mock import MagicMock
+
+    from PySide6.QtCore import QPoint
+    from phibuilder.widgets import M3Menu
+
+    # M3Menu extends QMenu, not QDialog — patch M3Menu.exec (not QDialog.exec,
+    # which the other tests in this file patch) to avoid a blocking modal.
+    monkeypatch.setattr(M3Menu, "exec", lambda self, *a, **kw: None)
+
+    w = _make_window(qtbot, mock_db, mock_session)
+
+    # A MagicMock table (same pattern as
+    # TestEventActionsGetEventIdFromTable.test_returns_id_from_selected_row in
+    # test_event_actions.py) — a real M3TableWidget's setCurrentCell() does not
+    # reliably update currentRow() off-screen/headless in this environment, so
+    # a real widget makes _get_event_id_from_table short-circuit on
+    # `if not eid: return` before ever reaching the M3Menu construction this
+    # test targets. table.viewport().mapToGlobal(pos) on a MagicMock resolves
+    # harmlessly since menu.exec is patched above and never inspects it.
+    table = MagicMock()
+    table.currentRow.return_value = 0
+    item = MagicMock()
+    item.text.return_value = "42"
+    table.item.return_value = item
+
+    # Avoid depending on DB cursor/description plumbing: EventActions.get_event_by_id
+    # is a thin DB read whose exact shape is exercised elsewhere (test_event_actions.py);
+    # here we only need _show_event_context_menu to not short-circuit before
+    # `menu = M3Menu(theme=theme_manager.phi_theme, parent=self)`.
+    monkeypatch.setattr(w._actions, "get_event_by_id", lambda eid: None)
+
+    recwarn.clear()
+
+    # Same dedup pitfall as test_edit_event_dialog_no_theme_warning above, but
+    # for a different call site: TopBar (built during _make_window, as part of
+    # MainWindow.__init__) constructs self._theme_menu = M3Menu() with NO
+    # theme= (views/top_bar.py) — an out-of-scope, pre-existing defect not
+    # part of this branch's fix list. That M3Menu() firing during window
+    # construction, before recwarn.clear(), would silently dedup-suppress a
+    # genuine regression on main_events.py's own
+    # `menu = M3Menu(theme=theme_manager.phi_theme, parent=self)` site without
+    # "always" (identical mechanism to commit 7be90be).
+    warnings.simplefilter("always")
+
+    w._show_event_context_menu(table, QPoint(0, 0))
 
     theme_warnings = [x for x in recwarn.list if "cree sans theme=" in str(x.message)]
     assert not theme_warnings, [str(x.message) for x in theme_warnings]
