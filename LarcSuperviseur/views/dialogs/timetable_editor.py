@@ -35,6 +35,8 @@ class TimetableEditor(M3Dialog):
         self._term_id = term_id
         self.setWindowTitle(_("timetable.title").format(label=class_label))
         self.setMinimumSize(ds.window_width * 2 // 3, ds.window_height * 5 // 8)  # 800×500
+        p = theme_manager.palette
+        self.setStyleSheet(f"TimetableEditor {{ background-color: {p.surface}; border-radius: {ds.radius_lg}px; }}")
         self._init_ui()
         self._load_data()
 
@@ -44,7 +46,7 @@ class TimetableEditor(M3Dialog):
         layout = QVBoxLayout(self)
 
         # Grille
-        self._tt_grid = M3TableWidget()
+        self._tt_grid = M3TableWidget(theme=theme_manager.phi_theme)
         self._tt_grid.setAlternatingRowColors(False)
         self._tt_grid.horizontalHeader().setStretchLastSection(True)
         self._tt_grid.setEditTriggers(M3TableWidget.NoEditTriggers)
@@ -52,7 +54,7 @@ class TimetableEditor(M3Dialog):
 
         # Boutons
         btn_row = QHBoxLayout()
-        save_btn = M3Button(_("timetable.save_button"))
+        save_btn = M3Button(_("timetable.save_button"), theme=theme_manager.phi_theme)
         save_btn.setMinimumHeight(ds.space_lg + ds.space_xxs)  # 36px
         save_btn.setStyleSheet(
             f"QPushButton {{ background: {p.primary}; color: {p.on_primary}; "
@@ -117,7 +119,7 @@ class TimetableEditor(M3Dialog):
                         self._tt_grid.setItem(row, 0, time_item)
 
                     # Combo matière
-                    combo = M3ComboBox()
+                    combo = M3ComboBox(theme=theme_manager.phi_theme)
                     combo.addItems(self._subjects)
                     current_subj = self._cht_map.get((day_idx, tp_id), "")
                     idx = combo.findText(current_subj)
