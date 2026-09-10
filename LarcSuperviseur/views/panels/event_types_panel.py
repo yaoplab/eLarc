@@ -50,20 +50,20 @@ class EventTypeEditDialog(ThemedDialog):
         outer.setSpacing(ds.space_md)
         outer.setContentsMargins(ds.space_lg, ds.space_lg, ds.space_lg, ds.space_lg)
 
-        card = M3Card(variant=CardVariant.ELEVATED, parent=self)
+        card = M3Card(theme=theme_manager.phi_theme, variant=CardVariant.ELEVATED, parent=self)
         cl = card.content_layout()
         cl.setSpacing(ds.space_sm)
 
-        cl.addWidget(M3Label(_("event_types.label_label"), style="label_small"))
-        self._label = M3TextField(placeholder=_("event_types.label_label"))
+        cl.addWidget(M3Label(_("event_types.label_label"), theme=theme_manager.phi_theme, style="label_small"))
+        self._label = M3TextField(placeholder=_("event_types.label_label"), theme=theme_manager.phi_theme)
         self._label.setFixedHeight(ds.field_height)
         self._label.setStyleSheet(ds.flat_input_qss())
         if mode == "rename":
             self._label.setText(node.get("label", ""))
         cl.addWidget(self._label)
 
-        cl.addWidget(M3Label(_("event_types.code_label"), style="label_small"))
-        self._code = M3TextField(placeholder=_("event_types.code_auto"))
+        cl.addWidget(M3Label(_("event_types.code_label"), theme=theme_manager.phi_theme, style="label_small"))
+        self._code = M3TextField(placeholder=_("event_types.code_auto"), theme=theme_manager.phi_theme)
         self._code.setFixedHeight(ds.field_height)
         self._code.setStyleSheet(ds.flat_input_qss())
         if mode == "rename":
@@ -71,16 +71,16 @@ class EventTypeEditDialog(ThemedDialog):
         cl.addWidget(self._code)
 
         if mode == "create":
-            cl.addWidget(M3Label(_("event_types.parent_label"), style="label_small"))
-            self._parent = M3ComboBox()
+            cl.addWidget(M3Label(_("event_types.parent_label"), theme=theme_manager.phi_theme, style="label_small"))
+            self._parent = M3ComboBox(theme=theme_manager.phi_theme)
             self._parent.setFixedHeight(ds.field_height)
             self._parent.addItem("—", None)
             for r in self._roots:
                 self._parent.addItem(("    " * (r.get("depth", 0))) + (r.get("label") or ""), r.get("id"))
             cl.addWidget(self._parent)
 
-            cl.addWidget(M3Label(_("event_types.absence_scope_label"), style="label_small"))
-            self._scope = M3ComboBox()
+            cl.addWidget(M3Label(_("event_types.absence_scope_label"), theme=theme_manager.phi_theme, style="label_small"))
+            self._scope = M3ComboBox(theme=theme_manager.phi_theme)
             self._scope.setFixedHeight(ds.field_height)
             self._scope.addItem(_("event_types.absence_scope_none"), None)
             self._scope.addItem("École", "ecole")
@@ -88,7 +88,7 @@ class EventTypeEditDialog(ThemedDialog):
             cl.addWidget(self._scope)
 
         self._buttons = M3DialogButtonBox(
-            M3DialogButtonBox.Ok | M3DialogButtonBox.Cancel, parent=self
+            M3DialogButtonBox.Ok | M3DialogButtonBox.Cancel, theme=theme_manager.phi_theme, parent=self
         )
         self._buttons.accepted.connect(self._validate_and_save)
         self._buttons.rejected.connect(self.reject)
@@ -142,16 +142,16 @@ class EventTypesPanel(QWidget):
         outer.setContentsMargins(ds.space_lg, ds.space_lg, ds.space_lg, ds.space_lg)
         outer.setSpacing(ds.space_md)
 
-        outer.addWidget(M3Label(_("event_types.title"), style="title_medium"))
+        outer.addWidget(M3Label(_("event_types.title"), theme=theme_manager.phi_theme, style="title_medium"))
 
         bar = QHBoxLayout()
         bar.setSpacing(ds.space_sm)
-        self._btn_add_root = M3Button(_("event_types.add_root"), variant=ButtonVariant.FILLED)
-        self._btn_add_child = M3Button(_("event_types.add_child"), variant=ButtonVariant.TONAL)
-        self._btn_rename = M3Button(_("event_types.rename"), variant=ButtonVariant.TONAL)
-        self._btn_disable = M3Button(_("event_types.disable"), variant=ButtonVariant.TONAL)
-        self._btn_up = M3Button(_("event_types.reorder_up"), variant=ButtonVariant.TEXT)
-        self._btn_down = M3Button(_("event_types.reorder_down"), variant=ButtonVariant.TEXT)
+        self._btn_add_root = M3Button(_("event_types.add_root"), theme=theme_manager.phi_theme, variant=ButtonVariant.FILLED)
+        self._btn_add_child = M3Button(_("event_types.add_child"), theme=theme_manager.phi_theme, variant=ButtonVariant.TONAL)
+        self._btn_rename = M3Button(_("event_types.rename"), theme=theme_manager.phi_theme, variant=ButtonVariant.TONAL)
+        self._btn_disable = M3Button(_("event_types.disable"), theme=theme_manager.phi_theme, variant=ButtonVariant.TONAL)
+        self._btn_up = M3Button(_("event_types.reorder_up"), theme=theme_manager.phi_theme, variant=ButtonVariant.TEXT)
+        self._btn_down = M3Button(_("event_types.reorder_down"), theme=theme_manager.phi_theme, variant=ButtonVariant.TEXT)
         for b in (self._btn_add_root, self._btn_add_child, self._btn_rename,
                   self._btn_disable, self._btn_up, self._btn_down):
             b.setMinimumHeight(ds.button_height)
@@ -159,7 +159,7 @@ class EventTypesPanel(QWidget):
         bar.addStretch()
         outer.addLayout(bar)
 
-        self._table = M3TableWidget(0, 4)
+        self._table = M3TableWidget(0, 4, theme=theme_manager.phi_theme)
         self._table.set_headers([_("event_types.code_label"), _("event_types.label_label"),
                                  _("event_types.usage"), _("event_types.state_active")])
         self._table.setEditTriggers(M3TableWidget.NoEditTriggers)
