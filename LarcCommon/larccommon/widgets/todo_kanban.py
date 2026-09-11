@@ -185,7 +185,7 @@ class TodoKanban(QWidget):
             tasks = self._tasks.get(key, [])
             self._count_labels[key].setText(str(len(tasks)))
             for task in tasks:
-                card = M3Card(variant=CardVariant.ELEVATED)
+                card = M3Card(theme=theme_manager.phi_theme, variant=CardVariant.ELEVATED)
                 card.setStyleSheet(
                     f"M3Card {{ background: {p.surface}; "
                     f"border: 1px solid {p.outline_variant}; "

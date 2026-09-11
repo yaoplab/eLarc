@@ -100,7 +100,7 @@ class EventTypeSelectorWidget(QWidget):
         self._colorize_root_item()
         layout.addWidget(self._tree, 1)
 
-        self._badge = M3Card(variant=CardVariant.FILLED, parent=self)
+        self._badge = M3Card(theme=theme_manager.phi_theme, variant=CardVariant.FILLED, parent=self)
         badge_layout = self._badge.content_layout()
         badge_layout.setContentsMargins(ds.space_md, ds.space_xs, ds.space_md, ds.space_xs)
         self._badge_text = M3Label("", theme=theme_manager.phi_theme, style="body_medium")
@@ -113,6 +113,11 @@ class EventTypeSelectorWidget(QWidget):
         self._confirm_btn.setEnabled(False)
         self._confirm_btn.clicked.connect(self._on_confirm_clicked)
         layout.addWidget(self._confirm_btn)
+
+        # Qt donne le focus initial au premier widget "tab-focusable" du layout à l'ouverture
+        # (les chips le sont, pour l'accessibilité clavier) — sans ceci, le 1er chip afficherait
+        # son anneau de focus au chargement, sans aucune interaction utilisateur.
+        self._search.setFocus()
 
     @staticmethod
     def is_leaf(node: EventTypeNode) -> bool:

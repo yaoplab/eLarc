@@ -163,7 +163,7 @@ class StudentForm(ThemedWidget):
         content.setSpacing(ds.space_md)
 
         # ── Panneau gauche : tableau des resultats ──
-        self._results_card = M3Card(variant=CardVariant.ELEVATED, parent=self)
+        self._results_card = M3Card(theme=theme_manager.phi_theme, variant=CardVariant.ELEVATED, parent=self)
         rc_layout = self._results_card.content_layout()
         rc_layout.setContentsMargins(ds.space_xs, ds.space_xs, ds.space_xs, ds.space_xs)
 
@@ -229,7 +229,7 @@ class StudentForm(ThemedWidget):
         content.addWidget(self._results_card, 3)
 
         # ── Panneau droit : detail eleve ──
-        self._detail_panel = M3Card(variant=CardVariant.ELEVATED, parent=self)
+        self._detail_panel = M3Card(theme=theme_manager.phi_theme, variant=CardVariant.ELEVATED, parent=self)
         dp_layout = self._detail_panel.content_layout()
         dp_layout.setContentsMargins(ds.space_md, ds.space_md, ds.space_md, ds.space_md)
         dp_layout.setSpacing(ds.space_md)
@@ -829,7 +829,7 @@ class StudentEditDialog(ThemedDialog):
 
         def _section_card(title: str, icon_name: str):
             """Carte de section avec icône + titre + séparateur."""
-            card = M3Card(variant=CardVariant.ELEVATED)
+            card = M3Card(theme=theme_manager.phi_theme, variant=CardVariant.ELEVATED)
             card.setStyleSheet(
                 f"M3Card {{ background: {ds.p.surface}; "
                 f"border: 1px solid {ds.p.outline_variant}; "
@@ -2394,7 +2394,7 @@ class StudentCreateDialog(ThemedDialog):
         # ═══════════════════════════════════════════════════════════
 
         def _section_card(title: str, icon_name: str):
-            card = M3Card(variant=CardVariant.ELEVATED)
+            card = M3Card(theme=theme_manager.phi_theme, variant=CardVariant.ELEVATED)
             card.setStyleSheet(
                 f"M3Card {{ background: {ds.p.surface}; "
                 f"border: 1px solid {ds.p.outline_variant}; "

@@ -95,8 +95,8 @@ larccommon/
   └── l10n/             ← Translator + fr.json/en.json (~662 clés)
 ```
 
-### Thèmes (5)
-océan (clair/bleu), forêt (clair/vert), nuit (sombre/violet), lave (sombre/rouge), sable (clair/ambre)
+### Thèmes (4)
+`blue` (clair, bleu marque), `dark` (sombre), `sobre` (clair, neutre bas-contraste), `contrast` (clair, contraste maximal) — définis dans `THEMES_CONFIG`/`_THEME_PALETTES` (`LarcCommon/larccommon/theme.py`).
 
 ## Conventions de code
 

@@ -29,19 +29,74 @@ repos:
           D1=HTML color, J7=WA_StyledBackground, D3=hex hardcodés,
           D4=contraste, D5=text_soft inline, D6=theme_changed.connect,
           D7=complétude _restyle()
-        entry: python C:/projets/scripts/lint_d1_color_checker.py --rule D1+J7+D3+D4+D5+D6+D7 --fix-only
+        entry: python D:/projets/scripts/lint_d1_color_checker.py --rule D1+J7+D3+D4+D5+D6+D7 --fix-only
         language: system
         files: \.py$
         stages: [pre-commit]
         verbose: true
         pass_filenames: false
       - id: lint-rlinter
-        name: 🔬 Linter QSS Larc (R + Q1+Q3 + Q2 — zéro hardcoding)
+        name: 🔬 Linter QSS Larc (R + Q1+Q3 + Q2 — baseline, zéro NOUVEAU hardcoding)
         description: >
           Vérifie le ZERO hardcoding pixels (Sous-système R) et la règle Q1+Q3
           (tables interactives sans curseur main ni eventFilter) du skill
-          design-system-larc. Retourne 1 si une violation est détectée.
-        entry: python C:/projets/scripts/lint_qss_hardcoding.py --fix-only
+          design-system-larc. Mode baseline (2026-09-09, ratchet comme
+          lint_widget_purity/audit_design_system) : la dette pré-existante
+          (29 violations connues) reste visible mais ne bloque plus — seule
+          une violation absente de la baseline retourne 1.
+        entry: python D:/projets/scripts/lint_qss_hardcoding.py --check-baseline
+        language: system
+        files: \.py$
+        stages: [pre-commit]
+        verbose: true
+        pass_filenames: false
+      - id: lint-ui-quality
+        name: ✨ Finitions UI (V1-V8)
+        description: Emojis au lieu d'icônes MD3, setMinimumSize hardcodé, etc.
+        entry: python D:/projets/scripts/lint_ui_quality.py
+        language: system
+        files: \.py$
+        stages: [pre-commit]
+        verbose: true
+        pass_filenames: false
+      - id: lint-palette-contrast
+        name: 🌓 Contraste palette (D8)
+        description: Contraste texte/fond WCAG des 4 thèmes
+        entry: python D:/projets/scripts/lint_palette_contrast.py
+        language: system
+        files: larccommon/theme\.py$
+        stages: [pre-commit]
+        verbose: true
+        pass_filenames: false
+      - id: lint-safe-slot
+        name: 🛡️ @safe_slot manquant
+        entry: python D:/projets/scripts/lint_safe_slot.py --dir .
+        language: system
+        files: \.py$
+        stages: [pre-commit]
+        verbose: true
+        pass_filenames: false
+      - id: lint-file-size
+        name: 📏 Fichiers > 1000 lignes
+        entry: python D:/projets/scripts/lint_file_size.py --dir .
+        language: system
+        files: \.py$
+        stages: [pre-commit]
+        verbose: true
+        pass_filenames: false
+      - id: lint-widget-purity
+        name: 🧩 Widgets phibuilder uniquement (W1)
+        description: RE GLE ABSOLUE CLAUDE.md -- pas de PySide6.QtWidgets direct
+        entry: python D:/projets/scripts/lint_widget_purity.py --check-baseline
+        language: system
+        files: \.py$
+        stages: [pre-commit]
+        verbose: true
+        pass_filenames: false
+      - id: audit-design-system-baseline
+        name: 📐 Audit design system (baseline)
+        description: Hardcodings P0/P1/P2 -- bloque seulement le NOUVEAU
+        entry: python D:/projets/scripts/audit_design_system.py --check-baseline
         language: system
         files: \.py$
         stages: [pre-commit]

@@ -15,6 +15,7 @@ Lancer les linters PySide6 et vérifier les règles manuelles.
 ```bash
 python D:/projets/scripts/lint_safe_slot.py --dir .
 python D:/projets/scripts/lint_file_size.py --dir . --stats
+python D:/projets/scripts/lint_widget_purity.py --check-baseline
 ```
 
 2. Vérifier manuellement les règles sans linter :
@@ -22,6 +23,10 @@ python D:/projets/scripts/lint_file_size.py --dir . --stats
    - **D2** : Signaux cross-thread → `Signal` + `@Slot()` avec `QThread`
    - **B3** : Dialogue fermé avant d'en ouvrir un nouveau
    - **B4** : Dialogues en lazy init (pas dans `__init__`)
+   - **E1** : Widget phibuilder construit sans `theme=` → avertissement `UserWarning`
+     depuis 2026-09-08 (voir `LarcCommon/phibuilder/widgets/*.py`). Si un test/script
+     émet ce warning, c'est un écran non stylé — corriger en ajoutant
+     `theme=theme_manager.phi_theme`, ne jamais supprimer le warning.
 
 3. Vérifier la règle "pas de `theme=phi`" :
 ```bash

@@ -29,6 +29,12 @@ class M3NavigationBar(QFrame):
         self._update_style()
     def _update_style(self):
         if self._theme is None:
+            import warnings
+            warnings.warn(
+                f"{type(self).__name__} cree sans theme= -- aucun style applique. "
+                f"Passer theme=theme_manager.phi_theme.",
+                stacklevel=2,
+            )
             return
         c, t, s = self._theme.colors, self._theme.typo, self._theme.spacing
         for i, btn in enumerate(self._buttons):
@@ -82,6 +88,12 @@ class M3Sidebar(QFrame):
         self._update_style()
     def _update_style(self):
         if self._theme is None:
+            import warnings
+            warnings.warn(
+                f"{type(self).__name__} cree sans theme= -- aucun style applique. "
+                f"Passer theme=theme_manager.phi_theme.",
+                stacklevel=2,
+            )
             return
         c, t, s = self._theme.colors, self._theme.typo, self._theme.spacing
         for i, btn in enumerate(self._buttons):

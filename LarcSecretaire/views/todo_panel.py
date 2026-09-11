@@ -281,7 +281,7 @@ class TodoPanel(QWidget):
             tasks = self._tasks.get(status_key, [])
             self._count_labels[status_key].setText(str(len(tasks)))
             for task in tasks:
-                card = M3Card(variant=CardVariant.ELEVATED)
+                card = M3Card(theme=theme_manager.phi_theme, variant=CardVariant.ELEVATED)
                 card.setStyleSheet(
                     f"M3Card {{ background: {p.surface}; border: 1px solid {p.outline_variant}; "
                     f"border-radius: {ds.radius_sm}px; }}")

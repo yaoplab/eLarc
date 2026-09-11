@@ -21,6 +21,7 @@ from larccommon.design_system import ds
 from larccommon.l10n import _
 from larccommon.widgets.file_viewer import FileViewer
 from larccommon.widgets.table_settings import TableSettings
+from LarcSecretaire.common.theme import theme_manager
 from phibuilder.widgets import (
     M3Button,
     M3Card,
@@ -696,7 +697,7 @@ class _Page(M3Frame):
         dl.setContentsMargins(ds.space_sm, ds.space_sm, ds.space_sm, ds.space_sm)
         dl.setSpacing(ds.space_sm)
 
-        self._detail_card = M3Card(variant=CardVariant.ELEVATED)
+        self._detail_card = M3Card(theme=theme_manager.phi_theme, variant=CardVariant.ELEVATED)
         dcl = self._detail_card.content_layout()
         dcl.setSpacing(ds.space_md)
         self._detail_title = M3Label(_("dossier.detail_title"), style="title_small")
@@ -725,7 +726,7 @@ class _Page(M3Frame):
 
         # Fiche sante (medicale uniquement)
         if self._key == "medicale":
-            health_card = M3Card(variant=CardVariant.ELEVATED)
+            health_card = M3Card(theme=theme_manager.phi_theme, variant=CardVariant.ELEVATED)
             hcl = health_card.content_layout()
             hcl.setSpacing(ds.space_sm)
             hcl.addWidget(M3Label(_("dossier.health_fiche"), style="title_small"))
