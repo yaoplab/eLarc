@@ -74,7 +74,7 @@ class TopBar(QFrame):
         row1.addStretch()
 
         self._network_label = M3Label()
-        self._update_network_label()
+        self._update_style()
         row1.addWidget(self._network_label)
 
         self._theme_btn = M3Button()
@@ -246,9 +246,9 @@ class TopBar(QFrame):
         self._term_label.setText(f"— {t}" if t else "")
 
     def update_network(self):
-        self._update_network_label()
+        self._update_style()
 
-    def _update_network_label(self):
+    def _update_style(self):
         intranet_ok, internet_ok = detect_network()
         p = theme_manager.palette
         s = theme_manager.font_size
@@ -329,6 +329,7 @@ class TopBar(QFrame):
 
     # ── Réapplication du style après changement de thème ────────────────
 
+    @safe_slot("TopBar.restyle")
     def restyle(self):
         p = theme_manager.palette
         s = theme_manager.font_size
@@ -352,7 +353,7 @@ class TopBar(QFrame):
         self._loading_label.setStyleSheet(
             f"font-size: {s(13)}px; color: {p.primary}; font-weight: bold;"
         )
-        self._update_network_label()
+        self._update_style()
         for action, icon_name, key in self._theme_menu_actions:
             pal = theme_manager.get_palette(key)
             action.setIcon(
