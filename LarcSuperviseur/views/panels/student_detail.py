@@ -102,6 +102,15 @@ class StudentDetail(ThemedWidget):
             QLabel#sd_period_val {{
                 font-size: {s(24)}px; font-weight: bold; color: {p.text_strong};
             }}
+            QLabel#sd_name_lbl {{
+                font-size: {s(18)}px; font-weight: bold; color: {p.text_strong}; border: none;
+            }}
+            QLabel#sd_class_lbl {{
+                font-size: {s(ds.font_label_lg)}px; color: {p.text_strong}; border: none;
+            }}
+            QLabel#sd_id_lbl {{
+                font-size: {s(ds.font_label_sm)}px; color: {p.text_strong}; border: none;
+            }}
         """
 
     @safe_slot("StudentDetail._restyle_all")
@@ -150,18 +159,15 @@ class StudentDetail(ThemedWidget):
         identity.setSpacing(ds.space_xxs)  # 4px — Q22f
 
         self._sd_name_lbl = QLabel("—")
-        self._sd_name_lbl.setStyleSheet(
-            f"font-size: {s(18)}px; font-weight: bold; color: {p.text_strong}; border: none;")
+        self._sd_name_lbl.setObjectName("sd_name_lbl")
         identity.addWidget(self._sd_name_lbl)  # Q22c
 
         self._sd_class_lbl = QLabel("—")
-        self._sd_class_lbl.setStyleSheet(
-            f"font-size: {s(ds.font_label_lg)}px; color: {p.text_strong}; border: none;")
+        self._sd_class_lbl.setObjectName("sd_class_lbl")
         identity.addWidget(self._sd_class_lbl)  # Q22d
 
         self._sd_id_lbl = QLabel("—")
-        self._sd_id_lbl.setStyleSheet(
-            f"font-size: {s(ds.font_label_sm)}px; color: {p.text_strong}; border: none;")
+        self._sd_id_lbl.setObjectName("sd_id_lbl")
         identity.addWidget(self._sd_id_lbl)  # Q22e
 
         hdr.addLayout(identity, 1)

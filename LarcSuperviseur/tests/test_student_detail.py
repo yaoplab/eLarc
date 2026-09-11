@@ -65,6 +65,55 @@ def test_period_dates_three_months(qtbot, mock_db, mock_session, mock_theme, mon
     assert date_to == QDate.currentDate().toString("yyyy-MM-dd")
 
 
+def test_restyle_all_updates_identity_labels(qtbot, mock_db, mock_session, mock_theme, monkeypatch):
+    # mock_theme est INOPERANT ici : il patch l'attribut module
+    # "LarcSuperviseur.common.theme.theme_manager", mais student_detail.py fait
+    # `from LarcSuperviseur.common.theme import theme_manager` (ligne 42) — ce
+    # nom reste lie au VRAI singleton ThemeManager pour tout le process. On
+    # mute donc directement les attributs de la VRAIE Palette active et on
+    # emet le VRAI signal ds.theme_changed (meme pattern que
+    # test_event_dialog.py::test_restyle_all_updates_colors_on_theme_changed).
+    #
+    # NB : QWidget.styleSheet() ne renvoie QUE le style local pose via
+    # setStyleSheet() sur ce widget precis -- jamais le QSS hérité par cascade
+    # ancestor (ex. QLabel#sd_name_lbl {{...}} dans le _STYLE du panel parent).
+    # Interroger detail._sd_name_lbl.styleSheet() serait donc toujours "" une
+    # fois le fix applique (labels sans setStyleSheet local) : on verifie donc
+    # a la fois (a) que les labels n'ont plus de style LOCAL et (b) que la
+    # regle #objectName correspondante existe bel et bien dans le _STYLE du
+    # panel et qu'elle est mise a jour par _restyle_all().
+    from larccommon.design_system import ds
+    from LarcSuperviseur.views.panels import student_detail as sd_mod
+
+    d = _make_detail(qtbot, monkeypatch, mock_db, mock_session)
+
+    real_palette = sd_mod.theme_manager.palette
+    old_text_strong = real_palette.text_strong
+
+    # Pas de style local sur les labels : ils dependent de la cascade ancestor.
+    assert d._sd_name_lbl.styleSheet() == ""
+    assert d._sd_class_lbl.styleSheet() == ""
+    assert d._sd_id_lbl.styleSheet() == ""
+
+    old_style = d.styleSheet()
+    assert "QLabel#sd_name_lbl" in old_style
+    assert "QLabel#sd_class_lbl" in old_style
+    assert "QLabel#sd_id_lbl" in old_style
+    assert old_text_strong in old_style
+
+    monkeypatch.setattr(real_palette, "text_strong", "#123456")
+
+    ds.theme_changed.emit()  # signal reel : prouve que _restyle_all() est bien connecte
+
+    new_style = d.styleSheet()
+    assert new_style != old_style
+    assert "QLabel#sd_name_lbl" in new_style
+    assert "QLabel#sd_class_lbl" in new_style
+    assert "QLabel#sd_id_lbl" in new_style
+    assert "#123456" in new_style
+    assert old_text_strong not in new_style
+
+
 def test_load_populates_ui(qtbot, mock_db, mock_session, mock_theme, monkeypatch):
     d = _make_detail(qtbot, monkeypatch, mock_db, mock_session)
     d.load(123)
