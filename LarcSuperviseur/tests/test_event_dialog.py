@@ -88,6 +88,51 @@ def test_save_updates_and_accepts(qtbot, mock_db, mock_session, mock_theme):
     assert mock_db.server_conn.commit.called
 
 
+def test_restyle_all_updates_colors_on_theme_changed(qtbot, mock_db, mock_session, mock_theme, monkeypatch):
+    # Assertion faible rejetee : "styleSheet() != ''" reste vrai meme si
+    # _restyle_all n'existe pas / n'est jamais connectee (le styleSheet est
+    # deja non-vide depuis __init__).
+    #
+    # mock_theme est INOPERANT ici : il patch l'attribut module
+    # "LarcSuperviseur.common.theme.theme_manager", mais event_dialog.py fait
+    # `from LarcSuperviseur.common.theme import theme_manager` (ligne 16) —
+    # ce nom est lie UNE FOIS a la collection des tests (avant que la fixture
+    # ne patche quoi que ce soit) et reste bind sur le VRAI singleton
+    # ThemeManager pour tout le reste du process. On mute donc directement les
+    # attributs de la VRAIE Palette active (meme objet que celui lu par
+    # theme_manager.palette dans le code de production) et on emet le VRAI
+    # signal ds.theme_changed, pour exercer bout-en-bout le fil connect() de
+    # __init__ sans dependre de la plomberie mock_theme (meme pattern que
+    # test_timetable_editor.py::test_restyle_all_updates_colors_on_theme_changed).
+    from larccommon.design_system import ds
+    from LarcSuperviseur.views.core import event_dialog as ed_mod
+
+    fake = mock_db.server_conn.cursor.return_value
+    fake.fetchone.return_value = (
+        "Absence cours", None, datetime(2026, 7, 8, 8, 30),
+        "Salle de cours", "Maths", "", "Dupont Jean",
+    )
+    fake.fetchall.return_value = [("Absence cours",)]
+
+    dlg = _make_dlg(qtbot, mock_db)
+
+    real_palette = ed_mod.theme_manager.palette
+    old_primary = real_palette.primary
+    old_surface = real_palette.surface
+    assert old_primary in dlg._save_btn.styleSheet()
+    assert old_surface in dlg.styleSheet()
+
+    monkeypatch.setattr(real_palette, "primary", "#ABCDEF")
+    monkeypatch.setattr(real_palette, "surface", "#123456")
+
+    ds.theme_changed.emit()  # signal reel : prouve que le connect() de __init__ fonctionne
+
+    assert "#ABCDEF" in dlg._save_btn.styleSheet()
+    assert old_primary not in dlg._save_btn.styleSheet()
+    assert "#123456" in dlg.styleSheet()
+    assert old_surface not in dlg.styleSheet()
+
+
 def test_no_theme_warning(qtbot, mock_db, mock_session, mock_theme, recwarn):
     fake = mock_db.server_conn.cursor.return_value
     fake.fetchone.return_value = (

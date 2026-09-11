@@ -27,6 +27,7 @@ class EventEditDialog(M3Dialog):
         self.setMinimumSize(ds.window_width * 3 // 5, ds.window_height * 4 // 5)
         p = theme_manager.palette
         self.setStyleSheet(f"EventEditDialog {{ background-color: {p.surface}; border-radius: {ds.radius_lg}px; }}")
+        ds.theme_changed.connect(self._restyle_all)
         self._setup_ui()
         self._load_event()
 
@@ -60,19 +61,29 @@ class EventEditDialog(M3Dialog):
 
         p = theme_manager.palette
         btn_row = QHBoxLayout()
-        save_btn = M3Button(_("event_dialog.save_button"), theme=theme_manager.phi_theme)
-        save_btn.setStyleSheet(
+        self._save_btn = M3Button(_("event_dialog.save_button"), theme=theme_manager.phi_theme)
+        self._save_btn.setStyleSheet(
             f"QPushButton {{ background: {p.primary}; color: {p.on_primary}; "
             f"border: none; border-radius: {ds.radius_sm}px; "
             f"padding: {ds.space_xs}px {ds.space_md}px; font-weight: bold; }}"
         )
-        save_btn.clicked.connect(self._save)
+        self._save_btn.clicked.connect(self._save)
         cancel_btn = M3Button(_("event_dialog.cancel_button"), theme=theme_manager.phi_theme, variant=ButtonVariant.OUTLINED)
         cancel_btn.clicked.connect(self.reject)
         btn_row.addStretch()
-        btn_row.addWidget(save_btn)
+        btn_row.addWidget(self._save_btn)
         btn_row.addWidget(cancel_btn)
         layout.addLayout(btn_row)
+
+    @safe_slot("EventEditDialog._restyle_all")
+    def _restyle_all(self):
+        p = theme_manager.palette
+        self.setStyleSheet(f"EventEditDialog {{ background-color: {p.surface}; border-radius: {ds.radius_lg}px; }}")
+        self._save_btn.setStyleSheet(
+            f"QPushButton {{ background: {p.primary}; color: {p.on_primary}; "
+            f"border: none; border-radius: {ds.radius_sm}px; "
+            f"padding: {ds.space_xs}px {ds.space_md}px; font-weight: bold; }}"
+        )
 
     def _load_event(self):
         conn = self._conn
