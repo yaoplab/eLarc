@@ -33,7 +33,16 @@ def test_main_window_constructs(qtbot, mock_db, mock_session, mock_theme):
 
 def test_theme_change_no_crash(qtbot, mock_db, mock_session, mock_theme):
     w = _make_window(qtbot, mock_db, mock_session)
-    w._restyle()
+    w._restyle_all()
+
+
+def test_theme_selected_no_crash_and_repaints(qtbot, mock_db, mock_session, mock_theme):
+    w = _make_window(qtbot, mock_db, mock_session)
+
+    w._on_theme_selected("dark")  # doit NE PAS lever NameError et doit appeler refresh_all
+
+    assert w._cards_widget.styleSheet() != ""
+    assert w._group_scroll.viewport().styleSheet() != ""
 
 
 def test_period_click_no_crash(qtbot, mock_db, mock_session, mock_theme):
