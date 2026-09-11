@@ -66,3 +66,18 @@ def test_save_updates_slots_and_accepts(qtbot, mock_db, mock_session, mock_theme
     ]
     assert updates and updates[0][1] == (9, 11)
     assert mock_db.server_conn.commit.called
+
+
+def test_no_theme_warning(qtbot, mock_db, mock_session, mock_theme, recwarn):
+    fake = mock_db.server_conn.cursor.return_value
+    fake.fetchall.side_effect = [
+        [(1, time(8, 0), time(8, 55), 1), (2, time(9, 0), time(9, 55), 1)],
+        [(11, 1, 1, "Maths")],
+        [("Maths",), ("Anglais",)],
+    ]
+    recwarn.clear()
+
+    _make_editor(qtbot, mock_db)
+
+    theme_warnings = [x for x in recwarn.list if "cree sans theme=" in str(x.message)]
+    assert not theme_warnings, [str(x.message) for x in theme_warnings]
