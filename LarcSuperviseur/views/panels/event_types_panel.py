@@ -95,6 +95,12 @@ class EventTypeEditDialog(ThemedDialog):
         outer.addWidget(card)
         outer.addWidget(self._buttons)
         self.setStyleSheet(f"EventTypeEditDialog {{ background: {p.surface}; }}")
+        ds.theme_changed.connect(self._restyle_all)
+
+    @safe_slot("EventTypeEditDialog._restyle_all")
+    def _restyle_all(self):
+        p = theme_manager.palette
+        self.setStyleSheet(f"EventTypeEditDialog {{ background: {p.surface}; }}")
 
     @safe_slot("EventTypeEditDialog.validate_and_save")
     def _validate_and_save(self):
