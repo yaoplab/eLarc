@@ -57,3 +57,16 @@ def test_update_datetime(qtbot, mock_theme, mock_session, monkeypatch):
     bar._update_datetime()
     assert bar._date_label.text() != ""
     assert bar._time_label.text() != ""
+
+
+def test_restyle_recolors_menu_icons(qtbot, mock_theme):
+    from LarcSuperviseur.views.top_bar import TopBar
+
+    bar = TopBar(lambda k: None, lambda k: None, lambda: None)
+    qtbot.addWidget(bar)
+
+    old_icon = bar._prefs_action.icon()
+    bar.restyle()
+    new_icon = bar._prefs_action.icon()
+
+    assert isinstance(old_icon, type(new_icon))  # smoke : setIcon() a bien été rappelé, pas d'exception

@@ -34,6 +34,7 @@ class TopBar(QFrame):
 
         self._build_ui()
         self._start_clock()
+        ds.theme_changed.connect(self.restyle)
 
     # ── Construction UI ────────────────────────────────────────────────
 
@@ -84,13 +85,14 @@ class TopBar(QFrame):
         self._theme_btn.setIconSize(
             QSize(ds.icon_sm, ds.icon_sm)
         )
-        self._theme_menu = M3Menu()
+        self._theme_menu = M3Menu(theme=theme_manager.phi_theme)
         _theme_icon_names = {
             "blue": "light_mode",
             "dark": "dark_mode",
             "sobre": "tonality",
             "contrast": "bolt",
         }
+        self._theme_menu_actions = []
         for key, label in theme_manager.names():
             icon_name = _theme_icon_names.get(key, "light_mode")
             pal = theme_manager.get_palette(key)
@@ -101,6 +103,7 @@ class TopBar(QFrame):
             )
             a = self._theme_menu.addAction(ic, label)
             a.setData(key)
+            self._theme_menu_actions.append((a, icon_name))
         self._theme_menu.triggered.connect(self._on_theme_triggered)
         self._theme_btn.setMenu(self._theme_menu)
         row1.addWidget(self._theme_btn)
@@ -119,23 +122,23 @@ class TopBar(QFrame):
             f"QPushButton::menu-indicator {{ image: none; width: 0px; }}"
         )
         self.update_profile()
-        self._profile_menu = M3Menu(self)
-        prefs_action = self._profile_menu.addAction(
+        self._profile_menu = M3Menu(theme=theme_manager.phi_theme, parent=self)
+        self._prefs_action = self._profile_menu.addAction(
             md3_icon("settings", color=p.text_strong, size=ds.icon_sm),
             _("topbar.preferences"),
         )
-        prefs_action.triggered.connect(self._on_preferences)
-        pwd_action = self._profile_menu.addAction(
+        self._prefs_action.triggered.connect(self._on_preferences)
+        self._pwd_action = self._profile_menu.addAction(
             md3_icon("lock", color=p.text_strong, size=ds.icon_sm),
             _("topbar.change_password"),
         )
-        pwd_action.triggered.connect(self._on_change_password)
+        self._pwd_action.triggered.connect(self._on_change_password)
         self._profile_menu.addSeparator()
-        logout_action = self._profile_menu.addAction(
+        self._logout_action = self._profile_menu.addAction(
             md3_icon("logout", color=p.text_strong, size=ds.icon_sm),
             _("topbar.logout"),
         )
-        logout_action.triggered.connect(self._on_logout)
+        self._logout_action.triggered.connect(self._on_logout)
         self._profile_btn.setMenu(self._profile_menu)
         row1.addWidget(self._profile_btn)
 
@@ -350,3 +353,8 @@ class TopBar(QFrame):
             f"font-size: {s(13)}px; color: {p.primary}; font-weight: bold;"
         )
         self._update_network_label()
+        for action, icon_name in self._theme_menu_actions:
+            action.setIcon(md3_icon(icon_name, color=p.primary, size=ds.icon_sm))
+        self._prefs_action.setIcon(md3_icon("settings", color=p.text_strong, size=ds.icon_sm))
+        self._pwd_action.setIcon(md3_icon("lock", color=p.text_strong, size=ds.icon_sm))
+        self._logout_action.setIcon(md3_icon("logout", color=p.text_strong, size=ds.icon_sm))

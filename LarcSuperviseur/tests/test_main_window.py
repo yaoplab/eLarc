@@ -158,15 +158,27 @@ def test_show_event_context_menu_no_theme_warning(qtbot, mock_db, mock_session, 
 
     recwarn.clear()
 
-    # Same dedup pitfall as test_edit_event_dialog_no_theme_warning above, but
-    # for a different call site: TopBar (built during _make_window, as part of
-    # MainWindow.__init__) constructs self._theme_menu = M3Menu() with NO
-    # theme= (views/top_bar.py) — an out-of-scope, pre-existing defect not
-    # part of this branch's fix list. That M3Menu() firing during window
-    # construction, before recwarn.clear(), would silently dedup-suppress a
-    # genuine regression on main_events.py's own
-    # `menu = M3Menu(theme=theme_manager.phi_theme, parent=self)` site without
-    # "always" (identical mechanism to commit 7be90be).
+    # Same dedup pitfall as test_edit_event_dialog_no_theme_warning above.
+    # TopBar (built during _make_window, as part of MainWindow.__init__) used
+    # to construct self._theme_menu = M3Menu() / self._profile_menu = M3Menu(self)
+    # with NO theme= (views/top_bar.py) — that was fixed in this same change
+    # (both now pass theme=theme_manager.phi_theme), so TopBar no longer
+    # contributes a "M3Menu cree sans theme=" warning during window
+    # construction. Verified by live regression check (temporarily stripped
+    # theme= from main_events.py's own `menu = M3Menu(...)` call): the
+    # assertion below still catches it, with or without "always", because no
+    # other M3Menu() is currently built eagerly during _make_window() (the
+    # only remaining untheme'd M3Menu() call, student_detail.py's
+    # _show_context_menu, is lazy — only constructed on right-click, never
+    # during window construction). "always" is kept anyway as defense in
+    # depth: pytest's recwarn fixture runs under the "default" filter, which
+    # dedups by (message, category, module, lineno) and is NOT reset by
+    # recwarn.clear() — every M3Menu()-without-theme warning is attributed to
+    # the same location inside menu.py's _update_style(), so if a future
+    # eager, untheme'd M3Menu() construction is (re)introduced upstream of
+    # this call, it would again silently dedup-suppress a genuine regression
+    # on main_events.py's own site without "always" (identical mechanism to
+    # commit 7be90be).
     warnings.simplefilter("always")
 
     w._show_event_context_menu(table, QPoint(0, 0))
