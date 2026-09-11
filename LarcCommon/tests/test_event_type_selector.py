@@ -183,3 +183,13 @@ class TestEventTypeSelectorWidget:
 
         assert widget._tree.current_node() is None
         assert widget._confirm_btn.isEnabled() is False
+
+    def test_construct_no_theme_warning(self, recwarn):
+        """_search (M3TextField), _badge_text (M3Label) et _confirm_btn (M3Button)
+        doivent tous recevoir theme=theme_manager.phi_theme — sinon _update_style()
+        n'applique aucun style et emet un warnings.warn('... cree sans theme= ...')."""
+        hierarchies, *_ = make_hierarchy()
+        widget = EventTypeSelectorWidget(hierarchies)
+
+        theme_warnings = [str(w.message) for w in recwarn.list if "cree sans theme=" in str(w.message)]
+        assert not theme_warnings, theme_warnings
