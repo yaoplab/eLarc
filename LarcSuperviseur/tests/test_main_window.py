@@ -36,10 +36,28 @@ def test_theme_change_no_crash(qtbot, mock_db, mock_session, mock_theme):
     w._restyle_all()
 
 
-def test_theme_selected_no_crash_and_repaints(qtbot, mock_db, mock_session, mock_theme):
+def test_theme_selected_no_crash_and_repaints(qtbot, mock_db, mock_session, mock_theme, monkeypatch):
     w = _make_window(qtbot, mock_db, mock_session)
 
-    w._on_theme_selected("dark")  # doit NE PAS lever NameError et doit appeler refresh_all
+    # Bypass @safe_slot's exception-swallowing so a regression (e.g. a NameError
+    # from an unbound `p` in _restyle_all) fails this test loudly instead of
+    # passing silently. @safe_slot wraps with functools.wraps(func), which sets
+    # __wrapped__ to the original undecorated function.
+    #
+    # Two layers need bypassing, not one: _on_theme_selected's own body just
+    # delegates to `self._restyle_all()`, and _restyle_all is ITSELF separately
+    # decorated with @safe_slot. Calling only
+    # `w._on_theme_selected.__wrapped__(w, "dark")` still routes the inner
+    # `self._restyle_all()` call through _restyle_all's own decorator, which
+    # would silently swallow exactly the NameError this test exists to catch
+    # (verified: reintroducing the bug — removing `p = theme_manager.palette`
+    # in _restyle_all — still passed with only the outer layer bypassed).
+    # So replace the instance's `_restyle_all` with its own unwrapped function
+    # (bound to `w`) before calling the outer unwrapped `_on_theme_selected`.
+    monkeypatch.setattr(
+        w, "_restyle_all", w._restyle_all.__wrapped__.__get__(w, type(w))
+    )
+    w._on_theme_selected.__wrapped__(w, "dark")
 
     assert w._cards_widget.styleSheet() != ""
     assert w._group_scroll.viewport().styleSheet() != ""
