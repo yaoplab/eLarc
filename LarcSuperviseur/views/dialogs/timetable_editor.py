@@ -37,8 +37,21 @@ class TimetableEditor(M3Dialog):
         self.setMinimumSize(ds.window_width * 2 // 3, ds.window_height * 5 // 8)  # 800×500
         p = theme_manager.palette
         self.setStyleSheet(f"TimetableEditor {{ background-color: {p.surface}; border-radius: {ds.radius_lg}px; }}")
+        ds.theme_changed.connect(self._restyle_all)
         self._init_ui()
         self._load_data()
+
+    @safe_slot("TimetableEditor._restyle_all")
+    def _restyle_all(self):
+        p = theme_manager.palette
+        s = theme_manager.font_size
+        self.setStyleSheet(f"TimetableEditor {{ background-color: {p.surface}; border-radius: {ds.radius_lg}px; }}")
+        self._save_btn.setStyleSheet(
+            f"QPushButton {{ background: {p.primary}; color: {p.on_primary}; "
+            f"border: none; border-radius: {ds.radius_sm}px; font-weight: bold; "
+            f"font-size: {s(12)}px; padding: {ds.space_xs}px {ds.space_md}px; }}"
+            f"QPushButton:hover {{ background: {p.active}; }}"
+        )
 
     def _init_ui(self):
         p = theme_manager.palette
@@ -54,17 +67,17 @@ class TimetableEditor(M3Dialog):
 
         # Boutons
         btn_row = QHBoxLayout()
-        save_btn = M3Button(_("timetable.save_button"), theme=theme_manager.phi_theme)
-        save_btn.setMinimumHeight(ds.space_lg + ds.space_xxs)  # 36px
-        save_btn.setStyleSheet(
+        self._save_btn = M3Button(_("timetable.save_button"), theme=theme_manager.phi_theme)
+        self._save_btn.setMinimumHeight(ds.space_lg + ds.space_xxs)  # 36px
+        self._save_btn.setStyleSheet(
             f"QPushButton {{ background: {p.primary}; color: {p.on_primary}; "
             f"border: none; border-radius: {ds.radius_sm}px; font-weight: bold; "
             f"font-size: {s(12)}px; padding: {ds.space_xs}px {ds.space_md}px; }}"
             f"QPushButton:hover {{ background: {p.active}; }}"
         )
-        save_btn.clicked.connect(self._save)
+        self._save_btn.clicked.connect(self._save)
         btn_row.addStretch()
-        btn_row.addWidget(save_btn)
+        btn_row.addWidget(self._save_btn)
         layout.addLayout(btn_row)
 
     def _load_data(self):

@@ -68,6 +68,50 @@ def test_save_updates_slots_and_accepts(qtbot, mock_db, mock_session, mock_theme
     assert mock_db.server_conn.commit.called
 
 
+def test_restyle_all_updates_colors_on_theme_changed(qtbot, mock_db, mock_session, mock_theme, monkeypatch):
+    # Assertions plus faibles rejetees : "styleSheet() != ''" reste vrai meme si
+    # _restyle_all n'existe pas / n'est jamais appelee (le styleSheet est deja
+    # non-vide depuis __init__), et appeler editor._restyle_all() directement
+    # ne prouve pas que ds.theme_changed.connect(self._restyle_all) a bien eu
+    # lieu en __init__.
+    #
+    # mock_theme est INOPERANT ici : il patch l'attribut module
+    # "LarcSuperviseur.common.theme.theme_manager", mais timetable_editor.py
+    # fait `from LarcSuperviseur.common.theme import theme_manager` (ligne 13)
+    # — ce nom est lie UNE FOIS a la collection des tests (avant que la
+    # fixture ne patche quoi que ce soit) et reste bind sur le VRAI singleton
+    # ThemeManager reel pour tout le reste du process (verifie empiriquement :
+    # avec mock_theme.palette.primary = "#1976d2", le styleSheet produit
+    # contenait quand meme "#1F4494", la vraie couleur de marque). On mute
+    # donc directement les attributs de la VRAIE Palette active (meme objet
+    # que celui lu par theme_manager.palette dans le code de production) et on
+    # emet le VRAI signal ds.theme_changed, pour exercer bout-en-bout le fil
+    # connect() de la ligne 40 sans dependre du plomberie mock_theme.
+    from larccommon.design_system import ds
+    from LarcSuperviseur.views.dialogs import timetable_editor as tte_mod
+
+    fake = mock_db.server_conn.cursor.return_value
+    fake.fetchall.side_effect = [[], [], []]
+
+    editor = _make_editor(qtbot, mock_db)
+
+    real_palette = tte_mod.theme_manager.palette
+    old_primary = real_palette.primary
+    old_surface = real_palette.surface
+    assert old_primary in editor._save_btn.styleSheet()
+    assert old_surface in editor.styleSheet()
+
+    monkeypatch.setattr(real_palette, "primary", "#ABCDEF")
+    monkeypatch.setattr(real_palette, "surface", "#123456")
+
+    ds.theme_changed.emit()  # signal reel : prouve que le connect() de __init__ fonctionne
+
+    assert "#ABCDEF" in editor._save_btn.styleSheet()
+    assert old_primary not in editor._save_btn.styleSheet()
+    assert "#123456" in editor.styleSheet()
+    assert old_surface not in editor.styleSheet()
+
+
 def test_no_theme_warning(qtbot, mock_db, mock_session, mock_theme, recwarn):
     fake = mock_db.server_conn.cursor.return_value
     fake.fetchall.side_effect = [
