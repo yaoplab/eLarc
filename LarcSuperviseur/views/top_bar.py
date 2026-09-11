@@ -103,7 +103,7 @@ class TopBar(QFrame):
             )
             a = self._theme_menu.addAction(ic, label)
             a.setData(key)
-            self._theme_menu_actions.append((a, icon_name))
+            self._theme_menu_actions.append((a, icon_name, key))
         self._theme_menu.triggered.connect(self._on_theme_triggered)
         self._theme_btn.setMenu(self._theme_menu)
         row1.addWidget(self._theme_btn)
@@ -353,8 +353,11 @@ class TopBar(QFrame):
             f"font-size: {s(13)}px; color: {p.primary}; font-weight: bold;"
         )
         self._update_network_label()
-        for action, icon_name in self._theme_menu_actions:
-            action.setIcon(md3_icon(icon_name, color=p.primary, size=ds.icon_sm))
+        for action, icon_name, key in self._theme_menu_actions:
+            pal = theme_manager.get_palette(key)
+            action.setIcon(
+                md3_icon(icon_name, color=pal.primary if pal else "#1565C0", size=ds.icon_sm)
+            )
         self._prefs_action.setIcon(md3_icon("settings", color=p.text_strong, size=ds.icon_sm))
         self._pwd_action.setIcon(md3_icon("lock", color=p.text_strong, size=ds.icon_sm))
         self._logout_action.setIcon(md3_icon("logout", color=p.text_strong, size=ds.icon_sm))
