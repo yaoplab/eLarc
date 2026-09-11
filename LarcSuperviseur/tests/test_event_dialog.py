@@ -102,31 +102,28 @@ def test_no_theme_warning(qtbot, mock_db, mock_session, mock_theme, recwarn):
     fake.fetchall.return_value = [("Absence cours",), ("Sortie",)]
     recwarn.clear()
 
-    # A filename-based filter does NOT work here: every M3 widget's
-    # _update_style() calls warnings.warn(..., stacklevel=2), which always
-    # attributes the warning's filename to the widget's own defining file
-    # inside LarcCommon (e.g. phibuilder/widgets/label.py) — never to the
-    # external caller (event_dialog.py) that instantiated it, no matter who
-    # the caller is. So instead we assert the exact multiset of warning
-    # classes: EventEditDialog constructs EventTypeSelectorWidget
-    # (LarcCommon/larccommon/dialogs/event_type_selector.py), which
-    # unconditionally emits exactly 3 known, out-of-scope warnings (one
-    # M3TextField, one M3Label, one M3Button) — tracked separately, not part
-    # of this task. event_dialog.py's own 5 widget sites (_info, _note_label,
-    # _note_input, save_btn, cancel_btn) all pass theme=theme_manager.phi_theme
-    # and must contribute 0 warnings on top of that baseline.
+    # EventEditDialog constructs EventTypeSelectorWidget
+    # (LarcCommon/larccommon/dialogs/event_type_selector.py). That widget used
+    # to have 3 of its own unfixed theme= sites (M3TextField/M3Label/M3Button),
+    # which required tolerating exactly those 3 out-of-scope warnings here.
+    # It was fixed on 2026-09-11 (commit 166f370) — EventTypeSelectorWidget now
+    # contributes 0 warnings, so this test asserts a plain empty list like the
+    # other tasks' tests. If this ever needs the class-count workaround again
+    # (a new unfixed shared widget introduced upstream), see git history on
+    # this test for the pattern (multiset of warning classes) and why a
+    # filename-based filter cannot discriminate (every M3 widget's
+    # _update_style() calls warnings.warn(stacklevel=2), which always
+    # attributes the filename to the widget's own defining file in LarcCommon,
+    # never to the external caller).
     #
-    # This requires forcing the "always" filter: pytest's recwarn fixture
-    # uses "default" (print-once-per-(message, category, module, lineno)).
-    # Since every M3Button instantiation warns from the exact same line
-    # inside button.py regardless of which call site created it, "default"
-    # would silently dedup a second, genuinely distinct M3Button warning
-    # (e.g. from event_dialog.py's own cancel_btn losing its theme=) against
-    # the one already raised by EventTypeSelectorWidget's _confirm_btn —
-    # making a regression invisible. "always" disables that dedup so each
-    # instantiation is counted. (Verified empirically: without this line, a
-    # deliberately reintroduced missing theme= on cancel_btn does NOT fail
-    # this test — see task-2-report.md, Round 3.)
+    # "always" is still required: pytest's recwarn fixture uses "default"
+    # (print-once-per-(message, category, module, lineno)), and every
+    # M3Button instantiation warns from the exact same line inside button.py
+    # regardless of call site — "default" would silently dedup a second,
+    # genuinely distinct M3Button warning (e.g. event_dialog.py's own
+    # cancel_btn losing its theme=) if any earlier M3Button in this test
+    # process already warned once. "always" disables that dedup so each
+    # instantiation is counted.
     import warnings
 
     warnings.simplefilter("always")
@@ -134,5 +131,4 @@ def test_no_theme_warning(qtbot, mock_db, mock_session, mock_theme, recwarn):
     _make_dlg(qtbot, mock_db)
 
     theme_warnings = [str(x.message) for x in recwarn.list if "cree sans theme=" in str(x.message)]
-    classes = sorted(w.split()[0] for w in theme_warnings)
-    assert classes == ["M3Button", "M3Label", "M3TextField"], theme_warnings
+    assert not theme_warnings, theme_warnings

@@ -84,21 +84,16 @@ def test_edit_event_dialog_no_theme_warning(qtbot, mock_db, mock_session, mock_t
 
     w._edit_event(42)
 
-    # A plain "no warnings at all" assertion does NOT hold here: _edit_event
-    # constructs EventTypeSelectorWidget (LarcCommon/larccommon/dialogs/
-    # event_type_selector.py), which unconditionally emits exactly 3 known,
-    # out-of-scope warnings (one M3TextField from _search, one M3Label from
-    # _badge_text, one M3Button from _confirm_btn) — tracked separately, not
-    # part of this task. main_events.py's own widget sites in _edit_event
-    # (info, note_label, note_input, save_btn, cancel_btn) all pass
-    # theme=theme_manager.phi_theme and must contribute 0 warnings on top of
-    # that baseline. Verified empirically: with a plain "not theme_warnings"
-    # assertion, this test fails even on the fully-fixed code because of
-    # EventTypeSelectorWidget's baseline — so the multiset comparison below is
-    # required, mirroring test_event_dialog.py::test_no_theme_warning.
+    # _edit_event constructs EventTypeSelectorWidget (LarcCommon/larccommon/
+    # dialogs/event_type_selector.py). That widget used to have 3 of its own
+    # unfixed theme= sites (M3TextField/M3Label/M3Button), which required
+    # tolerating exactly those 3 out-of-scope warnings here. It was fixed on
+    # 2026-09-11 (commit 166f370) — EventTypeSelectorWidget now contributes 0
+    # warnings, so this test asserts a plain empty list like the other tasks'
+    # tests. See test_event_dialog.py::test_no_theme_warning's git history for
+    # the class-count workaround pattern if this regresses upstream again.
     theme_warnings = [str(x.message) for x in recwarn.list if "cree sans theme=" in str(x.message)]
-    classes = sorted(msg.split()[0] for msg in theme_warnings)
-    assert classes == ["M3Button", "M3Label", "M3TextField"], theme_warnings
+    assert not theme_warnings, theme_warnings
 
 
 def test_show_event_context_menu_no_theme_warning(qtbot, mock_db, mock_session, mock_theme, recwarn, monkeypatch):
