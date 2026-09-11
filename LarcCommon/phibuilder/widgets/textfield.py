@@ -79,14 +79,16 @@ class M3TextField(QLineEdit):
             base_bg = c.surface_container_highest
             base_border = "none"
             base_bottom_border = f"1px solid {c.outline}"
-            focus_border = f"2px solid {c.primary}"
-            focus_bottom = ""
+            # Filled MD3 : pas de cadre au focus, seul le trait bas s'epaissit
+            focus_border = "none"
+            focus_bottom = f"2px solid {c.primary}"
         else:  # OUTLINED
             base_bg = "transparent"
             base_border = f"1px solid {c.outline}"
             base_bottom_border = ""
+            # Outlined MD3 : le cadre complet s'epaissit au focus, bas inclus
             focus_border = f"2px solid {c.primary}"
-            focus_bottom = ""
+            focus_bottom = focus_border
 
         # Error state
         err_border = f"2px solid {c.error}"
@@ -113,7 +115,7 @@ M3TextField {{
 
 M3TextField:focus {{
     border: {focus_border};
-    border-bottom: {focus_bottom if focus_bottom else "none"};
+    border-bottom: {focus_bottom};
     background-color: {c.surface};
     outline: {focus_width}px solid {c.primary};
     outline-offset: {focus_offset}px;
