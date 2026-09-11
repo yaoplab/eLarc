@@ -166,28 +166,28 @@ class LoginWindow(QWidget):
         self._logo_label.setCursor(Qt.PointingHandCursor)
         self._logo_label.installEventFilter(self)
         cl.addWidget(self._logo_label)
-        cl.addSpacing(21)
+        cl.addSpacing(ds.space_md)
 
         title = self._label(_("login.superviseur_title"), "title_large", p.text_strong)
         title.setAlignment(Qt.AlignCenter)
         cl.addWidget(title)
-        cl.addSpacing(8)
+        cl.addSpacing(ds.space_xs)
 
         sub = self._label(_("login.superviseur_subtitle"), "body_medium", p.text_soft)
         sub.setAlignment(Qt.AlignCenter)
         cl.addWidget(sub)
-        cl.addSpacing(21)
+        cl.addSpacing(ds.space_md)
 
         self._net_label = self._label(style="body_medium", color=p.text_soft)
         self._net_label.setAlignment(Qt.AlignCenter)
         cl.addWidget(self._net_label)
-        cl.addSpacing(21)
+        cl.addSpacing(ds.space_md)
 
         self._force_check = QCheckBox(_("login.choose_connection"))
         self._force_check.setVisible(False)
         self._force_check.toggled.connect(self._on_force_toggle)
         cl.addWidget(self._force_check, 0, Qt.AlignCenter)
-        cl.addSpacing(21)
+        cl.addSpacing(ds.space_md)
 
         self._tabs = M3TabWidget(theme=phi)
         self._tab_intra_widget = self._tab_intranet()
@@ -200,7 +200,7 @@ class LoginWindow(QWidget):
         self._err_label.setAlignment(Qt.AlignCenter)
         self._err_label.setWordWrap(True)
         cl.addWidget(self._err_label)
-        cl.addSpacing(8)
+        cl.addSpacing(ds.space_xs)
 
         self._status_label = self._label(style="body_medium", color=p.text_soft)
         cl.addWidget(self._status_label)
@@ -241,7 +241,7 @@ class LoginWindow(QWidget):
         self._edt_i_email = email
         layout.addWidget(email)
 
-        layout.addSpacing(21)
+        layout.addSpacing(ds.space_md)
 
         pwd_lbl = self._label(_("login.password_label"), "body_medium", p.text_strong)
         layout.addWidget(pwd_lbl)
@@ -260,14 +260,14 @@ class LoginWindow(QWidget):
             )
             term_lbl.setAlignment(Qt.AlignCenter)
             layout.addWidget(term_lbl)
-            layout.addSpacing(16)
+            layout.addSpacing(ds.space_sm)
 
         btn = M3Button(_("login.connect_intranet"), theme=phi)
         btn.setFixedSize(ds.window_width * 7 // 40, ds.logo_small)  # 210×55
         btn.clicked.connect(self._on_intranet)
         layout.addWidget(btn, 0, Qt.AlignCenter)
 
-        layout.addSpacing(21)
+        layout.addSpacing(ds.space_md)
         info = self._label(_("login.info_intranet"), "body_medium", p.text_soft)
         info.setAlignment(Qt.AlignCenter)
         layout.addWidget(info)
@@ -291,7 +291,7 @@ class LoginWindow(QWidget):
             )
             term_lbl.setAlignment(Qt.AlignCenter)
             layout.addWidget(term_lbl)
-            layout.addSpacing(16)
+            layout.addSpacing(ds.space_sm)
 
         # accent_color préserve le rouge de marque Google (identique au QSS d'origine)
         btn = M3Button(_("login.connect_google"), theme=phi, accent_color="#DB4437")  # clé manquante dans fr.json
@@ -299,7 +299,7 @@ class LoginWindow(QWidget):
         btn.clicked.connect(self._on_cloud)
         layout.addWidget(btn, 0, Qt.AlignCenter)
 
-        layout.addSpacing(16)
+        layout.addSpacing(ds.space_sm)
         info2 = M3Label(_("login.info_oauth"), theme=phi)
         info2.setObjectName("infoLbl")
         info2.setAlignment(Qt.AlignCenter)
@@ -505,7 +505,7 @@ class LoginWindow(QWidget):
 
     def _do_open_main_window(self, MainWindow):
         self.main = MainWindow()
-        self.main.resize(1200, 750)
+        self.main.resize(ds.window_width, ds.window_height)
         self.main.showMaximized()
         self.close()
 

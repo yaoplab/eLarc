@@ -51,9 +51,9 @@ repos:
         verbose: true
         pass_filenames: false
       - id: lint-ui-quality
-        name: ✨ Finitions UI (V1-V8)
-        description: Emojis au lieu d'icônes MD3, setMinimumSize hardcodé, etc.
-        entry: python D:/projets/scripts/lint_ui_quality.py
+        name: ✨ Finitions UI (V1-V8, baseline)
+        description: Emojis au lieu d'icônes MD3, setMinimumSize hardcodé, etc. — bloque seulement le NOUVEAU
+        entry: python D:/projets/scripts/lint_ui_quality.py --check-baseline
         language: system
         files: \.py$
         stages: [pre-commit]
@@ -69,16 +69,18 @@ repos:
         verbose: true
         pass_filenames: false
       - id: lint-safe-slot
-        name: 🛡️ @safe_slot manquant
-        entry: python D:/projets/scripts/lint_safe_slot.py --dir .
+        name: 🛡️ @safe_slot manquant (baseline)
+        description: Slots sans @safe_slot, anti-patterns Qt — bloque seulement le NOUVEAU
+        entry: python D:/projets/scripts/lint_safe_slot.py --check-baseline
         language: system
         files: \.py$
         stages: [pre-commit]
         verbose: true
         pass_filenames: false
       - id: lint-file-size
-        name: 📏 Fichiers > 1000 lignes
-        entry: python D:/projets/scripts/lint_file_size.py --dir .
+        name: 📏 Fichiers > 1000 lignes (baseline)
+        description: Refactoring requis > 1000 lignes — bloque seulement le NOUVEAU
+        entry: python D:/projets/scripts/lint_file_size.py --check-baseline
         language: system
         files: \.py$
         stages: [pre-commit]

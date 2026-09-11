@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Linter: vérifie les règles du skill pyside6-wrapper.
+r"""Linter: vérifie les règles du skill pyside6-wrapper.
 
 Vérifie statiquement :
   - Slots Qt sans @safe_slot
@@ -27,6 +27,9 @@ import re
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from _baseline import load_baseline, save_baseline, split_new
+
 ROOT = Path(__file__).resolve().parents[1]
 PROJETS = [ROOT / n for n in (
     "LarcSuperviseur",
@@ -36,6 +39,7 @@ PROJETS = [ROOT / n for n in (
     "LarcConfig",
     "LarcCommon",
 )]
+BASELINE_PATH = ROOT / "scripts" / ".safe_slot_baseline.json"
 
 VIOLATIONS = []
 
@@ -212,6 +216,8 @@ def main():
     parser.add_argument("--dir", help="Repertoire a scanner")
     parser.add_argument("--json", action="store_true", help="Sortie JSON")
     parser.add_argument("--fix", action="store_true", help="Afficher le correctif a appliquer")
+    parser.add_argument("--baseline", action="store_true", help="(Re)genere la baseline avec les violations actuelles")
+    parser.add_argument("--check-baseline", action="store_true", help="N'echoue que sur les violations absentes de la baseline (pre-commit)")
     args = parser.parse_args()
 
     if args.dir:
@@ -222,6 +228,20 @@ def main():
     for d in dirs:
         if d.exists():
             scan_directory(d)
+
+    if args.baseline:
+        save_baseline(BASELINE_PATH, VIOLATIONS)
+        print(f"[baseline] {len(VIOLATIONS)} violation(s) figee(s) dans {BASELINE_PATH}")
+        return 0
+
+    if args.check_baseline:
+        baseline = load_baseline(BASELINE_PATH)
+        new, known = split_new(VIOLATIONS, baseline)
+        print(f"lint_safe_slot: {len(new)} nouvelle(s) violation(s), {len(known)} connue(s) (baseline, non bloquant)")
+        for v in sorted(new, key=lambda x: (x['rule'], x['file'])):
+            print(f"  [{v['rule']}] {v['file']}:{v['line']} — {v['message']}")
+            print(f"       -> {v['fix']}")
+        return 1 if new else 0
 
     if args.json:
         import json

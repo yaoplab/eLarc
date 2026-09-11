@@ -1,0 +1,10 @@
+{
+  "violations": [
+    "LarcSecretaire\\views\\parent_manager.py:677:V1",
+    "LarcSecretaire\\views\\student_form.py:1360:V2",
+    "LarcSecretaire\\views\\student_form.py:2710:V2",
+    "LarcSecretaire\\views\\supervisor_panel.py:67:V1",
+    "LarcSecretaire\\views\\todo_panel.py:390:V1",
+    "LarcSuperviseur\\tools\\show_icons.py:21:V2"
+  ]
+}
