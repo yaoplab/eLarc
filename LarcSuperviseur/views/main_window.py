@@ -158,7 +158,7 @@ class MainWindow(GroupStatsMixin, StudentsMixin, EventsMixin, QWidget):
         self._actions = EventActions()
         self._load_user_prefs()  # avant _init_ui pour éviter thème mixte
         self._init_ui()
-        ds.theme_changed.connect(self._restyle)
+        ds.theme_changed.connect(self._restyle_all)
         trace(" MainWindow.__init__: _init_ui OK, appel _load_initial_data")
         self._load_initial_data()
         trace(" MainWindow.__init__: _load_initial_data terminé")
@@ -735,35 +735,30 @@ class MainWindow(GroupStatsMixin, StudentsMixin, EventsMixin, QWidget):
             get_reporter().report_exception()
             log(f"MainWindow._load_user_prefs: {e}")
 
-    @safe_slot("MainWindow._restyle")
-    def _restyle(self):
-        """Thème changé via PreferencesDialog ou autre source externe."""
+    @safe_slot("MainWindow._restyle_all")
+    def _restyle_all(self):
+        """Réapplique le style courant à tous les fonds réels (PAS transparents —
+        palette noire sinon) après un changement de thème, interne ou externe
+        (PreferencesDialog, sélecteur top bar)."""
+        p = theme_manager.palette
         self.setStyleSheet(self._STYLE)
         self._top_bar.restyle()
-        # Fond réel (PAS transparent — palette noire sinon, voir init)
+        self._rebuild_student_detail_theme()
+        self._top_bar.update_network()
+        if hasattr(self, "_cards_scroll"):
+            self._cards_scroll.viewport().setStyleSheet(f"background: {p.surface};")
         if hasattr(self, "_cards_widget"):
-            self._cards_widget.setStyleSheet(f"background: {ds.p.surface};")
+            self._cards_widget.setStyleSheet(f"background: {p.surface};")
+        if hasattr(self, "_group_scroll"):
+            self._group_scroll.viewport().setStyleSheet(f"background: {p.background};")
+        if self._current_group_mode:
+            self.refresh_all()
 
     @safe_slot("MainWindow.on_theme_selected")
     def _on_theme_selected(self, key: str):
         theme_manager.set_active(key)
         session.theme_pref = key
-        self.setStyleSheet(self._STYLE)
-        self._top_bar.restyle()
-        # SidebarWidget se reconstruit automatiquement via theme_changed
-        self._rebuild_student_detail_theme()
-        self._top_bar.update_network()
-        # Fonds réels (PAS transparent — palette noire sinon, voir init)
-        if hasattr(self, "_cards_scroll"):
-            self._cards_scroll.viewport().setStyleSheet(
-                f"background: {p.surface};")
-        if hasattr(self, "_cards_widget"):
-            self._cards_widget.setStyleSheet(f"background: {p.surface};")
-        if hasattr(self, "_group_scroll"):
-            self._group_scroll.viewport().setStyleSheet(
-                f"background: {p.background};")
-        if self._current_group_mode:
-            self.refresh_all()
+        self._restyle_all()
 
     # ---- Mode groupe -------------------------------------------------------
 
@@ -852,6 +847,7 @@ class MainWindow(GroupStatsMixin, StudentsMixin, EventsMixin, QWidget):
 
 
 
+    @safe_slot("MainWindow.refresh_all")
     def refresh_all(self):
         self._event_types_panel.refresh()
         self._top_bar.update_network()

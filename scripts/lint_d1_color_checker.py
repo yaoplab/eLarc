@@ -472,8 +472,19 @@ def scan_d7_violations(lines: list[str], filepath: Path) -> list[dict]:
         # (_restyle → _rebuild / _restyle_all / restyle / _update_style)
         restyle_start = find_method_def(cls, "_restyle", lines)
 
+        # Pas de méthode _restyle() littérale : essayer les alias comme
+        # candidats PRIMAIRES (une classe peut connecter theme_changed
+        # directement à _restyle_all/restyle/etc. sans wrapper _restyle)
         if restyle_start is None:
-            # a theme_changed.connect MAIS pas de _restyle → D7
+            for alias_name in (
+                "_restyle_all", "restyle", "_rebuild", "_update_style", "refresh_theme"
+            ):
+                restyle_start = find_method_def(cls, alias_name, lines)
+                if restyle_start is not None:
+                    break
+
+        if restyle_start is None:
+            # a theme_changed.connect MAIS pas de _restyle (ni alias) → D7
             violations.append({
                 "rule": "D7",
                 "line": cls["start"] + 1,

@@ -88,6 +88,51 @@ def test_save_updates_and_accepts(qtbot, mock_db, mock_session, mock_theme):
     assert mock_db.server_conn.commit.called
 
 
+def test_restyle_all_updates_colors_on_theme_changed(qtbot, mock_db, mock_session, mock_theme, monkeypatch):
+    # Assertion faible rejetee : "styleSheet() != ''" reste vrai meme si
+    # _restyle_all n'existe pas / n'est jamais connectee (le styleSheet est
+    # deja non-vide depuis __init__).
+    #
+    # mock_theme est INOPERANT ici : il patch l'attribut module
+    # "LarcSuperviseur.common.theme.theme_manager", mais event_dialog.py fait
+    # `from LarcSuperviseur.common.theme import theme_manager` (ligne 16) —
+    # ce nom est lie UNE FOIS a la collection des tests (avant que la fixture
+    # ne patche quoi que ce soit) et reste bind sur le VRAI singleton
+    # ThemeManager pour tout le reste du process. On mute donc directement les
+    # attributs de la VRAIE Palette active (meme objet que celui lu par
+    # theme_manager.palette dans le code de production) et on emet le VRAI
+    # signal ds.theme_changed, pour exercer bout-en-bout le fil connect() de
+    # __init__ sans dependre de la plomberie mock_theme (meme pattern que
+    # test_timetable_editor.py::test_restyle_all_updates_colors_on_theme_changed).
+    from larccommon.design_system import ds
+    from LarcSuperviseur.views.core import event_dialog as ed_mod
+
+    fake = mock_db.server_conn.cursor.return_value
+    fake.fetchone.return_value = (
+        "Absence cours", None, datetime(2026, 7, 8, 8, 30),
+        "Salle de cours", "Maths", "", "Dupont Jean",
+    )
+    fake.fetchall.return_value = [("Absence cours",)]
+
+    dlg = _make_dlg(qtbot, mock_db)
+
+    real_palette = ed_mod.theme_manager.palette
+    old_primary = real_palette.primary
+    old_surface = real_palette.surface
+    assert old_primary in dlg._save_btn.styleSheet()
+    assert old_surface in dlg.styleSheet()
+
+    monkeypatch.setattr(real_palette, "primary", "#ABCDEF")
+    monkeypatch.setattr(real_palette, "surface", "#123456")
+
+    ds.theme_changed.emit()  # signal reel : prouve que le connect() de __init__ fonctionne
+
+    assert "#ABCDEF" in dlg._save_btn.styleSheet()
+    assert old_primary not in dlg._save_btn.styleSheet()
+    assert "#123456" in dlg.styleSheet()
+    assert old_surface not in dlg.styleSheet()
+
+
 def test_no_theme_warning(qtbot, mock_db, mock_session, mock_theme, recwarn):
     fake = mock_db.server_conn.cursor.return_value
     fake.fetchone.return_value = (
@@ -102,31 +147,28 @@ def test_no_theme_warning(qtbot, mock_db, mock_session, mock_theme, recwarn):
     fake.fetchall.return_value = [("Absence cours",), ("Sortie",)]
     recwarn.clear()
 
-    # A filename-based filter does NOT work here: every M3 widget's
-    # _update_style() calls warnings.warn(..., stacklevel=2), which always
-    # attributes the warning's filename to the widget's own defining file
-    # inside LarcCommon (e.g. phibuilder/widgets/label.py) — never to the
-    # external caller (event_dialog.py) that instantiated it, no matter who
-    # the caller is. So instead we assert the exact multiset of warning
-    # classes: EventEditDialog constructs EventTypeSelectorWidget
-    # (LarcCommon/larccommon/dialogs/event_type_selector.py), which
-    # unconditionally emits exactly 3 known, out-of-scope warnings (one
-    # M3TextField, one M3Label, one M3Button) — tracked separately, not part
-    # of this task. event_dialog.py's own 5 widget sites (_info, _note_label,
-    # _note_input, save_btn, cancel_btn) all pass theme=theme_manager.phi_theme
-    # and must contribute 0 warnings on top of that baseline.
+    # EventEditDialog constructs EventTypeSelectorWidget
+    # (LarcCommon/larccommon/dialogs/event_type_selector.py). That widget used
+    # to have 3 of its own unfixed theme= sites (M3TextField/M3Label/M3Button),
+    # which required tolerating exactly those 3 out-of-scope warnings here.
+    # It was fixed on 2026-09-11 (commit 166f370) — EventTypeSelectorWidget now
+    # contributes 0 warnings, so this test asserts a plain empty list like the
+    # other tasks' tests. If this ever needs the class-count workaround again
+    # (a new unfixed shared widget introduced upstream), see git history on
+    # this test for the pattern (multiset of warning classes) and why a
+    # filename-based filter cannot discriminate (every M3 widget's
+    # _update_style() calls warnings.warn(stacklevel=2), which always
+    # attributes the filename to the widget's own defining file in LarcCommon,
+    # never to the external caller).
     #
-    # This requires forcing the "always" filter: pytest's recwarn fixture
-    # uses "default" (print-once-per-(message, category, module, lineno)).
-    # Since every M3Button instantiation warns from the exact same line
-    # inside button.py regardless of which call site created it, "default"
-    # would silently dedup a second, genuinely distinct M3Button warning
-    # (e.g. from event_dialog.py's own cancel_btn losing its theme=) against
-    # the one already raised by EventTypeSelectorWidget's _confirm_btn —
-    # making a regression invisible. "always" disables that dedup so each
-    # instantiation is counted. (Verified empirically: without this line, a
-    # deliberately reintroduced missing theme= on cancel_btn does NOT fail
-    # this test — see task-2-report.md, Round 3.)
+    # "always" is still required: pytest's recwarn fixture uses "default"
+    # (print-once-per-(message, category, module, lineno)), and every
+    # M3Button instantiation warns from the exact same line inside button.py
+    # regardless of call site — "default" would silently dedup a second,
+    # genuinely distinct M3Button warning (e.g. event_dialog.py's own
+    # cancel_btn losing its theme=) if any earlier M3Button in this test
+    # process already warned once. "always" disables that dedup so each
+    # instantiation is counted.
     import warnings
 
     warnings.simplefilter("always")
@@ -134,5 +176,4 @@ def test_no_theme_warning(qtbot, mock_db, mock_session, mock_theme, recwarn):
     _make_dlg(qtbot, mock_db)
 
     theme_warnings = [str(x.message) for x in recwarn.list if "cree sans theme=" in str(x.message)]
-    classes = sorted(w.split()[0] for w in theme_warnings)
-    assert classes == ["M3Button", "M3Label", "M3TextField"], theme_warnings
+    assert not theme_warnings, theme_warnings

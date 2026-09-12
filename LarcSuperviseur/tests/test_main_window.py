@@ -33,7 +33,34 @@ def test_main_window_constructs(qtbot, mock_db, mock_session, mock_theme):
 
 def test_theme_change_no_crash(qtbot, mock_db, mock_session, mock_theme):
     w = _make_window(qtbot, mock_db, mock_session)
-    w._restyle()
+    w._restyle_all()
+
+
+def test_theme_selected_no_crash_and_repaints(qtbot, mock_db, mock_session, mock_theme, monkeypatch):
+    w = _make_window(qtbot, mock_db, mock_session)
+
+    # Bypass @safe_slot's exception-swallowing so a regression (e.g. a NameError
+    # from an unbound `p` in _restyle_all) fails this test loudly instead of
+    # passing silently. @safe_slot wraps with functools.wraps(func), which sets
+    # __wrapped__ to the original undecorated function.
+    #
+    # Two layers need bypassing, not one: _on_theme_selected's own body just
+    # delegates to `self._restyle_all()`, and _restyle_all is ITSELF separately
+    # decorated with @safe_slot. Calling only
+    # `w._on_theme_selected.__wrapped__(w, "dark")` still routes the inner
+    # `self._restyle_all()` call through _restyle_all's own decorator, which
+    # would silently swallow exactly the NameError this test exists to catch
+    # (verified: reintroducing the bug — removing `p = theme_manager.palette`
+    # in _restyle_all — still passed with only the outer layer bypassed).
+    # So replace the instance's `_restyle_all` with its own unwrapped function
+    # (bound to `w`) before calling the outer unwrapped `_on_theme_selected`.
+    monkeypatch.setattr(
+        w, "_restyle_all", w._restyle_all.__wrapped__.__get__(w, type(w))
+    )
+    w._on_theme_selected.__wrapped__(w, "dark")
+
+    assert w._cards_widget.styleSheet() != ""
+    assert w._group_scroll.viewport().styleSheet() != ""
 
 
 def test_period_click_no_crash(qtbot, mock_db, mock_session, mock_theme):
@@ -84,21 +111,16 @@ def test_edit_event_dialog_no_theme_warning(qtbot, mock_db, mock_session, mock_t
 
     w._edit_event(42)
 
-    # A plain "no warnings at all" assertion does NOT hold here: _edit_event
-    # constructs EventTypeSelectorWidget (LarcCommon/larccommon/dialogs/
-    # event_type_selector.py), which unconditionally emits exactly 3 known,
-    # out-of-scope warnings (one M3TextField from _search, one M3Label from
-    # _badge_text, one M3Button from _confirm_btn) — tracked separately, not
-    # part of this task. main_events.py's own widget sites in _edit_event
-    # (info, note_label, note_input, save_btn, cancel_btn) all pass
-    # theme=theme_manager.phi_theme and must contribute 0 warnings on top of
-    # that baseline. Verified empirically: with a plain "not theme_warnings"
-    # assertion, this test fails even on the fully-fixed code because of
-    # EventTypeSelectorWidget's baseline — so the multiset comparison below is
-    # required, mirroring test_event_dialog.py::test_no_theme_warning.
+    # _edit_event constructs EventTypeSelectorWidget (LarcCommon/larccommon/
+    # dialogs/event_type_selector.py). That widget used to have 3 of its own
+    # unfixed theme= sites (M3TextField/M3Label/M3Button), which required
+    # tolerating exactly those 3 out-of-scope warnings here. It was fixed on
+    # 2026-09-11 (commit 166f370) — EventTypeSelectorWidget now contributes 0
+    # warnings, so this test asserts a plain empty list like the other tasks'
+    # tests. See test_event_dialog.py::test_no_theme_warning's git history for
+    # the class-count workaround pattern if this regresses upstream again.
     theme_warnings = [str(x.message) for x in recwarn.list if "cree sans theme=" in str(x.message)]
-    classes = sorted(msg.split()[0] for msg in theme_warnings)
-    assert classes == ["M3Button", "M3Label", "M3TextField"], theme_warnings
+    assert not theme_warnings, theme_warnings
 
 
 def test_show_event_context_menu_no_theme_warning(qtbot, mock_db, mock_session, mock_theme, recwarn, monkeypatch):
@@ -136,15 +158,27 @@ def test_show_event_context_menu_no_theme_warning(qtbot, mock_db, mock_session, 
 
     recwarn.clear()
 
-    # Same dedup pitfall as test_edit_event_dialog_no_theme_warning above, but
-    # for a different call site: TopBar (built during _make_window, as part of
-    # MainWindow.__init__) constructs self._theme_menu = M3Menu() with NO
-    # theme= (views/top_bar.py) — an out-of-scope, pre-existing defect not
-    # part of this branch's fix list. That M3Menu() firing during window
-    # construction, before recwarn.clear(), would silently dedup-suppress a
-    # genuine regression on main_events.py's own
-    # `menu = M3Menu(theme=theme_manager.phi_theme, parent=self)` site without
-    # "always" (identical mechanism to commit 7be90be).
+    # Same dedup pitfall as test_edit_event_dialog_no_theme_warning above.
+    # TopBar (built during _make_window, as part of MainWindow.__init__) used
+    # to construct self._theme_menu = M3Menu() / self._profile_menu = M3Menu(self)
+    # with NO theme= (views/top_bar.py) — that was fixed in this same change
+    # (both now pass theme=theme_manager.phi_theme), so TopBar no longer
+    # contributes a "M3Menu cree sans theme=" warning during window
+    # construction. Verified by live regression check (temporarily stripped
+    # theme= from main_events.py's own `menu = M3Menu(...)` call): the
+    # assertion below still catches it, with or without "always", because no
+    # other M3Menu() is currently built eagerly during _make_window() (the
+    # only remaining untheme'd M3Menu() call, student_detail.py's
+    # _show_context_menu, is lazy — only constructed on right-click, never
+    # during window construction). "always" is kept anyway as defense in
+    # depth: pytest's recwarn fixture runs under the "default" filter, which
+    # dedups by (message, category, module, lineno) and is NOT reset by
+    # recwarn.clear() — every M3Menu()-without-theme warning is attributed to
+    # the same location inside menu.py's _update_style(), so if a future
+    # eager, untheme'd M3Menu() construction is (re)introduced upstream of
+    # this call, it would again silently dedup-suppress a genuine regression
+    # on main_events.py's own site without "always" (identical mechanism to
+    # commit 7be90be).
     warnings.simplefilter("always")
 
     w._show_event_context_menu(table, QPoint(0, 0))
