@@ -96,6 +96,24 @@ class TestEventTypeSelectorWidgetCategoryChips:
         assert widget._tree.topLevelItemCount() == 1
         assert widget._tree.current_node() is None  # sélection réinitialisée par le changement de catégorie
 
+    def test_switching_chip_resets_confirm_button_and_badge_from_stale_selection(self):
+        """Bug reproduit : apres selection dans Absence puis switch vers Sortie sans
+        rien selectionner, le bouton Confirmer restait actif et le badge affichait
+        encore le libelle de l'ancienne categorie (event_type_selector.py:_on_category_changed
+        ne reinitialisait jamais confirm_btn/badge apres avoir reconstruit l'arbre)."""
+        hierarchies, absence_root, sortie_root, _ = make_multi_category_hierarchy()
+        widget = EventTypeSelectorWidget(hierarchies)
+        absence_mid_item = widget._tree.topLevelItem(0).child(0)
+        widget._tree.setCurrentItem(absence_mid_item)
+        assert widget._confirm_btn.isEnabled() is True  # sanity check avant le switch
+
+        sortie_index = widget._roots.index(sortie_root)
+        widget._chip_bar.set_current(sortie_index)
+
+        assert widget._tree.current_node() is None
+        assert widget._confirm_btn.isEnabled() is False
+        assert widget._badge.isHidden() is True
+
     def test_search_with_no_match_in_active_category_switches_and_filters(self):
         hierarchies, absence_root, sortie_root, sortie_leaf = make_multi_category_hierarchy()
         widget = EventTypeSelectorWidget(hierarchies)

@@ -725,17 +725,17 @@
     "LarcSecretaire\\views\\todo_panel.py:484:W1",
     "LarcSuperviseur\\views\\login.py:186:W1",
     "LarcSuperviseur\\views\\main_events.py:156:W1",
-    "LarcSuperviseur\\views\\panels\\event_types_panel.py:299:W1",
-    "LarcSuperviseur\\views\\panels\\student_detail.py:142:W1",
-    "LarcSuperviseur\\views\\panels\\student_detail.py:152:W1",
-    "LarcSuperviseur\\views\\panels\\student_detail.py:157:W1",
-    "LarcSuperviseur\\views\\panels\\student_detail.py:162:W1",
-    "LarcSuperviseur\\views\\panels\\student_detail.py:171:W1",
-    "LarcSuperviseur\\views\\panels\\student_detail.py:176:W1",
-    "LarcSuperviseur\\views\\panels\\student_detail.py:187:W1",
+    "LarcSuperviseur\\views\\panels\\event_types_panel.py:305:W1",
+    "LarcSuperviseur\\views\\panels\\student_detail.py:151:W1",
+    "LarcSuperviseur\\views\\panels\\student_detail.py:161:W1",
+    "LarcSuperviseur\\views\\panels\\student_detail.py:165:W1",
+    "LarcSuperviseur\\views\\panels\\student_detail.py:169:W1",
+    "LarcSuperviseur\\views\\panels\\student_detail.py:177:W1",
+    "LarcSuperviseur\\views\\panels\\student_detail.py:182:W1",
     "LarcSuperviseur\\views\\panels\\student_detail.py:193:W1",
-    "LarcSuperviseur\\views\\panels\\student_detail.py:196:W1",
-    "LarcSuperviseur\\views\\panels\\student_detail.py:204:W1",
-    "LarcSuperviseur\\views\\top_bar.py:193:W1"
+    "LarcSuperviseur\\views\\panels\\student_detail.py:199:W1",
+    "LarcSuperviseur\\views\\panels\\student_detail.py:202:W1",
+    "LarcSuperviseur\\views\\panels\\student_detail.py:210:W1",
+    "LarcSuperviseur\\views\\top_bar.py:196:W1"
   ]
 }

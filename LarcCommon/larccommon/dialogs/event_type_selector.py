@@ -144,6 +144,9 @@ class EventTypeSelectorWidget(QWidget):
         )
         self._colorize_root_item()
         self._tree.filter_text(self._search.text())
+        self._on_selection_changed()  # QTreeWidget.clear() (dans set_data) n'emet pas
+        # itemSelectionChanged de facon fiable ici -- sans cet appel, confirm_btn/badge
+        # restaient bloques sur la selection de la categorie precedente.
 
     def _colorize_root_item(self):
         """Teinte le nœud racine de la couleur de sa catégorie — repère visuel fort

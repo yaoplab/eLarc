@@ -42,24 +42,9 @@
     "LarcSuperviseur\\tools\\show_icons.py:74:setFixedSize",
     "LarcSuperviseur\\tools\\show_icons.py:75:QSS_border-radius",
     "LarcSuperviseur\\tools\\show_icons.py:78:QSS_font-size",
-    "LarcSuperviseur\\views\\login.py:148:addSpacing",
-    "LarcSuperviseur\\views\\login.py:154:addSpacing",
-    "LarcSuperviseur\\views\\login.py:160:addSpacing",
-    "LarcSuperviseur\\views\\login.py:166:addSpacing",
-    "LarcSuperviseur\\views\\login.py:172:addSpacing",
-    "LarcSuperviseur\\views\\login.py:186:addSpacing",
-    "LarcSuperviseur\\views\\login.py:227:addSpacing",
-    "LarcSuperviseur\\views\\login.py:240:addSpacing",
-    "LarcSuperviseur\\views\\login.py:247:addSpacing",
     "LarcSuperviseur\\views\\login.py:255:addSpacing",
-    "LarcSuperviseur\\views\\login.py:271:addSpacing",
-    "LarcSuperviseur\\views\\login.py:278:addSpacing",
     "LarcSuperviseur\\views\\login.py:286:addSpacing",
-    "LarcSuperviseur\\views\\login.py:492:resize",
-    "LarcSuperviseur\\views\\panels\\student_detail.py:224:setDefaultSectionSize",
-    "LarcSuperviseur\\views\\panels\\student_detail.py:225:setMinimumSectionSize",
-    "LarcSuperviseur\\views\\top_bar.py:117:QSS_border-radius",
-    "LarcSuperviseur\\views\\top_bar.py:177:addSpacing",
-    "LarcSuperviseur\\views\\top_bar.py:335:QSS_border-radius"
+    "LarcSuperviseur\\views\\panels\\student_detail.py:230:setDefaultSectionSize",
+    "LarcSuperviseur\\views\\panels\\student_detail.py:231:setMinimumSectionSize"
   ]
 }

@@ -117,7 +117,7 @@ class TopBar(QFrame):
         self._profile_btn.setStyleSheet(
             f"QPushButton {{ background: {p.primary}; color: {p.on_primary}; "
             f"font-weight: bold; font-size: {theme_manager.font_size(12)}px; "
-            f"border: none; border-radius: 17px; text-align: center; padding: 0px; }}"
+            f"border: none; border-radius: {ds.icon_md // 2}px; text-align: center; padding: 0px; }}"
             f"QPushButton:hover {{ background: {p.active}; }}"
             f"QPushButton::menu-indicator {{ image: none; width: 0px; }}"
         )
@@ -177,7 +177,7 @@ class TopBar(QFrame):
         self._unit_slot.setSpacing(d.spacing)
         self._period_row.addLayout(self._unit_slot)
 
-        self._period_row.addSpacing(13)
+        self._period_row.addSpacing(ds.space_sm)
         self._refresh_btn = M3Button()
         self._refresh_btn.setFixedSize(
             ds.icon_md, ds.icon_md
@@ -336,7 +336,7 @@ class TopBar(QFrame):
         self._theme_btn.setIcon(self._theme_icon())
         self._profile_btn.setStyleSheet(
             f"QPushButton {{ background: {p.primary}; color: {p.on_primary}; "
-            f"font-weight: bold; font-size: {s(12)}px; border: none; border-radius: 17px; "
+            f"font-weight: bold; font-size: {s(12)}px; border: none; border-radius: {ds.icon_md // 2}px; "
             f"text-align: center; padding: 0px; }}"
             f"QPushButton:hover {{ background: {p.active}; }}"
             f"QPushButton::menu-indicator {{ image: none; width: 0px; }}"
