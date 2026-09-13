@@ -44,7 +44,7 @@
     "LarcSuperviseur\\tools\\show_icons.py:78:QSS_font-size",
     "LarcSuperviseur\\views\\login.py:255:addSpacing",
     "LarcSuperviseur\\views\\login.py:286:addSpacing",
-    "LarcSuperviseur\\views\\panels\\student_detail.py:230:setDefaultSectionSize",
-    "LarcSuperviseur\\views\\panels\\student_detail.py:231:setMinimumSectionSize"
+    "LarcSuperviseur\\views\\panels\\student_detail.py:236:setDefaultSectionSize",
+    "LarcSuperviseur\\views\\panels\\student_detail.py:237:setMinimumSectionSize"
   ]
 }

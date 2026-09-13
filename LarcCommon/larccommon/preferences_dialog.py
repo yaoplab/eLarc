@@ -28,12 +28,14 @@ def _btn_style(selected: bool):
             f"QPushButton {{ background: {p.primary}; color: {p.on_primary}; "
             f"border: none; border-radius: {ds.radius_sm}px; font-weight: bold; "  # 8px M3 shape-small
             f"font-size: {theme_manager.font_size(11)}px; }}"
+            f"QPushButton:focus {{ outline: 2px solid {p.primary}; outline-offset: 2px; }}"
         )
     return (
         f"QPushButton {{ background: {p.surface}; color: {p.text_strong}; "
         f"border: 1px solid {p.outline_variant}; border-radius: {ds.radius_sm}px; "  # 8px M3 shape-small
         f"font-size: {theme_manager.font_size(11)}px; }}"
         f"QPushButton:hover {{ border-color: {p.primary}; }}"
+        f"QPushButton:focus {{ outline: 2px solid {p.primary}; outline-offset: 2px; }}"
     )
 
 

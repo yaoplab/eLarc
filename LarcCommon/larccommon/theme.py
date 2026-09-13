@@ -790,6 +790,7 @@ class QssHelper:
             f"border-color: {p.primary}; }}"
             f"QPushButton#period_btn:checked {{ background: {p.primary}; color: {p.on_primary}; "
             f"border: {d.btn_border * 2}px solid {p.primary}; font-weight: bold; }}"
+            f"QPushButton#period_btn:focus {{ outline: 2px solid {p.primary}; outline-offset: 2px; }}"
         )
 
     @staticmethod
@@ -829,6 +830,7 @@ class QssHelper:
             f"border-radius: {_ds.radius_lg}px; background: {p.surface_variant}; color: {p.text_strong}; }}"  # shape-large (16px) — button
             f"QPushButton#phi_btn:checked {{ background: {p.primary}; color: {p.on_primary}; "
             f"border: {d.btn_border * 2}px solid {p.primary}; }}"
+            f"QPushButton#phi_btn:focus {{ outline: 2px solid {p.primary}; outline-offset: 2px; }}"
         )
 
     @staticmethod
@@ -845,6 +847,7 @@ class QssHelper:
             f"font-size: {s(10)}px; }}"
             f"QPushButton#class_btn:hover {{ background: {p.primary_container}; }}"
             f"QPushButton#class_btn:checked {{ font-weight: bold; }}"
+            f"QPushButton#class_btn:focus {{ outline: 2px solid {p.primary}; outline-offset: 2px; }}"
         )
 
     @staticmethod

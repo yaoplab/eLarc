@@ -130,6 +130,12 @@ class MainWindow(GroupStatsMixin, StudentsMixin, EventsMixin, QWidget):
             QPushButton#sd_add_event:hover {{
                 background: {p.active};
             }}
+            QPushButton#sd_add_event:pressed {{
+                background: {p.active};
+            }}
+            QPushButton#sd_add_event:focus {{
+                outline: 2px solid {p.primary}; outline-offset: 2px;
+            }}
             QLabel#sd_placeholder {{
                 color: {p.text_disabled}; font-size: {s(14)}px;
             }}

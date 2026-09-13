@@ -79,18 +79,24 @@ class StudentDetail(ThemedWidget):
                 font-size: {s(24)}px; font-weight: bold; color: {p.primary};
             }}
             QLabel#sd_kpi_lbl {{
-                font-size: {s(11)}px; color: {p.text_strong};
+                font-size: {s(ds.font_label_sm)}px; color: {p.text_strong};
             }}
             QPushButton#sd_add_btn {{
                 background: {p.primary}; color: {p.on_primary};
                 border: none; border-radius: {ds.radius_md}px;
-                font-weight: bold; font-size: {s(28)}px;
+                font-weight: bold; font-size: {s(ds.font_headline_md)}px;
             }}
             QPushButton#sd_add_btn:hover {{
                 background: {p.active};
             }}
+            QPushButton#sd_add_btn:pressed {{
+                background: {p.active};
+            }}
+            QPushButton#sd_add_btn:focus {{
+                outline: 2px solid {p.primary}; outline-offset: 2px;
+            }}
             M3Label#sd_placeholder {{
-                color: {p.text_disabled}; font-size: {s(14)}px;
+                color: {p.text_disabled}; font-size: {s(ds.font_body_md)}px;
             }}
             QTableWidget#sd_events::item {{
                 padding: {ds.space_xxs // 4}px {ds.space_xs - ds.space_xxs // 2}px;  # 1px 6px
@@ -103,7 +109,7 @@ class StudentDetail(ThemedWidget):
                 font-size: {s(24)}px; font-weight: bold; color: {p.text_strong};
             }}
             QLabel#sd_name_lbl {{
-                font-size: {s(18)}px; font-weight: bold; color: {p.text_strong}; border: none;
+                font-size: {s(ds.font_title_lg)}px; font-weight: bold; color: {p.text_strong}; border: none;
             }}
             QLabel#sd_class_lbl {{
                 font-size: {s(ds.font_label_lg)}px; color: {p.text_strong}; border: none;

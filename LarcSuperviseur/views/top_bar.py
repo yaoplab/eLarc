@@ -52,7 +52,7 @@ class TopBar(QFrame):
 
         # Ligne 1 -------------------------------------------------------
         row1 = QHBoxLayout()
-        row1.setSpacing(d.radius_lg)
+        row1.setSpacing(ds.space_xs)
 
         self._date_label = M3Label(theme=theme_manager.phi_theme)
         self._date_label.setStyleSheet(
