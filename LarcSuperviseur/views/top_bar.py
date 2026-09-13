@@ -54,15 +54,15 @@ class TopBar(QFrame):
         row1 = QHBoxLayout()
         row1.setSpacing(d.radius_lg)
 
-        self._date_label = M3Label()
+        self._date_label = M3Label(theme=theme_manager.phi_theme)
         self._date_label.setStyleSheet(
             f"font-size: {theme_manager.font_size(21)}px; font-weight: bold; color: {p.text_strong};"
         )
-        self._time_label = M3Label()
+        self._time_label = M3Label(theme=theme_manager.phi_theme)
         self._time_label.setStyleSheet(
             f"font-size: {theme_manager.font_size(21)}px; font-weight: bold; color: {p.primary};"
         )
-        self._term_label = M3Label()
+        self._term_label = M3Label(theme=theme_manager.phi_theme)
         self._term_label.setStyleSheet(
             f"font-size: {theme_manager.font_size(13)}px; color: {p.text_strong}; "
             f"padding-left: {theme_manager.font_size(13)}px;"
@@ -73,11 +73,11 @@ class TopBar(QFrame):
         row1.addWidget(self._term_label)
         row1.addStretch()
 
-        self._network_label = M3Label()
+        self._network_label = M3Label(theme=theme_manager.phi_theme)
         self._update_style()
         row1.addWidget(self._network_label)
 
-        self._theme_btn = M3Button()
+        self._theme_btn = M3Button(theme=theme_manager.phi_theme)
         self._theme_btn.setObjectName("theme_btn")
         self._theme_btn.setFixedSize(theme_manager.image.theme_btn, theme_manager.image.theme_btn)
         self._theme_btn.setToolTip(_("topbar.theme_tooltip"))
@@ -142,7 +142,7 @@ class TopBar(QFrame):
         self._profile_btn.setMenu(self._profile_menu)
         row1.addWidget(self._profile_btn)
 
-        self._loading_label = M3Label()
+        self._loading_label = M3Label(theme=theme_manager.phi_theme)
         self._loading_label.setStyleSheet(
             f"font-size: {theme_manager.font_size(13)}px; color: {p.primary}; font-weight: bold;"
         )
@@ -178,7 +178,7 @@ class TopBar(QFrame):
         self._period_row.addLayout(self._unit_slot)
 
         self._period_row.addSpacing(ds.space_sm)
-        self._refresh_btn = M3Button()
+        self._refresh_btn = M3Button(theme=theme_manager.phi_theme)
         self._refresh_btn.setFixedSize(
             ds.icon_md, ds.icon_md
         )
@@ -205,7 +205,7 @@ class TopBar(QFrame):
     # ── Boutons période ────────────────────────────────────────────────
 
     def _make_period_btn(self, label: str) -> M3Button:
-        btn = M3Button(label)
+        btn = M3Button(label, theme=theme_manager.phi_theme)
         btn.setObjectName("period_btn")
         btn.setCheckable(True)
         btn.setFixedSize(theme_manager.image.logo, theme_manager.image.theme_btn)  # 89×34

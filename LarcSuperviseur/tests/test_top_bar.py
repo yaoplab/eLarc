@@ -28,6 +28,12 @@ def _make_bar(qtbot, monkeypatch, mock_session) -> tuple[TopBar, list]:
     return bar, clicks
 
 
+def test_construct_no_theme_warning(qtbot, mock_theme, mock_session, monkeypatch, recwarn):
+    bar, _ = _make_bar(qtbot, monkeypatch, mock_session)
+    theme_warnings = [x for x in recwarn.list if "cree sans theme=" in str(x.message)]
+    assert not theme_warnings, [str(x.message) for x in theme_warnings]
+
+
 def test_construct_labels(qtbot, mock_theme, mock_session, monkeypatch):
     bar, _ = _make_bar(qtbot, monkeypatch, mock_session)
     assert bar._date_label.text() != ""

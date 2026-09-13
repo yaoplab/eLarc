@@ -53,6 +53,12 @@ def _make_detail(qtbot, monkeypatch, mock_db, mock_session, loader=_StubLoader):
     return d
 
 
+def test_construct_no_theme_warning(qtbot, mock_db, mock_session, mock_theme, monkeypatch, recwarn):
+    _make_detail(qtbot, monkeypatch, mock_db, mock_session)
+    theme_warnings = [x for x in recwarn.list if "cree sans theme=" in str(x.message)]
+    assert not theme_warnings, [str(x.message) for x in theme_warnings]
+
+
 def test_construct_empty_state(qtbot, mock_db, mock_session, mock_theme, monkeypatch):
     d = _make_detail(qtbot, monkeypatch, mock_db, mock_session)
     assert d._student_id == 0

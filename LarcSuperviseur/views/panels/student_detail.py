@@ -222,9 +222,9 @@ class StudentDetail(ThemedWidget):
 
         # Colonne gauche : événements
         left = QVBoxLayout()
-        evt_label = M3Label(f"<b>{_('student.tab.events')}</b>")
+        evt_label = M3Label(f"<b>{_('student.tab.events')}</b>", theme=theme_manager.phi_theme)
         left.addWidget(evt_label)
-        self._sd_events = M3TableWidget()
+        self._sd_events = M3TableWidget(theme=theme_manager.phi_theme)
         self._sd_events.setAlternatingRowColors(False)
         self._sd_events.setObjectName("sd_events")
         self._sd_events.verticalHeader().setDefaultSectionSize(22)
@@ -245,7 +245,7 @@ class StudentDetail(ThemedWidget):
         content.addLayout(left, 8)
 
         # Colonne droite : graphiques dans des onglets
-        self._sd_chart_tabs = M3TabWidget(parent=self)
+        self._sd_chart_tabs = M3TabWidget(theme=theme_manager.phi_theme, parent=self)
         self._sd_chart_tabs.setDocumentMode(True)
 
         # Onglet 1 : Donut répartition par type
@@ -277,7 +277,7 @@ class StudentDetail(ThemedWidget):
         sd_layout.addLayout(content, 1)
 
         # Placeholder
-        self._sd_placeholder = M3Label(_("student.no_selection"))
+        self._sd_placeholder = M3Label(_("student.no_selection"), theme=theme_manager.phi_theme)
         self._sd_placeholder.setObjectName("sd_placeholder")
         self._sd_placeholder.setAlignment(Qt.AlignCenter)
         self._sd_placeholder.setVisible(False)

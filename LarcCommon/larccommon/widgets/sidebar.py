@@ -82,7 +82,7 @@ class SidebarWidget(M3ScrollArea):
                       Les rôles sont les noms d'attributs de ``Palette``.
             parent: widget parent optionnel
         """
-        super().__init__(parent)
+        super().__init__(theme=theme_manager.phi_theme, parent=parent)
         self._sections = sections
         self._prog_style = prog_style
         self._classes: list[tuple] = []
@@ -179,7 +179,7 @@ class SidebarWidget(M3ScrollArea):
 
         for sec_name, columns in self._sections:
             # En-tête section — fond sombre, texte clair (style bouton proéminent)
-            sec_hdr = M3Button(sec_name)
+            sec_hdr = M3Button(sec_name, theme=theme_manager.phi_theme)
             sec_hdr.setObjectName("sidebar_sec_hdr")
             sec_hdr.setMinimumHeight(ds.field_height + ds.space_xs)
             sec_hdr.setCursor(Qt.PointingHandCursor)
@@ -205,7 +205,7 @@ class SidebarWidget(M3ScrollArea):
                 items = groups.get(prog_key, [])
 
                 # En-tête programme (K8: couleur PLEINE, QSS sans sélecteur)
-                col_hdr = M3Button(hdr_text)
+                col_hdr = M3Button(hdr_text, theme=theme_manager.phi_theme)
                 col_hdr.setObjectName("sidebar_prog_hdr")
                 col_hdr.setFixedSize(self.COL_W, self.H_PROG)
                 col_hdr.setCursor(Qt.PointingHandCursor)
@@ -217,7 +217,7 @@ class SidebarWidget(M3ScrollArea):
 
                 # Boutons de classe (K10: couleur CONTAINER, QSS sans sélecteur)
                 for i, (cid, label) in enumerate(items):
-                    btn = M3Button(label)
+                    btn = M3Button(label, theme=theme_manager.phi_theme)
                     btn.setObjectName("sidebar_class_btn")
                     btn.setFixedSize(self.COL_W, self.H_CLASS)
                     btn.setCursor(Qt.PointingHandCursor)
@@ -232,7 +232,7 @@ class SidebarWidget(M3ScrollArea):
             self._layout.addSpacing(ds.space_xs)
 
         # Bouton Lycée + Collège (même style que les en-têtes de section)
-        self._all_btn = M3Button(_("sidebar.all_classes"))
+        self._all_btn = M3Button(_("sidebar.all_classes"), theme=theme_manager.phi_theme)
         self._all_btn.setObjectName("sidebar_all_btn")
         self._all_btn.setMinimumHeight(ds.field_height + ds.space_xs)
         self._all_btn.setCursor(Qt.PointingHandCursor)

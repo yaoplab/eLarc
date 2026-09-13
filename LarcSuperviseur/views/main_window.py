@@ -199,11 +199,11 @@ class MainWindow(GroupStatsMixin, StudentsMixin, EventsMixin, QWidget):
         self._sidebar.all_selected.connect(self._on_all_clicked)
 
         # Content area
-        self._content_stack = M3StackedWidget()
+        self._content_stack = M3StackedWidget(theme=theme_manager.phi_theme)
 
         # Page 0: Mode groupe (KPIs + charts + tables)
         self._group_page = ThemedWidget(object_name="group_page")
-        self._group_scroll = M3ScrollArea()
+        self._group_scroll = M3ScrollArea(theme=theme_manager.phi_theme)
         self._group_scroll.setWidgetResizable(True)
         self._group_scroll.setWidget(self._group_page)
         self._group_scroll.setFrameShape(M3Frame.NoFrame)
@@ -221,10 +221,10 @@ class MainWindow(GroupStatsMixin, StudentsMixin, EventsMixin, QWidget):
         kpi_row.setSpacing(ds.space_xs)
         self._kpi_cards = {}
         # Period label
-        self._kpi_period = M3Label("—")
+        self._kpi_period = M3Label("—", theme=theme_manager.phi_theme)
         self._kpi_period.setObjectName("kpi_value")
         self._kpi_period.setAlignment(Qt.AlignCenter)
-        period_card = M3Frame()
+        period_card = M3Frame(theme=theme_manager.phi_theme)
         period_card.setObjectName("kpi_card")
         period_card.setFixedHeight(ds.kpi_card_height)
         period_card.setAttribute(Qt.WA_StyledBackground, True)
@@ -233,7 +233,7 @@ class MainWindow(GroupStatsMixin, StudentsMixin, EventsMixin, QWidget):
         pcl = QVBoxLayout(period_card)
         pcl.setContentsMargins(ds.space_xs, ds.space_xxs, ds.space_xs, ds.space_xxs)
         pcl.addWidget(self._kpi_period)
-        period_label = M3Label(_("kpi.period"))
+        period_label = M3Label(_("kpi.period"), theme=theme_manager.phi_theme)
         period_label.setObjectName("kpi_label")
         period_label.setAlignment(Qt.AlignCenter)
         pcl.addWidget(period_label)
@@ -245,7 +245,7 @@ class MainWindow(GroupStatsMixin, StudentsMixin, EventsMixin, QWidget):
             ("absent", _("kpi.absent")),
             ("exit", _("kpi.exit")),
         ]:
-            card = M3Frame()
+            card = M3Frame(theme=theme_manager.phi_theme)
             card.setObjectName("kpi_card")
             card.setFixedHeight(ds.kpi_card_height)
             card.setAttribute(Qt.WA_StyledBackground, True)
@@ -253,11 +253,11 @@ class MainWindow(GroupStatsMixin, StudentsMixin, EventsMixin, QWidget):
             card.setToolTip(label)
             cl = QVBoxLayout(card)
             cl.setContentsMargins(ds.space_xs, ds.space_xxs, ds.space_xs, ds.space_xxs)
-            val = M3Label("—")
+            val = M3Label("—", theme=theme_manager.phi_theme)
             val.setObjectName("kpi_value")
             val.setAlignment(Qt.AlignCenter)
             val.setAccessibleName(label)
-            lbl = M3Label(label)
+            lbl = M3Label(label, theme=theme_manager.phi_theme)
             lbl.setObjectName("kpi_label")
             lbl.setAlignment(Qt.AlignCenter)
             cl.addWidget(val)
@@ -267,14 +267,14 @@ class MainWindow(GroupStatsMixin, StudentsMixin, EventsMixin, QWidget):
         group_layout.addLayout(kpi_row)
 
         # -- Liste des absents (apres KPIs, avant historique) --
-        self._absents_group = M3Frame()
+        self._absents_group = M3Frame(theme=theme_manager.phi_theme)
         self._absents_group.setObjectName("panel")
         self._absents_group.setAttribute(Qt.WA_StyledBackground, True)
         absents_layout = QVBoxLayout(self._absents_group)
-        absents_title = M3Label(f"<b>{_('kpi.absent')}</b>")
+        absents_title = M3Label(f"<b>{_('kpi.absent')}</b>", theme=theme_manager.phi_theme)
         absents_title.setObjectName("panel_title")
         absents_layout.addWidget(absents_title)
-        self._absents_table = M3TableWidget()
+        self._absents_table = M3TableWidget(theme=theme_manager.phi_theme)
         self._absents_table.setColumnCount(3)
         self._absents_table.setHorizontalHeaderLabels(
             [_("table.header.name"), _("table.header.class"), _("table.header.reason")]
@@ -285,13 +285,13 @@ class MainWindow(GroupStatsMixin, StudentsMixin, EventsMixin, QWidget):
         self._absents_table.setMaximumHeight(ds.kpi_card_height * 2 + ds.space_md)
         absents_layout.addWidget(self._absents_table)
         self._absents_group.setVisible(False)
-        self._history_group = M3Frame()
+        self._history_group = M3Frame(theme=theme_manager.phi_theme)
         self._history_group.setObjectName("panel")
         self._history_group.setAttribute(Qt.WA_StyledBackground, True)
         self._history_layout = QVBoxLayout(self._history_group)
-        history_title = M3Label(f"<b>{_('history.title')}</b>")
+        history_title = M3Label(f"<b>{_('history.title')}</b>", theme=theme_manager.phi_theme)
         history_title.setObjectName("panel_title")
-        self._history_table = M3TableWidget()
+        self._history_table = M3TableWidget(theme=theme_manager.phi_theme)
         self._history_table.setAlternatingRowColors(False)
         self._history_table.horizontalHeader().setStretchLastSection(True)
         self._history_table.setEditTriggers(M3TableWidget.NoEditTriggers)
@@ -309,21 +309,21 @@ class MainWindow(GroupStatsMixin, StudentsMixin, EventsMixin, QWidget):
         # -- Filtres --
         filter_row = QHBoxLayout()
         filter_row.setSpacing(d.spacing)
-        self._history_filter_class = M3ComboBox()
+        self._history_filter_class = M3ComboBox(theme=theme_manager.phi_theme)
         self._history_filter_class.setMinimumWidth(ds.avatar)  # 150px
         self._history_filter_class.addItem(_("history.filter_all_classes"), "")
-        filter_row.addWidget(M3Label(_("history.filter_class") + ":"))
+        filter_row.addWidget(M3Label(_("history.filter_class") + ":", theme=theme_manager.phi_theme))
         filter_row.addWidget(self._history_filter_class)
-        self._history_filter_type = M3ComboBox()
+        self._history_filter_type = M3ComboBox(theme=theme_manager.phi_theme)
         self._history_filter_type.setMinimumWidth(ds.window_width * 3 // 20)  # 180px
         self._history_filter_type.setEditable(True)
         self._history_filter_type.lineEdit().setPlaceholderText(
             _("history.filter_type_placeholder")
         )
-        filter_row.addWidget(M3Label(_("history.filter_type") + ":"))
+        filter_row.addWidget(M3Label(_("history.filter_type") + ":", theme=theme_manager.phi_theme))
         filter_row.addWidget(self._history_filter_type)
         filter_row.addSpacing(ds.space_xs)
-        filter_btn = M3Button(_("history.filter_button"))
+        filter_btn = M3Button(_("history.filter_button"), theme=theme_manager.phi_theme)
         filter_btn.setCursor(Qt.PointingHandCursor)
         filter_btn.clicked.connect(self._on_filter_history)
         filter_row.addWidget(filter_btn)
@@ -341,7 +341,7 @@ class MainWindow(GroupStatsMixin, StudentsMixin, EventsMixin, QWidget):
         bottom_row = QHBoxLayout()
         bottom_row.setSpacing(ds.space_xs)
 
-        self._charts_tabs = M3TabWidget()
+        self._charts_tabs = M3TabWidget(theme=theme_manager.phi_theme)
         self._charts_tabs.setMinimumSize(
             ds.window_width * 7 // 20, ds.window_height * 3 // 8  # 420×300
         )
@@ -393,13 +393,13 @@ class MainWindow(GroupStatsMixin, StudentsMixin, EventsMixin, QWidget):
 
         bottom_row.addWidget(self._charts_tabs, 3)
 
-        self._stats_group = M3Frame()
+        self._stats_group = M3Frame(theme=theme_manager.phi_theme)
         self._stats_group.setObjectName("panel")
         self._stats_group.setAttribute(Qt.WA_StyledBackground, True)
         self._stats_layout = QVBoxLayout(self._stats_group)
-        stats_title = M3Label(f"<b>{_('table.stats_title')}</b>")
+        stats_title = M3Label(f"<b>{_('table.stats_title')}</b>", theme=theme_manager.phi_theme)
         stats_title.setObjectName("panel_title")
-        self._stats_table = M3TableWidget()
+        self._stats_table = M3TableWidget(theme=theme_manager.phi_theme)
         self._stats_table.setAlternatingRowColors(False)
         self._stats_table.horizontalHeader().setStretchLastSection(True)
         self._stats_table.setEditTriggers(M3TableWidget.NoEditTriggers)
@@ -415,16 +415,16 @@ class MainWindow(GroupStatsMixin, StudentsMixin, EventsMixin, QWidget):
         class_layout = QVBoxLayout(self._class_page)
         class_layout.setContentsMargins(0, 0, 0, 0)
 
-        self._class_stack = M3StackedWidget()
+        self._class_stack = M3StackedWidget(theme=theme_manager.phi_theme)
 
         # -- Page 0 : Cartes élèves --
         self._cards_widget = QWidget()
         self._cards_layout = QGridLayout(self._cards_widget)
         self._cards_layout.setSpacing(ds.space_xs)
-        self._cards_scroll = M3ScrollArea()
+        self._cards_scroll = M3ScrollArea(theme=theme_manager.phi_theme)
         self._cards_scroll.setWidget(self._cards_widget)
         self._cards_scroll.setWidgetResizable(True)
-        cards_frame = M3Frame()
+        cards_frame = M3Frame(theme=theme_manager.phi_theme)
         cards_frame.setObjectName("panel")
         cards_frame.setAttribute(Qt.WA_StyledBackground, True)
         cards_frame_layout = QVBoxLayout(cards_frame)
@@ -432,13 +432,13 @@ class MainWindow(GroupStatsMixin, StudentsMixin, EventsMixin, QWidget):
         # Header row: titre à gauche, bouton EDT à droite
         header_row = QHBoxLayout()
         header_row.setContentsMargins(0, 0, 0, 0)
-        self._cards_title = M3Label(f"<b>{_('student.cards_title')}</b>")
+        self._cards_title = M3Label(f"<b>{_('student.cards_title')}</b>", theme=theme_manager.phi_theme)
         self._cards_title.setObjectName("panel_title")
         header_row.addWidget(self._cards_title)
         header_row.addStretch()
 
         # Recherche élève (filtre live sur nom/prénom des cartes affichées)
-        self._student_search = M3TextField(placeholder=_("student.search_placeholder"))
+        self._student_search = M3TextField(placeholder=_("student.search_placeholder"), theme=theme_manager.phi_theme)
         self._student_search.setObjectName("student_search")
         self._student_search.setFixedWidth(ds.space_xxxl + ds.space_xl)  # 188px
         self._student_search.setFixedHeight(ds.field_height - ds.space_md)  # 32px
@@ -457,7 +457,7 @@ class MainWindow(GroupStatsMixin, StudentsMixin, EventsMixin, QWidget):
             ("medium", "view_module"),
             ("large", "dashboard"),
         ]:
-            btn = M3Button("")
+            btn = M3Button("", theme=theme_manager.phi_theme)
             btn.setObjectName("phi_btn")
             btn.setCheckable(True)
             btn.setFixedSize(theme_manager.image.theme_btn, theme_manager.image.theme_btn)
@@ -475,7 +475,7 @@ class MainWindow(GroupStatsMixin, StudentsMixin, EventsMixin, QWidget):
             if key == session.card_theme:
                 btn.setChecked(True)
             header_row.addWidget(btn)
-        self._tt_edit_btn = M3Button(f" {_('student.timetable')}")
+        self._tt_edit_btn = M3Button(f" {_('student.timetable')}", theme=theme_manager.phi_theme)
         self._tt_edit_btn.setObjectName("tt_btn")
         self._tt_edit_btn.setCursor(Qt.PointingHandCursor)
         self._tt_edit_btn.setIcon(
@@ -499,15 +499,15 @@ class MainWindow(GroupStatsMixin, StudentsMixin, EventsMixin, QWidget):
         self._cards_widget.setStyleSheet(
             f"background: {theme_manager.palette.surface};")
 
-        self._class_absents_group = M3Frame()
+        self._class_absents_group = M3Frame(theme=theme_manager.phi_theme)
         self._class_absents_group.setObjectName("panel")
         self._class_absents_group.setAttribute(Qt.WA_StyledBackground, True)
         cal = QVBoxLayout(self._class_absents_group)
         cal.setContentsMargins(ds.space_xs, ds.space_xxs, ds.space_xs, ds.space_xxs)
-        cal_title = M3Label(f"<b>{_('student.absents_today')}</b>")
+        cal_title = M3Label(f"<b>{_('student.absents_today')}</b>", theme=theme_manager.phi_theme)
         cal_title.setStyleSheet(f"font-size: {theme_manager.font_size(13)}px; font-weight: bold;")
         cal.addWidget(cal_title)
-        self._class_absents_table = M3TableWidget()
+        self._class_absents_table = M3TableWidget(theme=theme_manager.phi_theme)
         self._class_absents_table.setColumnCount(2)
         self._class_absents_table.setHorizontalHeaderLabels(
             [_("table.header.name"), _("table.header.reason")]
@@ -819,7 +819,7 @@ class MainWindow(GroupStatsMixin, StudentsMixin, EventsMixin, QWidget):
     def _build_event_types_btn(self):
         """Bouton sidebar 'Types d'événements' (ADMIN/COORD) → page 2 du stack."""
         p = theme_manager.palette
-        btn = M3Button(_("event_types.title"))
+        btn = M3Button(_("event_types.title"), theme=theme_manager.phi_theme)
         btn.setIcon(md3_icon("event", color=p.text_strong, size=ds.icon_sm))
         btn.setIconSize(QSize(ds.icon_sm, ds.icon_sm))
         btn.setMinimumHeight(ds.button_height)

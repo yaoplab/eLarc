@@ -22,6 +22,12 @@ def _make_window(qtbot, mock_db, mock_session):
     return w
 
 
+def test_main_window_constructs_no_theme_warning(qtbot, mock_db, mock_session, mock_theme, recwarn):
+    _make_window(qtbot, mock_db, mock_session)
+    theme_warnings = [x for x in recwarn.list if "cree sans theme=" in str(x.message)]
+    assert not theme_warnings, [str(x.message) for x in theme_warnings]
+
+
 def test_main_window_constructs(qtbot, mock_db, mock_session, mock_theme):
     w = _make_window(qtbot, mock_db, mock_session)
     assert w.windowTitle() != ""
