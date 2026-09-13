@@ -868,3 +868,4 @@ class MainWindow(GroupStatsMixin, StudentsMixin, EventsMixin, QWidget):
 
     def resizeEvent(self, event):
         super().resizeEvent(event)
+        self._reflow_students_grid()

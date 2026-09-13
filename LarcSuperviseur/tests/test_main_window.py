@@ -185,3 +185,32 @@ def test_show_event_context_menu_no_theme_warning(qtbot, mock_db, mock_session, 
 
     theme_warnings = [x for x in recwarn.list if "cree sans theme=" in str(x.message)]
     assert not theme_warnings, [str(x.message) for x in theme_warnings]
+
+
+def test_reflow_students_grid_recomputes_columns_on_resize(qtbot, mock_db, mock_session, mock_theme):
+    from PySide6.QtWidgets import QApplication, QWidget
+    from PySide6.QtCore import Qt
+    from LarcSuperviseur.views.core.cardsList.config import CARD_THEMES
+
+    w = _make_window(qtbot, mock_db, mock_session)
+    w._card_theme = "medium"
+    cfg = CARD_THEMES.get("medium")
+    card_w = cfg.card_w + cfg.margin * 2
+    spacing = w._cards_layout.spacing()
+
+    cards = [QWidget(w._cards_widget) for _ in range(6)]
+    w._student_cards = [(c, "") for c in cards]
+    for idx, c in enumerate(cards):
+        w._cards_layout.addWidget(c, idx, 0, Qt.AlignCenter)  # 1 seule colonne au depart
+
+    # Largeur qui donne exactement 3 colonnes selon la formule de cols
+    target_width = 3 * (card_w + spacing)
+    w._cards_scroll.resize(target_width, 400)
+    QApplication.processEvents()
+
+    w._reflow_students_grid()
+
+    for idx, c in enumerate(cards):
+        pos = w._cards_layout.getItemPosition(w._cards_layout.indexOf(c))
+        row, col = pos[0], pos[1]
+        assert (row, col) == (idx // 3, idx % 3), f"carte {idx}: attendu {(idx // 3, idx % 3)}, obtenu {(row, col)}"

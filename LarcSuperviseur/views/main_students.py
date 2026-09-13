@@ -261,3 +261,23 @@ class StudentsMixin:
         for card, search_text in getattr(self, "_student_cards", []):
             card.setVisible(not needle or needle in search_text)
 
+    def _reflow_students_grid(self):
+        """Recalcule le nombre de colonnes selon la largeur disponible et replace
+        les cartes existantes SANS les reconstruire -- appelee par
+        MainWindow.resizeEvent(). Meme formule que ClassPanel.reflow()
+        (jamais instancie), adaptee a StudentsMixin qui est la classe reellement
+        utilisee pour cet ecran (cause racine #2 de l'audit design)."""
+        if not getattr(self, "_student_cards", None):
+            return
+        cfg = CARD_THEMES.get(self._card_theme)
+        card_w = cfg.card_w + cfg.margin * 2
+        avail_w = self._cards_scroll.viewport().width()
+        spacing = self._cards_layout.spacing()
+        cols = max(1, (avail_w + spacing) // (card_w + spacing)) if avail_w > 100 else 2
+        for i in reversed(range(self._cards_layout.count())):
+            item = self._cards_layout.itemAt(i)
+            if item.widget():
+                self._cards_layout.removeWidget(item.widget())
+        for idx, (card, _search_text) in enumerate(self._student_cards):
+            self._cards_layout.addWidget(card, idx // cols, idx % cols, Qt.AlignCenter)
+

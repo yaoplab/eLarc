@@ -6,6 +6,7 @@ Gère : thème, langue, taille des vignettes.
 from larccommon.design_system import ds
 from larccommon.l10n import Translator, _
 from phibuilder.widgets import M3Button, M3Dialog, M3Frame, M3Label
+from phibuilder.widgets.button import ButtonVariant
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QButtonGroup,
@@ -49,7 +50,7 @@ class PreferencesDialog(M3Dialog):
     def _make_group(
         self, label: str, options: list[tuple[str, str]], get_current, set_current
     ) -> QButtonGroup:
-        frame = M3Frame()
+        frame = M3Frame(theme=theme_manager.phi_theme)
         frame.setAttribute(Qt.WA_StyledBackground, True)
         frame.setStyleSheet(
             f"background: {theme_manager.palette.surface_variant}; "
@@ -58,7 +59,7 @@ class PreferencesDialog(M3Dialog):
         fl = QVBoxLayout(frame)
         fl.setContentsMargins(ds.space_xs, ds.space_xxs, ds.space_xs, ds.space_xxs)  # 8px 4px
         fl.setSpacing(ds.space_xxs)  # 4px
-        lbl = M3Label(f"<b>{label}</b>")
+        lbl = M3Label(f"<b>{label}</b>", theme=theme_manager.phi_theme)
         lbl.setStyleSheet(
             f"font-size: {theme_manager.font_size(11)}px; "
             f"color: {theme_manager.palette.text_strong};"
@@ -70,7 +71,7 @@ class PreferencesDialog(M3Dialog):
         group.setExclusive(True)
         current = get_current()
         for val, display in options:
-            btn = M3Button(display)
+            btn = M3Button(display, theme=theme_manager.phi_theme)
             btn.setCheckable(True)
             btn.setFixedSize(theme_manager.image.logo, theme_manager.image.theme_btn)  # 89×34
             btn.setChecked(val == current)
@@ -120,14 +121,14 @@ class PreferencesDialog(M3Dialog):
         p = theme_manager.palette
         btn_row = QHBoxLayout()
         btn_row.addStretch()
-        ok_btn = M3Button(_("common.button.ok"))
+        ok_btn = M3Button(_("common.button.ok"), theme=theme_manager.phi_theme)
         ok_btn.setStyleSheet(
             f"QPushButton {{ background: {p.primary}; color: {p.on_primary}; "
             f"border: none; border-radius: {ds.radius_sm}px; padding: {ds.space_xs}px {ds.space_md}px; font-weight: bold; }}"  # 8px 20px M3
         )
         ok_btn.clicked.connect(self._on_ok)
         btn_row.addWidget(ok_btn)
-        cancel_btn = M3Button(_("common.button.cancel"))
+        cancel_btn = M3Button(_("common.button.cancel"), theme=theme_manager.phi_theme, variant=ButtonVariant.OUTLINED)
         cancel_btn.clicked.connect(self._on_cancel)
         btn_row.addWidget(cancel_btn)
         layout.addLayout(btn_row)
