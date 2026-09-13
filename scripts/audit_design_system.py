@@ -44,9 +44,9 @@ from _baseline import load_baseline, save_baseline, split_new
 BASELINE_PATH = ROOT / "scripts" / ".design_system_baseline.json"
 
 EXCLUDE_DIRS = {
-    '.git', '.venv', '__pycache__', '.ruff_cache', '.aider.tags.cache.v4',
+    '.git', '.claude', '.venv', '__pycache__', '.ruff_cache', '.aider.tags.cache.v4',
     '.github', 'node_modules', 'egg-info', 'tests', 'deepseek', 'docs',
-    'a_faire', 'DbInit', 'img', 'grid_configs', 'algo', 'old', 'backup',
+    'a_faire', 'DbInit', 'img', 'grid_configs', 'algo', 'old', 'backup', '_backup_rerr',
 }
 
 # =========================================================================

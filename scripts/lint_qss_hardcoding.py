@@ -101,7 +101,7 @@ PROJECTS = [
     "LarcHub",
 ]
 
-EXCLUDE_DIRS = {"__pycache__", ".git", ".ruff_cache", "venv", ".venv", "node_modules", "__pycache__", "tools", "docs", "img", "photos", "sql", "tests"}
+EXCLUDE_DIRS = {"__pycache__", ".git", ".claude", ".ruff_cache", "venv", ".venv", "node_modules", "__pycache__", "tools", "docs", "img", "photos", "sql", "tests", "_backup_rerr"}
 
 # Valeurs autorisées sans token (R10)
 ALLOWED_VALUES = {0, 1, 17}

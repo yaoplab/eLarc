@@ -15,19 +15,7 @@
     "LarcCommon\\larccommon\\login.py:357:?",
     "LarcHub\\views\\hub_window.py:142:?",
     "LarcSecretaire\\views\\supervisor_panel.py:341:?",
-    "LarcSuperviseur\\views\\login.py:169:?",
-    "LarcSuperviseur\\views\\login.py:174:?",
-    "LarcSuperviseur\\views\\login.py:179:?",
-    "LarcSuperviseur\\views\\login.py:184:?",
-    "LarcSuperviseur\\views\\login.py:190:?",
-    "LarcSuperviseur\\views\\login.py:203:?",
-    "LarcSuperviseur\\views\\login.py:244:?",
     "LarcSuperviseur\\views\\login.py:255:?",
-    "LarcSuperviseur\\views\\login.py:263:?",
-    "LarcSuperviseur\\views\\login.py:270:?",
-    "LarcSuperviseur\\views\\login.py:286:?",
-    "LarcSuperviseur\\views\\login.py:294:?",
-    "LarcSuperviseur\\views\\login.py:302:?",
-    "LarcSuperviseur\\views\\top_bar.py:180:?"
+    "LarcSuperviseur\\views\\login.py:286:?"
   ]
 }

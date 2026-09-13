@@ -35,7 +35,7 @@ PROJECTS = [
     "LarcProf", "LarcHub", "LarcRH", "LarcCompta", "LarcConfig", "LarcDocs",
 ]
 SCAN_SUBDIRS = ("views", "dialogs", "panels")
-EXCLUDE_DIRS = {"__pycache__", ".git", ".venv", "venv", "tests", "tools", "docs"}
+EXCLUDE_DIRS = {"__pycache__", ".git", ".claude", ".venv", "venv", "tests", "tools", "docs", "_backup_rerr"}
 BASELINE_PATH = ROOT / "scripts" / ".widget_purity_baseline.json"
 
 # CLAUDE.md -- exceptions autorisees (jamais signalees)

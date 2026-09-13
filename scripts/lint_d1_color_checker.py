@@ -87,8 +87,8 @@ HEX_ALLOWLIST = {
     "#000", "#000000",                       # Noir — acceptable pour compatibilité
 }
 
-EXCLUDE_DIRS = {"__pycache__", ".git", ".ruff_cache", "venv", ".venv", "node_modules",
-                "tools", "docs", "img", "photos", "sql", "tests", ".github"}
+EXCLUDE_DIRS = {"__pycache__", ".git", ".claude", ".ruff_cache", "venv", ".venv", "node_modules",
+                "tools", "docs", "img", "photos", "sql", "tests", ".github", "_backup_rerr"}
 
 # Balises HTML qui contiennent du texte et nécessitent color: explicite (D1)
 TEXT_TAGS = {"b", "span", "div", "p", "h1", "h2", "h3", "h4", "h5", "h6",
