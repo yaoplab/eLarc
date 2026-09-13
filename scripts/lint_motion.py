@@ -179,6 +179,8 @@ class MotionLinter:
 
 def main():
     """Entry point."""
+    if hasattr(sys.stdout, 'reconfigure'):
+        sys.stdout.reconfigure(encoding='utf-8')
     if len(sys.argv) < 2:
         print("Usage: python lint_motion.py <path>")
         sys.exit(1)
