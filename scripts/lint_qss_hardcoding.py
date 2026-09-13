@@ -60,6 +60,36 @@ from typing import Optional
 # Force UTF-8 (Windows cp1252 fix) — appliqué dans main() uniquement
 # pour éviter un double wrapping du sys.stdout/stderr
 
+ROOT = Path(__file__).resolve().parents[1]
+BASELINE_PATH = ROOT / "scripts" / ".qss_hardcoding_baseline.json"
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from _baseline import load_baseline, save_baseline, split_new  # noqa: E402
+
+
+def _rel_to_root(filepath: str) -> str:
+    """Chemin relatif à ROOT pour que les clés de baseline survivent un
+    déplacement du repo (worktree -> emplacement final). Retombe sur le
+    chemin tel quel si le fichier est hors ROOT — même pattern que
+    lint_widget_purity.py/audit_design_system.py (Finding 1, 2026-09-09)."""
+    try:
+        return str(Path(filepath).resolve().relative_to(ROOT))
+    except ValueError:
+        return str(filepath)
+
+
+def _flat_findings_relative(all_findings: dict) -> list[dict]:
+    """Aplatit all_findings (par projet) avec 'file' relativisé à ROOT —
+    uniquement pour les clés de baseline, n'affecte pas --json/--report/
+    --fix-only qui gardent leurs chemins tels quels (comme
+    audit_design_system.py, pas comme lint_widget_purity.py — cf. la
+    review finale du 2026-09-09 sur l'incohérence entre les deux)."""
+    flat = []
+    for findings in all_findings.values():
+        for f in findings:
+            flat.append({**f, "file": _rel_to_root(f["file"])})
+    return flat
+
 
 # ── Configuration ─────────────────────────────────────────────────────────────
 
@@ -71,7 +101,7 @@ PROJECTS = [
     "LarcHub",
 ]
 
-EXCLUDE_DIRS = {"__pycache__", ".git", ".ruff_cache", "venv", ".venv", "node_modules", "__pycache__", "tools", "docs", "img", "photos", "sql", "tests"}
+EXCLUDE_DIRS = {"__pycache__", ".git", ".claude", ".ruff_cache", "venv", ".venv", "node_modules", "__pycache__", "tools", "docs", "img", "photos", "sql", "tests", "_backup_rerr"}
 
 # Valeurs autorisées sans token (R10)
 ALLOWED_VALUES = {0, 1, 17}
@@ -110,6 +140,8 @@ DETECT_PATTERNS = {
         re.compile(r'setFixedHeight\((\d+)\)'),
         # setFixedWidth(N)  où N > 10
         re.compile(r'setFixedWidth\((\d+)\)'),
+        # addSpacing(N) -- espacement vertical/horizontal en dur (QBoxLayout)
+        re.compile(r'addSpacing\((\d+)\)'),
     ],
     "P1": [
         # padding: Npx (dans QSS)
@@ -684,7 +716,18 @@ def main():
         choices=["all", "Q2", "Q2w"],
         help="Règles à exécuter : all (R+Q1+Q3+Q2, information uniquement), Q2 (Q2 seul), Q2w (Q2 étendu aux QMessageBox.warning)",
     )
+    parser.add_argument(
+        "--baseline",
+        action="store_true",
+        help="(Re)génère la baseline avec les violations actuelles",
+    )
+    parser.add_argument(
+        "--check-baseline",
+        action="store_true",
+        help="N'échoue que sur les violations absentes de la baseline (pre-commit)",
+    )
     args = parser.parse_args()
+    quiet = args.json or args.fix_only or args.baseline or args.check_baseline
 
     # Forcer UTF-8 pour la sortie terminal (compatible pre-commit sur Windows cp1252)
     if hasattr(sys.stdout, 'buffer'):
@@ -700,7 +743,10 @@ def main():
     else:
         projects_to_scan = PROJECTS
 
-    base_path = Path(os.getcwd())
+    # ROOT (dossier du script), pas os.getcwd() -- sinon un commit lance depuis
+    # un worktree (.claude/worktrees/<nom>) scanne le code du WORKTREE (potentiellement
+    # tres en retard sur main) au lieu du vrai checkout principal.
+    base_path = ROOT if not args.dir else Path(os.getcwd())
 
     for project in projects_to_scan:
         project_path = base_path / project
@@ -713,13 +759,13 @@ def main():
                 print(f"  ⚠️  Répertoire non trouvé : {project}")
                 continue
 
-        if not args.json and not args.fix_only:
+        if not quiet:
             print(f"\n🔍 Scan de {project}...")
         by_file = scan_directory(project_path, args.threshold, args.rule)
         flat = flatten_findings(by_file)
         all_findings[project] = flat
 
-        if not args.json and not args.fix_only:
+        if not quiet:
             if args.dir:
                 print_dir_report(project, project_path, by_file, args.fix, args.group_by)
             else:
@@ -735,12 +781,30 @@ def main():
 
     # Rapport global
     total = sum(len(f) for f in all_findings.values())
-    if not args.json and not args.fix_only:
+    if not quiet:
         print(f"\n{'='*50}")
         print(f"📊 RÉSULTAT GLOBAL : {total} hardcoding(s)/violation(s) sur {len(all_findings)} projets")
         if total == 0:
             print("🎉 FÉLICITATIONS — Zéro hardcoding ni violation détecté !")
         print(f"{'='*50}")
+
+    if args.baseline:
+        rel_findings = _flat_findings_relative(all_findings)
+        save_baseline(BASELINE_PATH, rel_findings)
+        print(f"[baseline] {len(rel_findings)} violation(s) figée(s) dans {BASELINE_PATH}")
+        return 0
+
+    if args.check_baseline:
+        rel_findings = _flat_findings_relative(all_findings)
+        baseline = load_baseline(BASELINE_PATH)
+        new, known = split_new(rel_findings, baseline)
+        print(
+            f"lint_qss_hardcoding: {len(new)} nouvelle(s) violation(s), "
+            f"{len(known)} connue(s) (baseline, non bloquant)"
+        )
+        for f in new:
+            print(f"  [{f.get('rule', 'R')}] {f['file']}:{f['line']}  {f['context']}")
+        return 1 if new else 0
 
     if args.json:
         output = {

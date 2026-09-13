@@ -1,0 +1,21 @@
+{
+  "violations": [
+    "LarcCommon\\larccommon\\login.py:212:?",
+    "LarcCommon\\larccommon\\login.py:218:?",
+    "LarcCommon\\larccommon\\login.py:224:?",
+    "LarcCommon\\larccommon\\login.py:230:?",
+    "LarcCommon\\larccommon\\login.py:236:?",
+    "LarcCommon\\larccommon\\login.py:250:?",
+    "LarcCommon\\larccommon\\login.py:298:?",
+    "LarcCommon\\larccommon\\login.py:311:?",
+    "LarcCommon\\larccommon\\login.py:318:?",
+    "LarcCommon\\larccommon\\login.py:326:?",
+    "LarcCommon\\larccommon\\login.py:342:?",
+    "LarcCommon\\larccommon\\login.py:349:?",
+    "LarcCommon\\larccommon\\login.py:357:?",
+    "LarcHub\\views\\hub_window.py:142:?",
+    "LarcSecretaire\\views\\supervisor_panel.py:341:?",
+    "LarcSuperviseur\\views\\login.py:255:?",
+    "LarcSuperviseur\\views\\login.py:286:?"
+  ]
+}

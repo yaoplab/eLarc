@@ -1,0 +1,8 @@
+{
+  "violations": [
+    "D:\\projets\\LarcCommon\\larccommon\\database.py:41:C6/A5",
+    "D:\\projets\\LarcSecretaire\\views\\login.py:101:C6/A5",
+    "D:\\projets\\LarcSecretaire\\views\\login.py:102:C6/A5",
+    "D:\\projets\\LarcSecretaire\\views\\login.py:98:C6/A5"
+  ]
+}

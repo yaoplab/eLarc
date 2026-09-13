@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Linter: vérifie la règle des 1000 lignes (skill pyside6-wrapper, sous-système F).
+r"""Linter: vérifie la règle des 1000 lignes (skill pyside6-wrapper, sous-système F).
 
 Usage:
   python scripts/lint_file_size.py                           # Tous les projets
@@ -19,7 +19,11 @@ LINTER_META = {
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from _baseline import load_baseline, save_baseline, split_new
+
 ROOT = Path(__file__).resolve().parents[1]
+BASELINE_PATH = ROOT / "scripts" / ".file_size_baseline.json"
 PROJETS = [ROOT / n for n in (
     "LarcSuperviseur",
     "LarcSecretaire",
@@ -111,6 +115,8 @@ def main():
     parser.add_argument("--threshold", type=int, default=1000, help="Seuil max de lignes")
     parser.add_argument("--json", action="store_true", help="Sortie JSON")
     parser.add_argument("--stats", action="store_true", help="Afficher les statistiques")
+    parser.add_argument("--baseline", action="store_true", help="(Re)genere la baseline avec les violations actuelles")
+    parser.add_argument("--check-baseline", action="store_true", help="N'echoue que sur les violations absentes de la baseline (pre-commit)")
     args = parser.parse_args()
 
     if args.dir:
@@ -122,6 +128,24 @@ def main():
     for d in dirs:
         if d.exists():
             all_stats[d.name] = scan_with_stats(d, args.threshold)
+
+    flat_findings = [{'file': v['file'], 'line': 0, 'rule': 'F1'} for v in VIOLATIONS]
+
+    if args.baseline:
+        save_baseline(BASELINE_PATH, flat_findings)
+        print(f"[baseline] {len(flat_findings)} violation(s) figee(s) dans {BASELINE_PATH}")
+        return 0
+
+    if args.check_baseline:
+        baseline = load_baseline(BASELINE_PATH)
+        new, known = split_new(flat_findings, baseline)
+        print(f"lint_file_size: {len(new)} nouvelle(s) violation(s), {len(known)} connue(s) (baseline, non bloquant)")
+        new_files = {f['file'] for f in new}
+        for v in sorted(VIOLATIONS, key=lambda x: -x['lines']):
+            if v['file'] in new_files:
+                print(f"  [{v['severity']}] {v['file']}")
+                print(f"       {v['lines']} lignes -> {v['fix']}")
+        return 1 if new else 0
 
     if args.json:
         print(json.dumps({

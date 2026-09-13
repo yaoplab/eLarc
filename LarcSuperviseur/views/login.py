@@ -6,7 +6,8 @@ from typing import Optional
 from larccommon.design_system import ds
 from larccommon.l10n import Translator, _
 from larccommon.safe_slot import safe_slot
-from phibuilder.widgets import M3Button, M3Label, M3TabWidget, M3TextField
+from phibuilder.widgets import M3Button, M3Card, M3Label, M3TabWidget, M3TextField
+from phibuilder.widgets.card import CardVariant
 from PySide6.QtCore import QEvent, Qt, QThread, QTimer, Signal
 from PySide6.QtGui import QPixmap
 from PySide6.QtWidgets import (
@@ -114,12 +115,28 @@ class LoginWindow(QWidget):
             log(f"_get_current_term_label: {e}")
             return ""
 
+    @staticmethod
+    def _label(text: str = "", style: str = "body_medium", color: str = "") -> M3Label:
+        """M3Label avec style typo M3 + couleur explicite (évite que le style M3
+        par défaut n'écrase silencieusement les couleurs sémantiques du QSS)."""
+        lbl = M3Label(text, theme=theme_manager.phi_theme, style=style)
+        if color:
+            lbl.set_color(color)
+        return lbl
+
     def _init_ui(self):
         self.setObjectName("root")
         self.setStyleSheet(QssHelper.login_qss(theme_manager.palette))
         W = 420
-        H = int(W * 1.618033988749895)
+        # H : la formule golden-ratio (W*phi=679) ne suffit plus depuis que les
+        # widgets M3 sont correctement stylés (theme= posé) - leur padding réel
+        # porte le contenu a ~809px de haut (mesure sizeHint), contre du texte
+        # non stylé et compact auparavant. Valeur fixe avec marge de confort.
+        H = 830
         self.setFixedSize(W, H)
+
+        phi = theme_manager.phi_theme
+        p = theme_manager.palette
 
         outer = QVBoxLayout()
         outer.setContentsMargins(
@@ -130,8 +147,12 @@ class LoginWindow(QWidget):
         )
         outer.setSpacing(0)
 
+        card = M3Card(theme=phi, variant=CardVariant.ELEVATED)
+        cl = card.content_layout()
+        cl.setSpacing(0)
+
         logo_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "img", "logoAEC.png")
-        self._logo_label = M3Label()
+        self._logo_label = self._label()
         if os.path.exists(logo_path):
             pix = QPixmap(logo_path)
             self._logo_pixmap = pix.scaledToHeight(
@@ -144,51 +165,47 @@ class LoginWindow(QWidget):
         self._logo_label.setAlignment(Qt.AlignCenter)
         self._logo_label.setCursor(Qt.PointingHandCursor)
         self._logo_label.installEventFilter(self)
-        outer.addWidget(self._logo_label)
-        outer.addSpacing(21)
+        cl.addWidget(self._logo_label)
+        cl.addSpacing(ds.space_md)
 
-        title = M3Label(_("login.superviseur_title"))
-        title.setObjectName("hdrTitle")
+        title = self._label(_("login.superviseur_title"), "title_large", p.text_strong)
         title.setAlignment(Qt.AlignCenter)
-        outer.addWidget(title)
-        outer.addSpacing(8)
+        cl.addWidget(title)
+        cl.addSpacing(ds.space_xs)
 
-        sub = M3Label(_("login.superviseur_subtitle"))
-        sub.setObjectName("hdrSub")
+        sub = self._label(_("login.superviseur_subtitle"), "body_medium", p.text_soft)
         sub.setAlignment(Qt.AlignCenter)
-        outer.addWidget(sub)
-        outer.addSpacing(21)
+        cl.addWidget(sub)
+        cl.addSpacing(ds.space_md)
 
-        self._net_label = M3Label()
+        self._net_label = self._label(style="body_medium", color=p.text_soft)
         self._net_label.setAlignment(Qt.AlignCenter)
-        self._net_label.setObjectName("infoLbl")
-        outer.addWidget(self._net_label)
-        outer.addSpacing(21)
+        cl.addWidget(self._net_label)
+        cl.addSpacing(ds.space_md)
 
         self._force_check = QCheckBox(_("login.choose_connection"))
         self._force_check.setVisible(False)
         self._force_check.toggled.connect(self._on_force_toggle)
-        outer.addWidget(self._force_check, 0, Qt.AlignCenter)
-        outer.addSpacing(21)
+        cl.addWidget(self._force_check, 0, Qt.AlignCenter)
+        cl.addSpacing(ds.space_md)
 
-        self._tabs = M3TabWidget()
+        self._tabs = M3TabWidget(theme=phi)
         self._tab_intra_widget = self._tab_intranet()
         self._tab_cloud_widget = self._tab_cloud()
         self._tabs.addTab(self._tab_intra_widget, _("login.tab_intranet"))
         self._tabs.addTab(self._tab_cloud_widget, _("login.tab_cloud"))
-        outer.addWidget(self._tabs, 1)
+        cl.addWidget(self._tabs, 1)
 
-        self._err_label = M3Label()
-        self._err_label.setObjectName("errLabel")
+        self._err_label = self._label(style="body_medium", color=p.error)
         self._err_label.setAlignment(Qt.AlignCenter)
         self._err_label.setWordWrap(True)
-        outer.addWidget(self._err_label)
-        outer.addSpacing(8)
+        cl.addWidget(self._err_label)
+        cl.addSpacing(ds.space_xs)
 
-        self._status_label = M3Label()
-        self._status_label.setObjectName("infoLbl")
-        outer.addWidget(self._status_label)
+        self._status_label = self._label(style="body_medium", color=p.text_soft)
+        cl.addWidget(self._status_label)
 
+        outer.addWidget(card, 1)
         self.setLayout(outer)
         self._update_network_status()
 
@@ -211,28 +228,26 @@ class LoginWindow(QWidget):
         self._apply_tab_visibility()
 
     def _tab_intranet(self) -> QWidget:
+        phi = theme_manager.phi_theme
+        p = theme_manager.palette
         w = QWidget()
         layout = QVBoxLayout(w)
         layout.setAlignment(Qt.AlignCenter)
 
-        email_lbl = M3Label(_("login.email_label"))
-        email_lbl.setObjectName("formLbl")
+        email_lbl = self._label(_("login.email_label"), "body_medium", p.text_strong)
         layout.addWidget(email_lbl)
-        email = M3TextField()
+        email = M3TextField(theme=phi)
         email.setPlaceholderText(_("login.email_placeholder"))
-        email.setFixedHeight(ds.field_height)
         self._edt_i_email = email
         layout.addWidget(email)
 
-        layout.addSpacing(21)
+        layout.addSpacing(ds.space_md)
 
-        pwd_lbl = M3Label(_("login.password_label"))
-        pwd_lbl.setObjectName("formLbl")
+        pwd_lbl = self._label(_("login.password_label"), "body_medium", p.text_strong)
         layout.addWidget(pwd_lbl)
-        pwd = M3TextField()
+        pwd = M3TextField(theme=phi)
         pwd.setEchoMode(M3TextField.Password)
         pwd.setPlaceholderText(_("login.password_placeholder"))
-        pwd.setFixedHeight(ds.field_height)
         pwd.returnPressed.connect(self._on_intranet)
         self._edt_i_pwd = pwd
         layout.addWidget(pwd)
@@ -240,51 +255,52 @@ class LoginWindow(QWidget):
         layout.addSpacing(34)
 
         if self._term_label:
-            term_lbl = M3Label(_("login.term_label").format(label=self._term_label))
-            term_lbl.setObjectName("infoLbl")
+            term_lbl = self._label(
+                _("login.term_label").format(label=self._term_label), "body_medium", p.text_soft
+            )
             term_lbl.setAlignment(Qt.AlignCenter)
             layout.addWidget(term_lbl)
-            layout.addSpacing(16)
+            layout.addSpacing(ds.space_sm)
 
-        btn = M3Button(_("login.connect_intranet"))
-        btn.setObjectName("btnIntra")
+        btn = M3Button(_("login.connect_intranet"), theme=phi)
         btn.setFixedSize(ds.window_width * 7 // 40, ds.logo_small)  # 210×55
         btn.clicked.connect(self._on_intranet)
         layout.addWidget(btn, 0, Qt.AlignCenter)
 
-        layout.addSpacing(21)
-        info = M3Label(_("login.info_intranet"))
-        info.setObjectName("infoLbl")
+        layout.addSpacing(ds.space_md)
+        info = self._label(_("login.info_intranet"), "body_medium", p.text_soft)
         info.setAlignment(Qt.AlignCenter)
         layout.addWidget(info)
         return w
 
     def _tab_cloud(self) -> QWidget:
+        phi = theme_manager.phi_theme
+        p = theme_manager.palette
         w = QWidget()
         layout = QVBoxLayout(w)
         layout.setAlignment(Qt.AlignCenter)
 
-        info = M3Label(_("login.info_cloud"))
-        info.setObjectName("infoLbl")
+        info = self._label(_("login.info_cloud"), "body_medium", p.text_soft)
         info.setAlignment(Qt.AlignCenter)
         layout.addWidget(info)
         layout.addSpacing(24)
 
         if self._term_label:
-            term_lbl = M3Label(_("login.term_label").format(label=self._term_label))
-            term_lbl.setObjectName("infoLbl")
+            term_lbl = self._label(
+                _("login.term_label").format(label=self._term_label), "body_medium", p.text_soft
+            )
             term_lbl.setAlignment(Qt.AlignCenter)
             layout.addWidget(term_lbl)
-            layout.addSpacing(16)
+            layout.addSpacing(ds.space_sm)
 
-        btn = M3Button(_("login.connect_google"))  # clé manquante dans fr.json
-        btn.setObjectName("btnGoogle")
+        # accent_color préserve le rouge de marque Google (identique au QSS d'origine)
+        btn = M3Button(_("login.connect_google"), theme=phi, accent_color="#DB4437")  # clé manquante dans fr.json
         btn.setFixedSize(ds.window_width * 7 // 40, ds.logo_small)  # 210×55
         btn.clicked.connect(self._on_cloud)
         layout.addWidget(btn, 0, Qt.AlignCenter)
 
-        layout.addSpacing(16)
-        info2 = M3Label(_("login.info_oauth"))
+        layout.addSpacing(ds.space_sm)
+        info2 = M3Label(_("login.info_oauth"), theme=phi)
         info2.setObjectName("infoLbl")
         info2.setAlignment(Qt.AlignCenter)
         layout.addWidget(info2)
@@ -292,8 +308,6 @@ class LoginWindow(QWidget):
 
     @safe_slot("LoginWindow.on_intranet")
     def _on_intranet(self):
-        if not db.is_server_connected:
-            return
         trace("_on_intranet: START")
         email = self._edt_i_email.text().strip()
         password = self._edt_i_pwd.text()
@@ -491,7 +505,7 @@ class LoginWindow(QWidget):
 
     def _do_open_main_window(self, MainWindow):
         self.main = MainWindow()
-        self.main.resize(1200, 750)
+        self.main.resize(ds.window_width, ds.window_height)
         self.main.showMaximized()
         self.close()
 

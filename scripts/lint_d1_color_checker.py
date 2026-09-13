@@ -67,6 +67,8 @@ import re
 import sys
 from pathlib import Path
 
+ROOT = Path(__file__).resolve().parents[1]
+
 # Force UTF-8 pour eviter UnicodeEncodeError sous Windows (cp1252)
 # — appliqué dans main() uniquement pour éviter un double wrapping
 
@@ -87,8 +89,8 @@ HEX_ALLOWLIST = {
     "#000", "#000000",                       # Noir — acceptable pour compatibilité
 }
 
-EXCLUDE_DIRS = {"__pycache__", ".git", ".ruff_cache", "venv", ".venv", "node_modules",
-                "tools", "docs", "img", "photos", "sql", "tests", ".github"}
+EXCLUDE_DIRS = {"__pycache__", ".git", ".claude", ".ruff_cache", "venv", ".venv", "node_modules",
+                "tools", "docs", "img", "photos", "sql", "tests", ".github", "_backup_rerr"}
 
 # Balises HTML qui contiennent du texte et nécessitent color: explicite (D1)
 TEXT_TAGS = {"b", "span", "div", "p", "h1", "h2", "h3", "h4", "h5", "h6",
@@ -472,8 +474,19 @@ def scan_d7_violations(lines: list[str], filepath: Path) -> list[dict]:
         # (_restyle → _rebuild / _restyle_all / restyle / _update_style)
         restyle_start = find_method_def(cls, "_restyle", lines)
 
+        # Pas de méthode _restyle() littérale : essayer les alias comme
+        # candidats PRIMAIRES (une classe peut connecter theme_changed
+        # directement à _restyle_all/restyle/etc. sans wrapper _restyle)
         if restyle_start is None:
-            # a theme_changed.connect MAIS pas de _restyle → D7
+            for alias_name in (
+                "_restyle_all", "restyle", "_rebuild", "_update_style", "refresh_theme"
+            ):
+                restyle_start = find_method_def(cls, alias_name, lines)
+                if restyle_start is not None:
+                    break
+
+        if restyle_start is None:
+            # a theme_changed.connect MAIS pas de _restyle (ni alias) → D7
             violations.append({
                 "rule": "D7",
                 "line": cls["start"] + 1,
@@ -1201,7 +1214,10 @@ def main():
     else:
         projects_to_scan = PROJECTS
 
-    base_path = Path(os.getcwd())
+    # ROOT (dossier du script), pas os.getcwd() -- sinon un commit lance depuis
+    # un worktree (.claude/worktrees/<nom>) scanne le code du WORKTREE (potentiellement
+    # tres en retard sur main) au lieu du vrai checkout principal.
+    base_path = ROOT if not args.dir else Path(os.getcwd())
 
     for project in projects_to_scan:
         project_path = base_path / project

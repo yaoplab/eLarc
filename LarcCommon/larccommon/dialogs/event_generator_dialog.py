@@ -109,7 +109,11 @@ class EventGeneratorDialog(ThemedDialog):
                 background: {p.surface_variant};
             }}
             QDateEdit, QTimeEdit {{
-                padding: {ds.space_md}px;
+                padding-left: {ds.space_md}px;
+                padding-right: {ds.space_md}px;
+                padding-top: {ds.space_xxs}px;
+                padding-bottom: {ds.space_xxs}px;
+                min-height: {ds.field_height}px;
                 border: 1px solid {p.outline_variant};
                 border-radius: {ds.radius_sm}px;
                 font-size: {s(13)}px;
@@ -211,7 +215,7 @@ class EventGeneratorDialog(ThemedDialog):
         fl.setContentsMargins(0, 0, 0, 0)
         fl.setSpacing(ds.space_md)
 
-        card = M3Card(variant=CardVariant.ELEVATED)
+        card = M3Card(theme=theme_manager.phi_theme, variant=CardVariant.ELEVATED)
         cl = card.content_layout()
         cl.setSpacing(ds.space_md)
 
@@ -265,6 +269,7 @@ class EventGeneratorDialog(ThemedDialog):
         cl.addWidget(self._note_input)
         self._note_label.hide()
         self._note_input.hide()
+        cl.addStretch()
 
         card_row = QHBoxLayout()
         card_row.setSpacing(0)

@@ -34,7 +34,11 @@ import os
 from pathlib import Path
 from typing import Optional
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from _baseline import load_baseline, save_baseline, split_new
+
 ROOT = Path(__file__).resolve().parents[1]
+BASELINE_PATH = ROOT / "scripts" / ".ui_quality_baseline.json"
 PROJETS = [ROOT / n for n in (
     "LarcSuperviseur",
     "LarcSecretaire",
@@ -462,6 +466,8 @@ def main():
     parser.add_argument('--dir', type=str, help='Répertoire à auditer')
     parser.add_argument('--json', action='store_true', help='Sortie JSON')
     parser.add_argument('--fix', action='store_true', help='Afficher les suggestions de correction')
+    parser.add_argument('--baseline', action='store_true', help="(Re)genere la baseline avec les violations actuelles")
+    parser.add_argument('--check-baseline', action='store_true', help="N'echoue que sur les violations absentes de la baseline (pre-commit)")
     args = parser.parse_args()
 
     targets = [Path(args.dir).resolve()] if args.dir else [Path(p).resolve() for p in PROJETS if os.path.isdir(p)]
@@ -481,6 +487,24 @@ def main():
             v = lint_file(target)
             if v:
                 all_violations.append((target, v))
+
+    flat_findings = [
+        {'file': str(fp.resolve().relative_to(ROOT)), 'line': v['line'], 'rule': v['rule'], 'message': v['message']}
+        for fp, vs in all_violations for v in vs
+    ]
+
+    if args.baseline:
+        save_baseline(BASELINE_PATH, flat_findings)
+        print(f"[baseline] {len(flat_findings)} violation(s) figee(s) dans {BASELINE_PATH}")
+        return 0
+
+    if args.check_baseline:
+        baseline = load_baseline(BASELINE_PATH)
+        new, known = split_new(flat_findings, baseline)
+        print(f"lint_ui_quality: {len(new)} nouvelle(s) violation(s), {len(known)} connue(s) (baseline, non bloquant)")
+        for f in new:
+            print(f"  [{f['rule']}] {f['file']}:{f['line']}  {f['message']}")
+        return 1 if new else 0
 
     if args.json:
         import json

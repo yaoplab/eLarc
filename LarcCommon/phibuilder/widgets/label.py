@@ -10,6 +10,12 @@ class M3Label(QLabel):
         self._update_style()
     def _update_style(self):
         if self._theme is None:
+            import warnings
+            warnings.warn(
+                f"{type(self).__name__} cree sans theme= -- aucun style applique. "
+                f"Passer theme=theme_manager.phi_theme.",
+                stacklevel=2,
+            )
             return
         s: TypeStyle = getattr(self._theme.typo, self._style_name)
         self.setStyleSheet(f"M3Label {{ font-family: '{s.family}'; font-size: {s.size}px; font-weight: {s.weight}; letter-spacing: {s.letter_spacing}px; color: {self._theme.colors.on_surface}; }}")
@@ -20,6 +26,12 @@ class M3Label(QLabel):
         """Re-pose la QSS complète (typo M3 + couleur) — préserve la
         typographie contrairement à un setStyleSheet(f"color: ...")."""
         if self._theme is None:
+            import warnings
+            warnings.warn(
+                f"{type(self).__name__} cree sans theme= -- aucun style applique. "
+                f"Passer theme=theme_manager.phi_theme.",
+                stacklevel=2,
+            )
             return
         s: TypeStyle = getattr(self._theme.typo, self._style_name)
         self.setStyleSheet(

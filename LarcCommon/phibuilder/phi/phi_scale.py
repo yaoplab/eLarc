@@ -109,15 +109,15 @@ class PhiScale:
         return SectionTokens()
 
     def get_spacing(self, key: str) -> int:
-        """Accès rapide: ds.phi.get_spacing('md') → 20."""
+        """Accès rapide: ds.phi_scale.get_spacing('md') → 20."""
         return getattr(self.spacing, key, None)
 
     def get_sizing(self, key: str) -> int:
-        """Accès rapide: ds.phi.get_sizing('card_height') → 233."""
+        """Accès rapide: ds.phi_scale.get_sizing('card_height') → 233."""
         return getattr(self.sizing, key, None)
 
     def get_section(self, key: str) -> float:
-        """Accès rapide: ds.phi.get_section('golden_6') → 72."""
+        """Accès rapide: ds.phi_scale.get_section('golden_6') → 72."""
         return getattr(self.sections, key, None)
 
     def golden_proportion(self, width: float, position: str = 'content') -> float:

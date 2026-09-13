@@ -84,7 +84,7 @@ class EventTypeSelectorWidget(QWidget):
         self._chip_bar.current_changed.connect(self._on_category_changed)
         layout.addWidget(self._chip_bar)
 
-        self._search = M3TextField(placeholder=_("event.tree_search_placeholder"))
+        self._search = M3TextField(placeholder=_("event.tree_search_placeholder"), theme=theme_manager.phi_theme)
         self._search.textChanged.connect(self._on_search_changed)
         layout.addWidget(self._search)
 
@@ -100,19 +100,24 @@ class EventTypeSelectorWidget(QWidget):
         self._colorize_root_item()
         layout.addWidget(self._tree, 1)
 
-        self._badge = M3Card(variant=CardVariant.FILLED, parent=self)
+        self._badge = M3Card(theme=theme_manager.phi_theme, variant=CardVariant.FILLED, parent=self)
         badge_layout = self._badge.content_layout()
         badge_layout.setContentsMargins(ds.space_md, ds.space_xs, ds.space_md, ds.space_xs)
-        self._badge_text = M3Label("", style="body_medium")
+        self._badge_text = M3Label("", theme=theme_manager.phi_theme, style="body_medium")
         self._badge_text.setWordWrap(True)
         badge_layout.addWidget(self._badge_text)
         self._badge.hide()
         layout.addWidget(self._badge)
 
-        self._confirm_btn = M3Button(_("event.confirm_choice"), variant=ButtonVariant.FILLED)
+        self._confirm_btn = M3Button(_("event.confirm_choice"), theme=theme_manager.phi_theme, variant=ButtonVariant.FILLED)
         self._confirm_btn.setEnabled(False)
         self._confirm_btn.clicked.connect(self._on_confirm_clicked)
         layout.addWidget(self._confirm_btn)
+
+        # Qt donne le focus initial au premier widget "tab-focusable" du layout à l'ouverture
+        # (les chips le sont, pour l'accessibilité clavier) — sans ceci, le 1er chip afficherait
+        # son anneau de focus au chargement, sans aucune interaction utilisateur.
+        self._search.setFocus()
 
     @staticmethod
     def is_leaf(node: EventTypeNode) -> bool:
@@ -139,6 +144,9 @@ class EventTypeSelectorWidget(QWidget):
         )
         self._colorize_root_item()
         self._tree.filter_text(self._search.text())
+        self._on_selection_changed()  # QTreeWidget.clear() (dans set_data) n'emet pas
+        # itemSelectionChanged de facon fiable ici -- sans cet appel, confirm_btn/badge
+        # restaient bloques sur la selection de la categorie precedente.
 
     def _colorize_root_item(self):
         """Teinte le nœud racine de la couleur de sa catégorie — repère visuel fort

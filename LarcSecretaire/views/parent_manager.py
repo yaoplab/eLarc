@@ -159,7 +159,7 @@ class ParentManager(QWidget):
     # ── Helpers de carte ──
 
     def _section_card(self, title: str, icon_name: str):
-        card = M3Card(variant=CardVariant.ELEVATED)
+        card = M3Card(theme=theme_manager.phi_theme, variant=CardVariant.ELEVATED)
         card.setStyleSheet(
             f"M3Card {{ background: {ds.p.surface}; "
             f"border: 1px solid {ds.p.outline_variant}; "
@@ -778,7 +778,7 @@ class ParentEditDialog(ThemedDialog):
     # ── Helpers ──
 
     def _section_card(self, title: str, icon_name: str):
-        card = M3Card(variant=CardVariant.ELEVATED)
+        card = M3Card(theme=theme_manager.phi_theme, variant=CardVariant.ELEVATED)
         card.setStyleSheet(
             f"M3Card {{ background: {ds.p.surface}; "
             f"border: 1px solid {ds.p.outline_variant}; "

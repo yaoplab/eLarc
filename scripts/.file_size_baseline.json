@@ -1,0 +1,12 @@
+{
+  "violations": [
+    "D:\\projets\\LarcRH\\common\\hr_database.py:None:F1",
+    "D:\\projets\\LarcRH\\views\\letter_manager.py:None:F1",
+    "D:\\projets\\LarcRH\\views\\letter_templates.py:None:F1",
+    "D:\\projets\\LarcRH\\views\\staff_detail.py:None:F1",
+    "D:\\projets\\LarcSecretaire\\views\\dossier_panel.py:None:F1",
+    "D:\\projets\\LarcSecretaire\\views\\main_window.py:None:F1",
+    "D:\\projets\\LarcSecretaire\\views\\student_form.py:None:F1",
+    "D:\\projets\\LarcSuperviseur\\tests\\test_data_loader.py:None:F1"
+  ]
+}
