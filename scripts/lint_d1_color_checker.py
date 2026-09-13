@@ -67,6 +67,8 @@ import re
 import sys
 from pathlib import Path
 
+ROOT = Path(__file__).resolve().parents[1]
+
 # Force UTF-8 pour eviter UnicodeEncodeError sous Windows (cp1252)
 # — appliqué dans main() uniquement pour éviter un double wrapping
 
@@ -1212,7 +1214,10 @@ def main():
     else:
         projects_to_scan = PROJECTS
 
-    base_path = Path(os.getcwd())
+    # ROOT (dossier du script), pas os.getcwd() -- sinon un commit lance depuis
+    # un worktree (.claude/worktrees/<nom>) scanne le code du WORKTREE (potentiellement
+    # tres en retard sur main) au lieu du vrai checkout principal.
+    base_path = ROOT if not args.dir else Path(os.getcwd())
 
     for project in projects_to_scan:
         project_path = base_path / project
