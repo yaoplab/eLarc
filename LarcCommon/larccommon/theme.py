@@ -809,7 +809,7 @@ class QssHelper:
         return (
             f"QFrame#kpi_card {{ background: {p.surface}; border: 1px solid {p.outline_variant}; "
             f"border-radius: {_ds.radius_sm}px; padding: {_ds.space_xs}px; }}"  # shape-small (8px) — Card with border
-            f"QLabel#kpi_value {{ font-size: {s(24)}px; font-weight: bold; color: {p.primary}; }}"
+            f"QLabel#kpi_value {{ font-size: {s(24)}px; font-weight: bold; color: {p.text_strong}; }}"
             f"QLabel#kpi_label {{ font-size: {s(10)}px; color: {p.text_strong}; }}"  # text_strong = lisibilité garantie dark comme light
             f"QFrame#kpi_small {{ background: {p.surface}; border: 1px solid {p.outline_variant}; "
             f"border-radius: {_ds.radius_sm}px; padding: {_ds.space_xxs}px; }}"  # Card with border
