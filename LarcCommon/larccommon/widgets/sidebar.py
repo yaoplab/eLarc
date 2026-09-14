@@ -136,11 +136,15 @@ class SidebarWidget(M3ScrollArea):
         """Reconstruit toutes les sections du sidebar avec les couleurs actuelles.
         Appelé automatiquement lors du changement de thème (theme_changed).
         """
-        # Nettoyage
+        # Nettoyage — les header widgets (externes, persistants, re-ajoutés
+        # ci-dessous) ne doivent PAS être détruits : ce sont les MÊMES objets
+        # réutilisés à chaque rebuild, contrairement aux boutons de section/
+        # classe qui sont recréés à chaque appel.
+        header_widgets = set(getattr(self, '_header_widgets', []))
         while self._layout.count():
             item = self._layout.takeAt(0)
             w = item.widget()
-            if w:
+            if w and w not in header_widgets:
                 w.deleteLater()
             if item.layout():
                 while item.layout().count():

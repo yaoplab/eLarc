@@ -226,6 +226,11 @@ class MainWindow(GroupStatsMixin, StudentsMixin, EventsMixin, QWidget):
         kpi_row = QHBoxLayout()
         kpi_row.setSpacing(ds.space_xs)
         self._kpi_cards = {}
+        # (frame, value_label, caption_label) — restylés explicitement dans
+        # _style_kpi_widgets() car M3Frame/M3Label figent leur propre QSS à la
+        # construction et ne réagissent pas à theme_changed (QssHelper.kpi_common()
+        # sur #kpi_card/#kpi_value est donc toujours masqué par ce QSS d'instance).
+        self._kpi_widgets: list = []
         # Period label
         self._kpi_period = M3Label("—", theme=theme_manager.phi_theme)
         self._kpi_period.setObjectName("kpi_value")
@@ -244,6 +249,7 @@ class MainWindow(GroupStatsMixin, StudentsMixin, EventsMixin, QWidget):
         period_label.setAlignment(Qt.AlignCenter)
         pcl.addWidget(period_label)
         kpi_row.addWidget(period_card)
+        self._kpi_widgets.append((period_card, self._kpi_period, period_label))
 
         for k, label in [
             ("total", _("kpi.total")),
@@ -270,7 +276,9 @@ class MainWindow(GroupStatsMixin, StudentsMixin, EventsMixin, QWidget):
             cl.addWidget(lbl)
             self._kpi_cards[k] = val
             kpi_row.addWidget(card)
+            self._kpi_widgets.append((card, val, lbl))
         group_layout.addLayout(kpi_row)
+        self._style_kpi_widgets()
 
         # -- Liste des absents (apres KPIs, avant historique) --
         self._absents_group = M3Frame(theme=theme_manager.phi_theme)
@@ -741,6 +749,25 @@ class MainWindow(GroupStatsMixin, StudentsMixin, EventsMixin, QWidget):
             get_reporter().report_exception()
             log(f"MainWindow._load_user_prefs: {e}")
 
+    def _style_kpi_widgets(self):
+        """Réapplique explicitement le QSS des cartes KPI sur les instances
+        M3Frame/M3Label elles-mêmes : leur propre setStyleSheet() (fixé une
+        fois à la construction) masque toujours le QSS hérité de _STYLE
+        (QssHelper.kpi_common() sur #kpi_card/#kpi_value/#kpi_label ne
+        s'applique donc jamais tel quel)."""
+        p = theme_manager.palette
+        s = theme_manager.font_size
+        frame_qss = (
+            f"M3Frame {{ background: {p.surface}; border: 1px solid {p.outline_variant}; "
+            f"border-radius: {ds.radius_sm}px; }}"
+        )
+        value_qss = f"M3Label {{ font-size: {s(24)}px; font-weight: bold; color: {p.text_strong}; }}"
+        label_qss = f"M3Label {{ font-size: {s(10)}px; color: {p.text_strong}; }}"
+        for frame, val, lbl in getattr(self, "_kpi_widgets", []):
+            frame.setStyleSheet(frame_qss)
+            val.setStyleSheet(value_qss)
+            lbl.setStyleSheet(label_qss)
+
     @safe_slot("MainWindow._restyle_all")
     def _restyle_all(self):
         """Réapplique le style courant à tous les fonds réels (PAS transparents —
@@ -748,6 +775,7 @@ class MainWindow(GroupStatsMixin, StudentsMixin, EventsMixin, QWidget):
         (PreferencesDialog, sélecteur top bar)."""
         p = theme_manager.palette
         self.setStyleSheet(self._STYLE)
+        self._style_kpi_widgets()
         self._top_bar.restyle()
         self._rebuild_student_detail_theme()
         self._top_bar.update_network()
