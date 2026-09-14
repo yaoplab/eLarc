@@ -86,7 +86,7 @@ M3TableWidget {{
 }}
 
 M3TableWidget::item {{
-    padding: {padding // 2}px {padding}px;
+    padding: 0px {padding}px;
     border-bottom: 1px solid {c.outline_variant};
     min-height: {row_height}px;
 }}
