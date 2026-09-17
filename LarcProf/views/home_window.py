@@ -9,6 +9,7 @@ Design: 100% conforme aux skills design-system-larc.
 from __future__ import annotations
 
 import os
+from datetime import date
 
 from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QFont, QPixmap
@@ -26,6 +27,7 @@ from PySide6.QtWidgets import (
 )
 
 from common.database import db, DBMode
+from common.school_calendar import get_temps
 from common.session import session
 from common.theme import theme_manager
 from common.sync import sync as sync_manager
@@ -33,6 +35,7 @@ from common.sqlite_init import BUSINESS_TABLES
 from common.logger import log
 from larccommon.design_system import ds
 from larccommon.safe_slot import safe_slot
+from larccommon.widgets import TimelineWidget
 
 _STAT_TABLE_LABELS = {
     'larcauth_evaluation': 'Evaluations',
@@ -144,6 +147,8 @@ class HomeWindow(QMainWindow):
         self._main_window = None
         self._pgm_buttons: dict[str, QPushButton] = {}
         self._pgm_sections: dict[str, QWidget] = {}
+        self._timeline_band: QWidget | None = None
+        self._timeline_labels: list[tuple[QLabel, QLabel]] = []
 
         self._setup_ui()
         self._load_data()
@@ -164,6 +169,11 @@ class HomeWindow(QMainWindow):
 
         # ── Logo + Header ──
         outer.addWidget(self._build_header())
+
+        # ── Ligne de temps : année / trimestre / unité en cours, en gros ──
+        timeline_band = self._build_timeline_band()
+        if timeline_band is not None:
+            outer.addWidget(timeline_band)
 
         # ── Body: gauche (profil + synchro) | droite (programmes) ──
         body = QHBoxLayout()
@@ -228,6 +238,93 @@ class HomeWindow(QMainWindow):
         h.addWidget(self._hdr_last_login)
 
         return header
+
+    # ── Ligne de temps ──
+    def _build_timeline_band(self) -> QWidget | None:
+        """Bandeau ligne de temps : année scolaire / trimestre / unité en
+        cours en gros, + frise annuelle (widget partagé
+        larccommon.widgets.TimelineWidget, même que LarcConfig).
+
+        Données lues en direct sur le serveur (pas de mise en cache locale
+        — purement informationnel) : le bandeau est simplement absent si
+        aucune connexion serveur n'est disponible (cohérent avec le reste
+        du dashboard, qui tolère le hors-ligne).
+        """
+        data = get_temps(within_year=True)
+        if not data:
+            return None
+        ay = data['annee']
+        if not (ay.get('start') and ay.get('end') and ay['start'] < ay['end']):
+            return None
+        term_nr = ay.get('term') or 0
+        unit_nr = ay.get('unit') or 0
+        trim = next((t for t in data['trimestres']
+                     if t.get('trim') == term_nr), None)
+        unit = next((u for u in data['unites']
+                     if u.get('unit_nr') == unit_nr), None)
+
+        p = theme_manager.palette
+        band = QFrame()
+        band.setObjectName('timeline_band')
+        band.setAttribute(Qt.WA_StyledBackground, True)
+        band.setStyleSheet(
+            f"QFrame#timeline_band {{ background: {p.surface}; "
+            f"border: 1px solid {p.outline_variant}; "
+            f"border-radius: {ds.radius_md}px; }}")
+        v = QVBoxLayout(band)
+        v.setContentsMargins(ds.space_m3, ds.space_sm, ds.space_m3, ds.space_sm)
+        v.setSpacing(ds.space_xxs)
+
+        hero = QHBoxLayout()
+        hero.setSpacing(ds.space_xxl)
+        title_font = QFont('Segoe UI', theme_manager.font_size(11))
+        big_font = QFont('Segoe UI', theme_manager.font_size(22), QFont.Bold)
+        self._timeline_labels: list[tuple[QLabel, QLabel]] = []
+
+        def _hero_col(title: str, value: str):
+            col = QVBoxLayout()
+            col.setSpacing(0)
+            t_lbl = QLabel(title)
+            t_lbl.setFont(title_font)
+            t_lbl.setStyleSheet(f'color: {p.text_strong};')
+            col.addWidget(t_lbl)
+            v_lbl = QLabel(value)
+            v_lbl.setFont(big_font)
+            v_lbl.setStyleSheet(f'color: {p.text_strong};')
+            col.addWidget(v_lbl)
+            hero.addLayout(col)
+            self._timeline_labels.append((t_lbl, v_lbl))
+
+        _hero_col('Année scolaire', ay.get('label') or '—')
+        _hero_col('Trimestre', (trim.get('label_fr') if trim else '')
+                  or (f'T{term_nr}' if term_nr else '—'))
+        _hero_col('Unité', (unit.get('label_fr') if unit else '')
+                  or (f'U{unit_nr}' if unit_nr else '—'))
+        hero.addStretch(1)
+        v.addLayout(hero)
+
+        def _resolve(row: dict, nr_key: str) -> dict:
+            return {'nr': row[nr_key], 'label': row.get('label_fr') or '',
+                    'start': row.get('start_fr'), 'end': row.get('end_fr')}
+
+        unites_r = [_resolve(u, 'unit_nr') for u in data['unites']]
+        trimestres_r = [_resolve(t, 'trim') for t in data['trimestres']]
+        events = [
+            (ay.get('start'), 'Début année', 'year_start'),
+            (date.today(), "Aujourd'hui", 'today'),
+            (ay.get('end'), 'Fin année', 'year_end'),
+        ]
+
+        timeline = TimelineWidget()
+        timeline.set_data(
+            ay.get('start'), ay.get('end'),
+            [e for e in events if e[0]],
+            unites=unites_r, trimestres=trimestres_r,
+            current_unit_nr=unit_nr, current_trim_nr=term_nr)
+        v.addWidget(timeline)
+
+        self._timeline_band = band
+        return band
 
     # ── Carte Profil ──
     def _build_profile_card(self) -> QWidget:
@@ -770,6 +867,15 @@ class HomeWindow(QMainWindow):
             self._hdr_mode.setStyleSheet(f'color: {p.on_primary}; border: none;')
         if hasattr(self, '_hdr_last_login'):
             self._hdr_last_login.setStyleSheet(f'color: {p.on_primary}; border: none;')
+        # Bandeau ligne de temps (TimelineWidget s'auto-restyle via ds.theme_changed)
+        if self._timeline_band is not None:
+            self._timeline_band.setStyleSheet(
+                f"QFrame#timeline_band {{ background: {p.surface}; "
+                f"border: 1px solid {p.outline_variant}; "
+                f"border-radius: {ds.radius_md}px; }}")
+            for t_lbl, v_lbl in self._timeline_labels:
+                t_lbl.setStyleSheet(f'color: {p.text_strong};')
+                v_lbl.setStyleSheet(f'color: {p.text_strong};')
         # Indicateurs connexion
         if hasattr(self, '_profile_intra'):
             server_ok = db.server_conn is not None
