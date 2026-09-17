@@ -138,7 +138,7 @@ class StudentCardView(ThemedDialog):
                 font-size: {s(14)}px; font-weight: bold; color: {p.text_strong};
             }}
             QLabel#jval {{
-                font-size: {s(22)}px; font-weight: bold; color: {p.primary};
+                font-size: {s(22)}px; font-weight: bold; color: {p.text_strong};
             }}
             QLabel#note_lbl {{
                 font-size: {s(16)}px; font-weight: bold; color: {p.text_strong};
@@ -573,7 +573,7 @@ class StudentCardView(ThemedDialog):
         if self._note_on_7 is not None:
             self._note_display.setText(f'{note_title} {self._note_on_7}{suffix}')
             self._note_display.setStyleSheet(
-                f"font-size: {theme_manager.font_size(16)}px; font-weight: bold; color: {p.primary};")
+                f"font-size: {theme_manager.font_size(16)}px; font-weight: bold; color: {p.text_strong};")
         else:
             self._note_display.setText(f'{note_title} —{suffix}')
             self._note_display.setStyleSheet(

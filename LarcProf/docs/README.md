@@ -2,6 +2,17 @@
 
 Ce dossier contient la description détaillée de l'algorithme global du programme.
 
+## Référence principale
+
+**`FONCTIONNEMENT_COMPLET.md`** (2026-09-16) — documentation fonctionnelle exhaustive de
+l'application entière, basée sur une lecture intégrale du code (citations `fichier:ligne`
+systématiques) et sur des vérifications en conditions réelles (log applicatif, base SQLite).
+Couvre démarrage/authentification, tableaux de bord, fenêtre principale (grille de notes),
+système d'évaluations formatives/sommatives, moteur de calcul PEI/DP, synchronisation, thème.
+À consulter en premier pour toute reprise de développement — les fichiers numérotés ci-dessous
+restent utiles pour l'historique mais peuvent être partiellement obsolètes (voir les notes de
+correction dans `FONCTIONNEMENT_COMPLET.md`).
+
 ## Structure
 
 - `01_introduction.md` – introduction et ordre de lecture

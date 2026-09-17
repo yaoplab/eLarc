@@ -7,7 +7,7 @@ from phibuilder.phi.scale import SpacingToken
 from larccommon.design_system import ds
 from larccommon.theme import theme_manager
 from larccommon.icons import icon as md3_icon
-from LarcConfig.common.db_access import load_json, save_json
+from LarcConfig.common.db_access import load_json, save_json, FR_PATH, EN_PATH
 from larccommon.safe_slot import safe_slot
 
 
@@ -109,5 +109,20 @@ class I18nPanel(M3ScrollArea):
 
     @safe_slot("I18nPanel._save")
     def _save(self):
+        from PySide6.QtWidgets import QMessageBox
+        reply = QMessageBox.question(
+            self, "Confirmer l'enregistrement",
+            "fr.json/en.json sont partagés par toutes les applications du monorepo "
+            "(~662 clés). Écraser ces fichiers avec les modifications actuelles ?",
+            QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        if reply != QMessageBox.Yes:
+            return
+        import shutil, datetime
+        ts = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
+        for p in (FR_PATH, EN_PATH):
+            try:
+                shutil.copy2(p, f"{p}.bak_{ts}")
+            except OSError:
+                pass
         save_json(self._fr, 'fr')
         save_json(self._en, 'en')

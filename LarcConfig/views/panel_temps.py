@@ -404,8 +404,16 @@ class TempsPanel(M3ScrollArea):
 
     @safe_slot("TempsPanel.save_annee")
     def _save_annee(self):
+        start, end = self._d(self._ay_start), self._d(self._ay_end)
+        if start and end and start >= end:
+            from PySide6.QtWidgets import QMessageBox
+            QMessageBox.warning(
+                self, "Dates invalides",
+                "La date de début doit être antérieure à la date de fin — "
+                "enregistrement annulé pour éviter de casser l'affichage.")
+            return
         if save_annee(self._ay_label.text().strip(),
-                      self._d(self._ay_start), self._d(self._ay_end),
+                      start, end,
                       self._ay_term.value(), self._ay_unit.value()):
             self.reload()
 

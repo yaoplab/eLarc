@@ -1,7 +1,7 @@
 """Panel Thèmes — visualisation des 4 palettes."""
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QGridLayout
-from phibuilder.widgets import M3Label, M3Frame, M3ScrollArea
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QGridLayout, QHBoxLayout
+from phibuilder.widgets import M3Label, M3Frame, M3ScrollArea, M3Button
 from phibuilder.phi.scale import SpacingToken
 from larccommon.design_system import ds
 from larccommon.theme import theme_manager
@@ -42,8 +42,6 @@ class ThemesPanel(M3ScrollArea):
 
             for field in _FIELDS:
                 val = getattr(pal, field, '#000000')
-                from PySide6.QtWidgets import QHBoxLayout
-                from phibuilder.widgets import M3Button
                 row = QHBoxLayout()
                 row.setSpacing(ds.space_xs)
                 box = M3Button(theme=phi)

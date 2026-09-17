@@ -382,7 +382,7 @@ class LoginWindow(QWidget):
 
     def _check_secretary_exists(self, email: str) -> Tuple[bool, dict]:
         if not db.is_server_connected:
-            return
+            return False, {}
         conn = db.server_conn
         if not conn:
             return False, {}

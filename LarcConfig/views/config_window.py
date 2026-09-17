@@ -111,6 +111,7 @@ class ConfigWindow(QWidget):
                 f"M3Button {{ background: {bg}; color: {c.primary}; text-align: left; "
                 f"padding-left: {ds.space_xs}px; border-radius: {ds.radius_xs}px; }}")
 
+    @safe_slot("ConfigWindow._switch")
     def _switch(self, section: str, force: bool = False):
         if self._current == section and not force:
             return

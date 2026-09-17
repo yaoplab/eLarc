@@ -106,7 +106,7 @@ class HomeWidget(QWidget):
             QLabel#profile_name {{
                 font-size: {s(16)}px; font-weight: bold; color: {p.text_strong};
             }}
-            QLabel#profile_role {{ font-size: {s(13)}px; color: {p.primary}; font-weight: bold; }}
+            QLabel#profile_role {{ font-size: {s(13)}px; color: {p.text_strong}; font-weight: bold; }}
             QLabel#profile_meta {{ font-size: {s(12)}px; color: {p.text_soft}; }}
             QFrame#sync_card {{
                 background: {p.surface}; color: {p.text_strong};
@@ -122,7 +122,7 @@ class HomeWidget(QWidget):
                 background: {p.surface}; color: {p.text_strong};
                 border: 1px solid {p.outline_variant}; border-radius: {ds.radius_md}px;
             }}
-            QLabel#pgm_title {{ font-size: {s(14)}px; font-weight: bold; color: {p.primary}; }}
+            QLabel#pgm_title {{ font-size: {s(14)}px; font-weight: bold; color: {p.text_strong}; }}
             QPushButton.pgm_btn {{
                 background: {p.primary_container}; color: {p.primary};
                 border: 1px solid {p.primary}; border-radius: {ds.radius_lg}px;
@@ -295,7 +295,7 @@ class HomeWidget(QWidget):
 
         self._lbl_sync_count = QLabel()
         self._lbl_sync_count.setStyleSheet(
-            f"font-size: {theme_manager.font_size(36)}px; font-weight: bold; color: {theme_manager.palette.primary};"
+            f"font-size: {theme_manager.font_size(36)}px; font-weight: bold; color: {theme_manager.palette.text_strong};"
         )
         layout.addWidget(self._lbl_sync_count)
 
@@ -645,8 +645,13 @@ class HomeWidget(QWidget):
         self._status_label.setText('Synchronisation en cours...')
         QApplication.processEvents()
         try:
-            ok, msg = sync_manager.pull_push()
-            self._status_label.setText(msg or ('Sync OK' if ok else 'Echec sync'))
+            report = sync_manager.pull_push()
+            if report.has_errors:
+                self._status_label.setText(f'Sync terminee avec {len(report.errors)} erreur(s).')
+            elif report.has_conflicts:
+                self._status_label.setText(f'Sync terminee — {len(report.conflicts)} conflit(s) a resoudre.')
+            else:
+                self._status_label.setText(f'Sync reussie — {report.summary()}')
         except Exception as e:
             from larccommon.error_reporting import get_reporter
             get_reporter().report_exception()
@@ -675,6 +680,6 @@ class HomeWidget(QWidget):
         self._lbl_sync_date.setStyleSheet(
             f"font-size: {s(12)}px; color: {p.text_strong};")
         self._lbl_sync_count.setStyleSheet(
-            f"font-size: {s(36)}px; font-weight: bold; color: {p.primary};")
+            f"font-size: {s(36)}px; font-weight: bold; color: {p.text_strong};")
         self._lbl_sync_detail.setStyleSheet(
             f"font-size: {s(11)}px; color: {p.error}; font-weight: bold;")

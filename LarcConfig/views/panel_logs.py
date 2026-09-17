@@ -122,12 +122,7 @@ class _ErrorsTab(QWidget):
         self.detail = QTextEdit()
         self.detail.setReadOnly(True)
         self.detail.setFixedHeight(ds.space_xxxl + ds.button_height + ds.space_lg)
-        self.detail.setStyleSheet(
-            f"background: transparent; border: 1px solid "
-            f"{theme_manager.palette.outline}; border-radius: {ds.radius_xs}px; "
-            f"padding: {ds.space_md}px; color: "
-            f"{theme_manager.palette.text_strong}; font-size: {ds.font_small}px;"
-        )
+        self._restyle_detail()
 
         l.addWidget(self.filters)
         l.addWidget(self.table, 1)
@@ -135,11 +130,21 @@ class _ErrorsTab(QWidget):
 
         self.filters.btn_refresh.clicked.connect(self.reload)
         self.table.itemSelectionChanged.connect(self._show_detail)
+        ds.theme_changed.connect(self._restyle_detail)
+
+    @safe_slot("LogsPanel.Errors.restyle_detail")
+    def _restyle_detail(self):
+        self.detail.setStyleSheet(
+            f"background: transparent; border: 1px solid "
+            f"{theme_manager.palette.outline}; border-radius: {ds.radius_xs}px; "
+            f"padding: {ds.space_md}px; color: "
+            f"{theme_manager.palette.text_strong}; font-size: {ds.font_small}px;"
+        )
 
     @safe_slot("LogsPanel.Errors.reload")
     def reload(self):
         app, user, _t, frm, to = self.filters.params()
-        rows = get_errors(app, None, frm, to)
+        rows = get_errors(app, user, frm, to)
         self._last_rows = rows
         self.table.setRowCount(len(rows))
         for i, r in enumerate(rows):
@@ -201,7 +206,7 @@ class _AuditTab(QWidget):
     @safe_slot("LogsPanel.Audit.reload")
     def reload(self):
         app, user, table, frm, to = self.filters.params()
-        rows = get_audit(None, table, frm, to)
+        rows = get_audit(app, user, table, frm, to)
         self._last_rows = rows
         self.table.setRowCount(len(rows))
         for i, r in enumerate(rows):

@@ -29,7 +29,7 @@ Permet de voir, activer/désactiver et éditer tous les slots d'un type donné.
 │                           │                                  │
 │                           │  [Enregistrer ce slot]            │
 ├──────────────────────────┴──────────────────────────────────┤
-│  QSplitter redimensionnable (400 / 500)                      │
+│  QSplitter redimensionnable (tailles issues de ds.* — voir note)│
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -39,8 +39,8 @@ Permet de voir, activer/désactiver et éditer tous les slots d'un type donné.
 - **Légende** : texte `A: Recherche et analyse | B: ...` chargé depuis `larcauth_criteria_of_levelsubject`.
 - **Barres slots (`_SlotBar`)** : layout vertical (`QVBoxLayout`) dans une `QScrollArea`.
   - Chaque barre est une `QHBoxLayout` : `[F01] | Titre (nature, 72 chars max) ...... | ☐A ☐B ☐C ☐D`
-  - Actives : fond blanc, bordure verte `#27ae60`
-  - "Suivante" (première inactive) : fond gris, bordure pointillée `#bbb`
+  - Actives : fond `p.surface`, bordure `p.success` (`eval_manager.py:111`)
+  - "Suivante" (première inactive) : fond `p.surface_variant`, bordure pointillée `p.outline_variant` (`eval_manager.py:116`)
   - Suivantes inactives après la suivante : masquées (`setVisible(False)`)
 
 ### Panneau droit
@@ -118,7 +118,9 @@ Fenêtre principale de gestion :
 
 ## Responsive design
 
-- Le `QSplitter` permet de redimensionner les deux panneaux
+- Le `QSplitter` permet de redimensionner les deux panneaux. Tailles initiales posées via
+  `splitter.setSizes([ds.jugements_width + ds.sidebar_width + ds.space_md, ds.kpi_card_height * 6 + ds.space_md])`
+  (`eval_manager.py:189-190`) — dérivées de tokens du design system, pas de valeurs en dur.
 - Les barres de gauche s'étirent horizontalement (`QSizePolicy.Expanding`)
 - Les champs du panneau droit (`QLineEdit`, `QTextEdit`) ont `QSizePolicy.Expanding` horizontal
 - Le `QTextEdit` source a `Expanding` vertical → prend toute la hauteur disponible

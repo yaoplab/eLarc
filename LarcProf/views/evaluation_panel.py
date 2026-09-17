@@ -9,6 +9,7 @@ from PySide6.QtGui import QSyntaxHighlighter, QTextCharFormat
 from PySide6.QtWidgets import (
     QCheckBox,
     QSizePolicy,
+    QDialog,
     QFormLayout,
     QFrame,
     QGridLayout,

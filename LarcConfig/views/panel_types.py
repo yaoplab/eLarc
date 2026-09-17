@@ -134,7 +134,7 @@ class TypesPanel(M3ScrollArea):
         form.addRow("Suffixe code :", suffix_edit)
         form.addRow("Libellé FR :", label_fr_edit)
         form.addRow("Libellé EN :", label_en_edit)
-        ok_btn = M3Button("Créer")
+        ok_btn = M3Button("Créer", theme=theme_manager.phi_theme)
 
         def _validate_and_accept():
             if not suffix_edit.text().strip():

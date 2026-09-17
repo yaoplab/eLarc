@@ -161,6 +161,10 @@ class SyncManager:
         de décision cellule par cellule, met à jour `sync_state` à la fin.
         """
         report = SyncReport()
+        local_conn = db.local_conn
+        if local_conn is None:
+            report.errors.append("Connexion SQLite locale indisponible")
+            return report
 
         try:
             term = self._ensure_current_term()
@@ -180,7 +184,7 @@ class SyncManager:
                 t0 = time.time()
                 diffs = list(self.compute_cell_diff(table))
                 dt = time.time() - t0
-                log(f'[SYNC] {table}: {len(diffs)} diffs in {dt:.1f}s')
+                _log(f'[SYNC] {table}: {len(diffs)} diffs in {dt:.1f}s')
                 _log(f"SyncManager: {table} — {len(diffs)} diffs, computing took {dt:.1f}s")
                 if not diffs:
                     _log(f"SyncManager: {table} — aucune divergence")
@@ -280,8 +284,8 @@ class SyncManager:
                     # trimestre courant ET professeur connecté (même filtre que
                     # take_teacher_data, sinon on rapatrierait les évaluations
                     # de toute l'école)
+                    from common.session import session
                     if table == 'larcauth_evaluation':
-                        from common.session import session
                         cur.execute(f"""
                             SELECT e.* FROM public."{table}" e
                             JOIN public.larcauth_classroom_termsubject cts

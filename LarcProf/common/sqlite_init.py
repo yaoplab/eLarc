@@ -364,11 +364,9 @@ class SQLiteInit:
             open(db_path, 'w').close()
             msg = f"Base {db_path} créée."
             _log(msg)
-            log(msg)
         else:
             msg = f"Base {db_path} déjà existante."
             _log(msg)
-            log(msg)
         if not db.connect_sqlite(db_path):
             return False
         conn = db.local_conn
@@ -411,7 +409,6 @@ class SQLiteInit:
 
         conn.commit()
         _log("Tables SQLite créées/vérifiées avec succès (Intranet).")
-        log("Tables SQLite créées/vérifiées avec succès (Intranet).")
 
         # Migration : recréer sync_state si schéma ancien (pas de table_name)
         try:
@@ -462,7 +459,6 @@ class SQLiteInit:
         if not os.path.exists(config_path):
             msg = f"Fichier config.ini introuvable : {config_path}"
             _log(msg)
-            log(msg)
             return False
         config.read(config_path)
         try:
@@ -473,7 +469,6 @@ class SQLiteInit:
             get_reporter().report_exception()
             msg = f"Clé manquante dans config.ini : {e}"
             _log(msg)
-            log(msg)
             return False
 
         # Connexion à Supabase via l'API REST
@@ -499,11 +494,9 @@ class SQLiteInit:
             open(db_path, 'w').close()
             msg = f"Base cloud {db_path} créée."
             _log(msg)
-            log(msg)
         else:
             msg = f"Base cloud {db_path} déjà existante."
             _log(msg)
-            log(msg)
         if not db.connect_sqlite(db_path):
             return False
         conn = db.local_conn
@@ -512,7 +505,6 @@ class SQLiteInit:
         conn.executescript(_DDL)
         conn.commit()
         _log("Tables SQLite cloud créées/vérifiées avec succès (Supabase).")
-        log("Tables SQLite cloud créées/vérifiées avec succès (Supabase).")
         return True
 
     def save_session(self, result: AuthResult, pin: str = '') -> None:
@@ -537,7 +529,6 @@ class SQLiteInit:
         )
         conn.commit()
         _log(f"Session sauvegardée pour {result.email}")
-        log(f"Session sauvegardée pour {result.email}")
 
     def init_module_config(self, annee_scolaire: str,
                            trimestre_courant: int,
@@ -561,7 +552,6 @@ class SQLiteInit:
         ''', (annee_scolaire, trimestre_courant, nom_professeur, email_professeur))
         conn.commit()
         _log(f"module_config mis à jour pour {email_professeur}")
-        log(f"module_config mis à jour pour {email_professeur}")
 
     def take_teacher_data(self, infos: dict, log_fn=None, conn_sqlite=None, conn_pg=None) -> tuple:
         """
@@ -596,7 +586,6 @@ class SQLiteInit:
             else:
                 msg = "take_teacher_data: aucune connexion serveur disponible"
                 _log(msg)
-                log(msg)
                 if log_fn:
                     log_fn(msg)
                 return (False, msg)
@@ -686,7 +675,6 @@ class SQLiteInit:
                 else:
                     msg = f"Requêtes séparées : {len(eval_rows)} évaluations, {len(pei_rows)} PEI, {len(dp_rows)} DP, {len(term_other_rows)} termothersubject, {len(learner_other_rows)} learner_termothersubject, {len(event_rows)} events"
                     _log(msg)
-                    log(msg)
 
             # Insérer dans SQLite avec une transaction explicite
             cursor_sqlite = conn_sqlite.cursor()
@@ -699,7 +687,7 @@ class SQLiteInit:
                 for t in BUSINESS_TABLES:
                     cursor_sqlite.execute(f'DELETE FROM "{t}"')
                     cursor_sqlite.execute(f'DELETE FROM "{t}_ref"')
-                log(f'[INIT] DELETED all rows from {len(BUSINESS_TABLES)} business tables')
+                _log(f'[INIT] DELETED all rows from {len(BUSINESS_TABLES)} business tables')
 
                 # Helper : peupler une paire (table, table_ref) avec les mêmes données serveur
                 # et mettre à jour sync_state pour cette table.
@@ -730,7 +718,6 @@ class SQLiteInit:
 
             msg = f"take_teacher_data: {len(eval_rows)} évaluations, {len(pei_rows)} PEI, {len(dp_rows)} DP, {len(term_other_rows)} termothersubject, {len(learner_other_rows)} learner_termothersubject téléchargés"
             _log(msg)
-            log(msg)
             if log_fn:
                 log_fn(msg)
             # Vérifier si des lignes ont été insérées
@@ -742,14 +729,12 @@ class SQLiteInit:
             count_dp = cursor_sqlite.fetchone()[0]
             msg_counts = f"Comptes après insertion : eval={count_eval}, pei={count_pei}, dp={count_dp}"
             _log(msg_counts)
-            log(msg_counts)
             if log_fn:
                 log_fn(msg_counts)
             # Si les comptes sont nuls, journaliser un avertissement
             if count_eval == 0 and count_pei == 0 and count_dp == 0:
                 warn_msg = "ATTENTION : aucune ligne insérée dans les tables métiers"
                 _log(warn_msg)
-                log(warn_msg)
                 if log_fn:
                     log_fn(warn_msg)
             return (True, '')
@@ -758,7 +743,7 @@ class SQLiteInit:
             from larccommon.error_reporting import get_reporter
             get_reporter().report_exception()
             msg = f"Erreur take_teacher_data: {e}"
-            log(msg)
+            _log(msg)
             if log_fn:
                 log_fn(msg)
             return (False, msg)
@@ -779,12 +764,12 @@ class SQLiteInit:
         except Exception as e:
             from larccommon.error_reporting import get_reporter
             get_reporter().report_exception()
-            log(f'[INIT] sync_state update skipped: {e}')
+            _log(f'[INIT] sync_state update skipped: {e}')
 
     def _create_table_from_data(self, cursor, table_name: str, columns: list) -> None:
         """Crée une table avec des colonnes TEXT pour toutes les colonnes."""
         # Supprimer la table existante avant de la recréer
-        log(f'[INIT] DROP TABLE IF EXISTS "{table_name}"')
+        _log(f'[INIT] DROP TABLE IF EXISTS "{table_name}"')
         cursor.execute(f'DROP TABLE IF EXISTS "{table_name}"')
         # Vérifier si la colonne 'id' est déjà présente dans les colonnes
         has_id = any(col.lower() == 'id' for col in columns)
@@ -798,11 +783,10 @@ class SQLiteInit:
 
     def _insert_rows_from_data(self, cursor, table_name: str, columns: list, rows: list) -> None:
         """Insère les lignes dans la table en utilisant INSERT OR REPLACE."""
-        log(f'[INIT] INSERT {len(rows)} rows into "{table_name}" ({len(columns)} cols)')
+        _log(f'[INIT] INSERT {len(rows)} rows into "{table_name}" ({len(columns)} cols)')
         if not rows:
             msg = f"_insert_rows_from_data: aucune ligne pour {table_name}"
             _log(msg)
-            log(msg)
             return
         placeholders = ", ".join("?" for _unused in columns)
         col_names = ", ".join(f'"{c}"' for c in columns)
@@ -824,13 +808,11 @@ class SQLiteInit:
             cursor.executemany(sql, converted_rows)
             msg = f"_insert_rows_from_data: {len(rows)} lignes insérées dans {table_name}"
             _log(msg)
-            log(msg)
         except Exception as e:
             from larccommon.error_reporting import get_reporter
             get_reporter().report_exception()
             msg = f"_insert_rows_from_data: erreur lors de l'insertion dans {table_name} : {e}"
             _log(msg)
-            log(msg)
             raise
 
     def read_cursor(self, table: str) -> int:

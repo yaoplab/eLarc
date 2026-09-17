@@ -89,7 +89,7 @@ class HomeWindow(QMainWindow):
             QLabel#profile_name {{
                 font-size: {s(16)}px; font-weight: bold; color: {p.text_strong};
             }}
-            QLabel#profile_role {{ font-size: {s(13)}px; color: {p.primary}; font-weight: bold; }}
+            QLabel#profile_role {{ font-size: {s(13)}px; color: {p.text_strong}; font-weight: bold; }}
             QLabel#profile_meta {{ font-size: {s(12)}px; color: {p.text_soft}; }}
             QLabel#profile_connection {{ font-size: {s(11)}px; }}
             QFrame#sync_card {{
@@ -98,7 +98,7 @@ class HomeWindow(QMainWindow):
             }}
             QLabel#sync_title {{ font-size: {s(16)}px; font-weight: bold; color: {p.text_strong}; }}
             QLabel#sync_date {{ font-size: {s(12)}px; color: {p.text_soft}; }}
-            QLabel#sync_count {{ font-size: {s(36)}px; font-weight: bold; color: {p.primary}; }}
+            QLabel#sync_count {{ font-size: {s(36)}px; font-weight: bold; color: {p.text_strong}; }}
             QLabel#sync_label {{ font-size: {s(12)}px; color: {p.text_soft}; }}
             QLabel#sync_detail {{ font-size: {s(11)}px; color: {p.error}; font-weight: bold; }}
             QPushButton#sync_btn {{
@@ -118,7 +118,7 @@ class HomeWindow(QMainWindow):
                 background: {p.surface}; color: {p.text_strong};
                 border: 1px solid {p.outline_variant}; border-radius: {ds.radius_md}px;
             }}
-            QLabel#pgm_title {{ font-size: {s(14)}px; font-weight: bold; color: {p.primary}; }}
+            QLabel#pgm_title {{ font-size: {s(14)}px; font-weight: bold; color: {p.text_strong}; }}
             QPushButton.pgm_btn {{
                 background: {p.primary_container}; color: {p.primary};
                 border: 1px solid {p.primary}; border-radius: {ds.radius_lg}px;
@@ -760,7 +760,7 @@ class HomeWindow(QMainWindow):
     # ------------------------------------------------------------------
     @safe_slot("HomeWindow._restyle")
     def _restyle(self):
-        self.centralWidget().setStyleSheet(self._STYLE())
+        self.centralWidget().setStyleSheet(self._STYLE)
         p = theme_manager.palette
         s = theme_manager.font_size
         # Re-styler les labels inline du header

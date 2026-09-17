@@ -1,4 +1,5 @@
 """Panel Rôles — liste des utilisateurs."""
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QHeaderView, QTableWidgetItem
 from phibuilder.widgets import M3Label, M3TableWidget, M3ScrollArea
 from phibuilder.phi.scale import SpacingToken
@@ -27,14 +28,19 @@ class RolesPanel(M3ScrollArea):
             h.setSectionResizeMode(i, QHeaderView.Stretch)
         table.setAlternatingRowColors(False)
 
+        def _ro(text: str) -> QTableWidgetItem:
+            item = QTableWidgetItem(text)
+            item.setFlags(item.flags() & ~Qt.ItemIsEditable)
+            return item
+
         rows = get_roles()
         table.setRowCount(len(rows))
         for i, r in enumerate(rows):
-            table.setItem(i, 0, QTableWidgetItem(str(r['id'])))
-            table.setItem(i, 1, QTableWidgetItem(r['last_name']))
-            table.setItem(i, 2, QTableWidgetItem(r['first_name']))
-            table.setItem(i, 3, QTableWidgetItem(r['email']))
-            table.setItem(i, 4, QTableWidgetItem(r['roles']))
+            table.setItem(i, 0, _ro(str(r['id'])))
+            table.setItem(i, 1, _ro(r['last_name']))
+            table.setItem(i, 2, _ro(r['first_name']))
+            table.setItem(i, 3, _ro(r['email']))
+            table.setItem(i, 4, _ro(r['roles']))
 
         l.addWidget(table)
         self.setWidget(container)

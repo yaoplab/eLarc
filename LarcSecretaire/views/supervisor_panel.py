@@ -131,31 +131,31 @@ class EventDialog(ThemedDialog):
         layout = QVBoxLayout(self)
         layout.setSpacing(d.spacing)
 
-        info = M3Label(f"<b>{_('supervisor.student_label').format(id=self._student_id)}</b>", style="title_medium")
+        info = M3Label(f"<b>{_('supervisor.student_label').format(id=self._student_id)}</b>", style="title_medium", theme=theme_manager.phi_theme)
         layout.addWidget(info)
 
         # Lieu
-        layout.addWidget(M3Label(_("supervisor.lieu_label"), style="body_medium"))
-        self._lieu_combo = M3ComboBox()
+        layout.addWidget(M3Label(_("supervisor.lieu_label"), style="body_medium", theme=theme_manager.phi_theme))
+        self._lieu_combo = M3ComboBox(theme=theme_manager.phi_theme)
         self._lieu_combo.addItem(_("supervisor.lieu_none"), None)
         self._load_lieux()
         layout.addWidget(self._lieu_combo)
 
         # Matière
-        layout.addWidget(M3Label(_("supervisor.subject_label"), style="body_medium"))
-        self._subject_combo = M3ComboBox()
+        layout.addWidget(M3Label(_("supervisor.subject_label"), style="body_medium", theme=theme_manager.phi_theme))
+        self._subject_combo = M3ComboBox(theme=theme_manager.phi_theme)
         self._subject_combo.addItem(_("supervisor.subject_none"), None)
         self._load_subjects()
         self._subject_combo.currentIndexChanged.connect(self._on_subject_changed)
         layout.addWidget(self._subject_combo)
 
         # Professeur (lecture seule, auto-rempli)
-        self._teacher_label = M3Label("", style="body_small")
+        self._teacher_label = M3Label("", style="body_small", theme=theme_manager.phi_theme)
         self._teacher_label.setStyleSheet("font-style: italic;")
         layout.addWidget(self._teacher_label)
 
         # Type d'événement
-        layout.addWidget(M3Label(_("supervisor.type_label"), style="body_medium"))
+        layout.addWidget(M3Label(_("supervisor.type_label"), style="body_medium", theme=theme_manager.phi_theme))
         type_group = QButtonGroup(self)
         type_layout = QHBoxLayout()
         type_layout.setSpacing(ds.space_xxs)
@@ -167,13 +167,13 @@ class EventDialog(ThemedDialog):
         layout.addLayout(type_layout)
 
         # Note
-        self._note = M3TextEdit()
+        self._note = M3TextEdit(theme=theme_manager.phi_theme)
         self._note.setPlaceholderText(_("supervisor.note_placeholder"))
         self._note.setMaximumHeight(theme_manager.image.logo)
-        layout.addWidget(M3Label(_("supervisor.note_label"), style="body_medium"))
+        layout.addWidget(M3Label(_("supervisor.note_label"), style="body_medium", theme=theme_manager.phi_theme))
         layout.addWidget(self._note)
 
-        buttons = M3DialogButtonBox(M3DialogButtonBox.Ok | M3DialogButtonBox.Cancel)
+        buttons = M3DialogButtonBox(M3DialogButtonBox.Ok | M3DialogButtonBox.Cancel, theme=theme_manager.phi_theme)
         buttons.accepted.connect(self._validate)
         buttons.rejected.connect(self.reject)
         layout.addWidget(buttons)
@@ -289,12 +289,12 @@ class SupervisorPanel(QWidget):
         hdr_row.setContentsMargins(0, 3, 0, 3)
         from phibuilder.phi.scale import SpacingToken
 
-        self._header = M3Label(_("supervisor.select_class"), style="title_small")
+        self._header = M3Label(_("supervisor.select_class"), style="title_small", theme=theme_manager.phi_theme)
         self._header.setStyleSheet(f"padding: {ds.space_xs}px;")
         hdr_row.addWidget(self._header, 1)
 
         hdr_row.addSpacing(ds.sp(SpacingToken.SM))
-        self._list_btn = M3Button(_("supervisor.list_button"), variant=ButtonVariant.TONAL)
+        self._list_btn = M3Button(_("supervisor.list_button"), variant=ButtonVariant.TONAL, theme=theme_manager.phi_theme)
         self._list_btn.setFixedSize(ds.sp(SpacingToken.XL), ds.sp(SpacingToken.XL))
         self._list_btn.clicked.connect(self._on_class_list)
         self._list_btn.hide()
@@ -323,7 +323,7 @@ class SupervisorPanel(QWidget):
                 pass
         self._card_size = saved
         for key, icon_name in [("compact", "view_comfy"), ("medium", "view_module"), ("large", "dashboard")]:
-            btn = M3Button(variant=ButtonVariant.TONAL)
+            btn = M3Button(variant=ButtonVariant.TONAL, theme=theme_manager.phi_theme)
             btn.setFixedSize(ds.sp(SpacingToken.XL), ds.sp(SpacingToken.XL))
             btn.setIcon(md3_icon(icon_name, color=ds.p.text_soft, size=22))
             btn.setCheckable(True)
@@ -333,7 +333,7 @@ class SupervisorPanel(QWidget):
                 btn.setChecked(True)
             hdr_row.addWidget(btn)
         hdr_row.addSpacing(ds.sp(SpacingToken.SM))
-        self._add_btn = M3Button("+", variant=ButtonVariant.FILLED)
+        self._add_btn = M3Button("+", variant=ButtonVariant.FILLED, theme=theme_manager.phi_theme)
         self._add_btn.setFixedSize(ds.sp(SpacingToken.XL), ds.sp(SpacingToken.XL))
         self._add_btn.clicked.connect(self._on_add_student)
         self._add_btn.hide()
@@ -341,10 +341,10 @@ class SupervisorPanel(QWidget):
         hdr_row.addSpacing(3)
         layout.addLayout(hdr_row)
 
-        self._stack = M3StackedWidget()
+        self._stack = M3StackedWidget(theme=theme_manager.phi_theme)
 
         # Page 0: card grid
-        scroll = M3ScrollArea()
+        scroll = M3ScrollArea(theme=theme_manager.phi_theme)
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(M3Frame.NoFrame)
         self._cards_widget = QWidget()
@@ -373,19 +373,19 @@ class SupervisorPanel(QWidget):
         layout.setContentsMargins(ds.space_xs, ds.space_xs, ds.space_xs, ds.space_xs)
         layout.setSpacing(ds.space_xs)
 
-        back = M3Button(_("supervisor.back_to_class"), variant=ButtonVariant.TEXT)
+        back = M3Button(_("supervisor.back_to_class"), variant=ButtonVariant.TEXT, theme=theme_manager.phi_theme)
         back.setCursor(Qt.PointingHandCursor)
         back.clicked.connect(lambda checked: self._stack.setCurrentIndex(0))
         layout.addWidget(back)
 
-        self._sd_name = M3Label(style="title_medium")
+        self._sd_name = M3Label(style="title_medium", theme=theme_manager.phi_theme)
         layout.addWidget(self._sd_name)
 
-        tabs = M3TabWidget()
+        tabs = M3TabWidget(theme=theme_manager.phi_theme)
         tabs.setDocumentMode(True)
 
         # Tab 1: Coordonnées
-        self._sd_info = M3Label(style="body_small")
+        self._sd_info = M3Label(style="body_small", theme=theme_manager.phi_theme)
         self._sd_info.setWordWrap(True)
         tabs.addTab(self._sd_info, _("supervisor.tab_coordinates"))
 
@@ -394,7 +394,7 @@ class SupervisorPanel(QWidget):
         evt_layout = QVBoxLayout(evt_w)
         evt_layout.setContentsMargins(ds.space_xxs, ds.space_xxs, ds.space_xxs, ds.space_xxs)
 
-        self._sd_events = M3TableWidget()
+        self._sd_events = M3TableWidget(theme=theme_manager.phi_theme)
         self._sd_events.set_headers(
             [
                 _("supervisor.events_table"),
@@ -425,7 +425,7 @@ class SupervisorPanel(QWidget):
         self._sd_events.setAlternatingRowColors(False)
         evt_layout.addWidget(self._sd_events, 1)
 
-        self._sd_add_btn = M3Button(_("supervisor.add_event"), variant=ButtonVariant.FILLED)
+        self._sd_add_btn = M3Button(_("supervisor.add_event"), variant=ButtonVariant.FILLED, theme=theme_manager.phi_theme)
         self._sd_add_btn.clicked.connect(self._on_add_event)
         evt_layout.addWidget(self._sd_add_btn)
 
@@ -700,8 +700,11 @@ class SupervisorPanel(QWidget):
                 return
             try:
                 from psycopg2 import errors as pg_errors
+                from larccommon.audit_context import attach, refresh
 
+                refresh()
                 cur = conn.cursor()
+                attach(conn)
                 try:
                     cur.execute(
                         "INSERT INTO student_event "
@@ -727,8 +730,6 @@ class SupervisorPanel(QWidget):
                         "INSERT INTO student_event (student_id, event_type, event_at, note, source, created_by) VALUES (%s, %s, %s, %s, %s, %s)",
                         (data["student_id"], data["event_type"], data["event_at"], data["note"], "intranet", session.user_id),
                     )
-                cur.execute("SET LOCAL app.sync_source = 'intranet'")
-                cur.execute(f"SET LOCAL app.modified_by = {session.user_id}")
                 audit.add_event(data["student_id"], data["event_type"], data.get("note", ""))
                 conn.commit()
                 self._load_events(sid)
@@ -774,15 +775,15 @@ class ClassListDialog(ThemedDialog):
         layout.setContentsMargins(ds.space_md, ds.space_md, ds.space_md, ds.space_md)
 
         hdr = QHBoxLayout()
-        title = M3Label(_("supervisor.list_header").format(name=self._class_label), style="title_small")
+        title = M3Label(_("supervisor.list_header").format(name=self._class_label), style="title_small", theme=theme_manager.phi_theme)
         hdr.addWidget(title)
         hdr.addStretch()
-        self._count_label = M3Label("", style="label_small")
+        self._count_label = M3Label("", style="label_small", theme=theme_manager.phi_theme)
         self._count_label.setStyleSheet(f"color: {p.text_strong}; font-weight: bold;")
         hdr.addWidget(self._count_label)
         layout.addLayout(hdr)
 
-        self._table = M3TableWidget()
+        self._table = M3TableWidget(theme=theme_manager.phi_theme)
         self._table.set_headers([
             _("supervisor.list_table_num"), _("supervisor.list_table_last_name"),
             _("supervisor.list_table_first_name"),
@@ -800,11 +801,11 @@ class ClassListDialog(ThemedDialog):
 
         btn_row = QHBoxLayout()
         btn_row.setSpacing(ds.space_sm)
-        pdf_btn = M3Button(_("supervisor.pdf_button"), variant=ButtonVariant.FILLED)
+        pdf_btn = M3Button(_("supervisor.pdf_button"), variant=ButtonVariant.FILLED, theme=theme_manager.phi_theme)
         pdf_btn.clicked.connect(self._export_pdf)
         btn_row.addWidget(pdf_btn)
         btn_row.addStretch()
-        close_btn = M3Button(_("supervisor.close_button"), variant=ButtonVariant.OUTLINED)
+        close_btn = M3Button(_("supervisor.close_button"), variant=ButtonVariant.OUTLINED, theme=theme_manager.phi_theme)
         close_btn.clicked.connect(self.accept)
         btn_row.addWidget(close_btn)
         layout.addLayout(btn_row)

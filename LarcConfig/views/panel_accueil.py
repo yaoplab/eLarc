@@ -193,7 +193,7 @@ class TimelineWidget(QWidget):
             return left + (d - self._start).days / span * (right - left)
 
         events = {k: d for d, _l, k in self._events}
-        t_start = events.get('term_start') or events.get('term_end')
+        t_start = events.get('term_start')
         t_end = events.get('term_end')
         u_start = events.get('unit_start')
         u_end = events.get('unit_end')
@@ -276,7 +276,8 @@ class TimelineWidget(QWidget):
         p.setFont(theme_manager.font_px(ds.font_small))
         for d, caption, kind, above, lx, lw, row_i in render:
             tx = min(max(x(d), left), right)
-            color = colors.get(kind, pal.primary)
+            family = kind.split('_', 1)[0]
+            color = colors.get(family, pal.primary)
             # Marqueur
             p.setPen(self._pen(color, ds.border_width * 2))
             p.drawLine(tx, axis_y - ds.space_xxs, tx, axis_y + ds.space_xxs)
@@ -356,6 +357,24 @@ class AccueilPanel(M3ScrollArea):
         self._empty_data_w.hide()
         l.addWidget(self._empty_data_w)
 
+        # Avertissement dérive : aujourd'hui hors de la plage du trimestre/
+        # unité configuré manuellement — n'écrase jamais le trimestre actif
+        # (règle CLAUDE.md : défini par current_term_number, pas les dates),
+        # signale juste l'incohérence pour qu'elle ne passe plus inaperçue.
+        drift_row = QHBoxLayout()
+        drift_row.setSpacing(ds.space_sm)
+        self._drift_icon = QLabel()
+        drift_row.addWidget(self._drift_icon)
+        self._drift_lbl = M3Label(_("panel.accueil.date_drift"),
+                                  theme=theme_manager.phi_theme,
+                                  style="body_small")
+        drift_row.addWidget(self._drift_lbl)
+        drift_row.addStretch()
+        self._drift_w = QWidget()
+        self._drift_w.setLayout(drift_row)
+        self._drift_w.hide()
+        l.addWidget(self._drift_w)
+
         # Frise année scolaire
         self._timeline_card = _ChartCard(_("panel.accueil.timeline"))
         self._timeline = TimelineWidget()
@@ -427,6 +446,12 @@ class AccueilPanel(M3ScrollArea):
             self._show_empty_data()
             return
         ay = data['annee']
+        if ay.get('start') and ay.get('end') and ay['start'] >= ay['end']:
+            log_error(
+                f"panel_accueil: dates d'année scolaire invalides "
+                f"({ay.get('start')} >= {ay.get('end')}) — voir panel Le Temps")
+            self._show_empty_data()
+            return
         term_nr = ay.get('term') or 0
         unit_nr = ay.get('unit') or 0
         trim = next((t for t in data['trimestres']
@@ -442,18 +467,27 @@ class AccueilPanel(M3ScrollArea):
         today = date.today()
         self._date_lbl.setText(_fmt_long_date(today))
 
+        term_start = trim.get('start_fr') or trim.get('start_en') if trim else None
+        term_end = trim.get('end_fr') or trim.get('end_en') if trim else None
+        unit_start = unit.get('start_fr') or unit.get('start_en') if unit else None
+        unit_end = unit.get('end_fr') or unit.get('end_en') if unit else None
+        drift = bool(
+            (term_start and term_end and not (term_start <= today <= term_end))
+            or (unit_start and unit_end and not (unit_start <= today <= unit_end)))
+        self._drift_w.setVisible(drift)
+
         events = [
-            (ay.get('start'), _("panel.accueil.year_start"), 'year'),
+            (ay.get('start'), _("panel.accueil.year_start"), 'year_start'),
             ((trim.get('start_fr') or trim.get('start_en')),
-             _("panel.accueil.term_start"), 'term') if trim else None,
+             _("panel.accueil.term_start"), 'term_start') if trim else None,
             ((unit.get('start_fr') or unit.get('start_en')),
-             _("panel.accueil.unit_start"), 'unit') if unit else None,
+             _("panel.accueil.unit_start"), 'unit_start') if unit else None,
             (today, _("panel.accueil.today_short"), 'today'),
             ((unit.get('end_fr') or unit.get('end_en')),
-             _("panel.accueil.unit_end"), 'unit') if unit else None,
+             _("panel.accueil.unit_end"), 'unit_end') if unit else None,
             ((trim.get('end_fr') or trim.get('end_en')),
-             _("panel.accueil.term_end"), 'term') if trim else None,
-            (ay.get('end'), _("panel.accueil.year_end"), 'year'),
+             _("panel.accueil.term_end"), 'term_end') if trim else None,
+            (ay.get('end'), _("panel.accueil.year_end"), 'year_end'),
         ]
         self._timeline.set_data(ay.get('start'), ay.get('end'),
                                 [e for e in events if e and e[0]])
@@ -551,5 +585,9 @@ class AccueilPanel(M3ScrollArea):
             .pixmap(ds.icon_md, ds.icon_md))
         self._empty_stats_icon.setPixmap(
             md3_icon("info", color=p.text_soft, size=ds.icon_md)
+            .pixmap(ds.icon_md, ds.icon_md))
+        self._drift_lbl.set_color(p.error)
+        self._drift_icon.setPixmap(
+            md3_icon("warning", color=p.error, size=ds.icon_md)
             .pixmap(ds.icon_md, ds.icon_md))
         # _ChartCard / KpiCard / _LegendRow s'auto-restylent (ds.theme_changed)

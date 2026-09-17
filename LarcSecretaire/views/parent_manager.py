@@ -21,7 +21,6 @@ from larccommon.safe_slot import safe_slot
 from LarcSecretaire.common.audit import audit
 from LarcSecretaire.common.database import db
 from LarcSecretaire.common.logger import log
-from LarcSecretaire.common.session import session
 from LarcSecretaire.common.theme import theme_manager
 from phibuilder.phi.scale import SpacingToken
 from phibuilder.widgets import (
@@ -551,11 +550,12 @@ class ParentManager(QWidget):
         if not conn:
             return
         try:
+            from larccommon.audit_context import attach, refresh
+            refresh()
             cur = conn.cursor()
+            attach(conn)
             cur.execute("INSERT INTO larcauth_student_parent (student_id, parent_id, nature) VALUES (%s, %s, %s)",
                         (student_id, parent_id, nature))
-            cur.execute("SET LOCAL app.sync_source = 'intranet'")
-            cur.execute(f"SET LOCAL app.modified_by = {session.user_id}")
             audit.update_parent(parent_id, f"Lié à l'élève #{student_id}")
             conn.commit()
             self._load_links(parent_id)
@@ -585,7 +585,10 @@ class ParentManager(QWidget):
         if not conn:
             return
         try:
+            from larccommon.audit_context import attach, refresh
+            refresh()
             cur = conn.cursor()
+            attach(conn)
             cur.execute("""
                 SELECT s.aecuser_ptr_id FROM larcauth_student s
                 JOIN larcauth_aecuser aec ON aec.id = s.aecuser_ptr_id
@@ -603,8 +606,6 @@ class ParentManager(QWidget):
             student_id = r[0]
             cur.execute("DELETE FROM larcauth_student_parent WHERE student_id=%s AND parent_id=%s",
                         (student_id, parent_id))
-            cur.execute("SET LOCAL app.sync_source = 'intranet'")
-            cur.execute(f"SET LOCAL app.modified_by = {session.user_id}")
             audit.update_parent(parent_id, f"Délié de l'élève #{student_id}")
             conn.commit()
             self._load_links(parent_id)
@@ -649,7 +650,10 @@ class ParentManager(QWidget):
         if not conn:
             return
         try:
+            from larccommon.audit_context import attach, refresh
+            refresh()
             cur = conn.cursor()
+            attach(conn)
             cur.execute("SELECT fk_foyer_id FROM larcauth_aecuser WHERE id=%s", (parent_id,))
             r = cur.fetchone()
             if not r or not r[0]:
@@ -684,8 +688,6 @@ class ParentManager(QWidget):
                 target_id = ids[idx]
                 cur.execute("UPDATE larcauth_aecuser SET fk_foyer_id=%s WHERE id=%s",
                             (source_foyer_id, target_id))
-                cur.execute("SET LOCAL app.sync_source = 'intranet'")
-                cur.execute(f"SET LOCAL app.modified_by = {session.user_id}")
                 audit.update_foyer(target_id, f"Foyer partagé avec #{source_foyer_id}")
                 conn.commit()
                 QMessageBox.information(self, _("parent.share_address"), _("parent.share_success"))
@@ -897,9 +899,10 @@ class ParentEditDialog(ThemedDialog):
             QMessageBox.warning(self, _("common.dialog.error_title"), _("parent.error.no_connection"))
             return
         try:
+            from larccommon.audit_context import attach, refresh
+            refresh()
             cur = conn.cursor()
-            cur.execute("SET LOCAL app.sync_source = 'intranet'")
-            cur.execute(f"SET LOCAL app.modified_by = {session.user_id}")
+            attach(conn)
             if self._parent_id:
                 self._save_existing(cur, nom, prenom, nature)
             else:

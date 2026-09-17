@@ -39,7 +39,7 @@ def get_roles():
         cur = c.cursor()
         cur.execute("""
             SELECT id, last_name, first_name, email,
-                   type_supervisor, type_coordonator, type_secretary, is_adm
+                   type_supervisor, type_coordonator, type_secretary, is_superuser
             FROM larcauth_aecuser ORDER BY last_name
         """)
         rows = []
@@ -54,7 +54,10 @@ def get_roles():
                 'email': r[3], 'roles': ', '.join(roles) if roles else '—'
             })
         return rows
-    except:
+    except Exception as e:
+        from larccommon.error_reporting import get_reporter
+        get_reporter().report_exception()
+        log_error(f"get_roles: {e}")
         return []
 
 
@@ -204,36 +207,21 @@ def get_locations():
         return []
     try:
         cur = c.cursor()
-        cur.execute("SELECT id, fk_etablissement, nom_lieu FROM larcauth_lieu ORDER BY nom_lieu")
-        return [dict(zip(['id', 'fk_etab', 'nom'], r)) for r in cur.fetchall()]
-    except:
+        cur.execute('SELECT "IDLieu", "Lieu", fk_language FROM larcauth_lieu ORDER BY "Lieu"')
+        return [dict(zip(['id', 'nom', 'langue'], r)) for r in cur.fetchall()]
+    except Exception as e:
+        from larccommon.error_reporting import get_reporter
+        get_reporter().report_exception()
+        log_error(f"get_locations: {e}")
         return []
 
 
-def get_logs(limit=200):
-    """Journal d'audit (audit_log) — ancien audit_trail laissé en archive."""
-    c = _conn()
-    if not c:
-        return []
-    try:
-        cur = c.cursor()
-        cur.execute("""
-            SELECT id, user_name, operation, table_name, row_id,
-                   COALESCE(new_value, old_value), ts
-            FROM audit_log ORDER BY ts DESC LIMIT %s
-        """, (limit,))
-        return [dict(zip(['id', 'user', 'action', 'target_type', 'target_id', 'detail', 'at'], r))
-                for r in cur.fetchall()]
-    except:
-        return []
-
-
-def _filters(sql: str, params: list, app_name=None, user_id=None,
+def _filters(sql: str, params: list, app_name=None, user_name=None,
              table_name=None, date_from=None, date_to=None, limit=500) -> tuple:
     if app_name:
         sql += " AND app_name = %s"; params.append(app_name)
-    if user_id:
-        sql += " AND user_id = %s"; params.append(user_id)
+    if user_name:
+        sql += " AND user_name = %s"; params.append(user_name)
     if table_name:
         sql += " AND table_name = %s"; params.append(table_name)
     if date_from:
@@ -244,7 +232,7 @@ def _filters(sql: str, params: list, app_name=None, user_id=None,
     return sql, params
 
 
-def get_errors(app_name=None, user_id=None, date_from=None, date_to=None, limit=500):
+def get_errors(app_name=None, user_name=None, date_from=None, date_to=None, limit=500):
     c = _conn()
     if not c:
         return []
@@ -252,11 +240,14 @@ def get_errors(app_name=None, user_id=None, date_from=None, date_to=None, limit=
         cur = c.cursor()
         sql = """SELECT id, ts, app_name, level, user_name, module, message
                  FROM error_log WHERE 1=1"""
-        sql, params = _filters(sql, [], app_name, user_id, None, date_from, date_to, limit)
+        sql, params = _filters(sql, [], app_name, user_name, None, date_from, date_to, limit)
         cur.execute(sql, params)
         return [dict(zip(['id', 'ts', 'app', 'level', 'user', 'module', 'message'], r))
                 for r in cur.fetchall()]
-    except:
+    except Exception as e:
+        from larccommon.error_reporting import get_reporter
+        get_reporter().report_exception()
+        log_error(f"get_errors: {e}")
         return []
 
 
@@ -278,11 +269,14 @@ def get_error_detail(error_id):
         return dict(zip(['id', 'ts', 'app', 'version', 'user_id', 'user',
                          'role', 'conn_mode', 'level', 'module', 'func',
                          'line', 'message', 'traceback', 'context'], r))
-    except:
+    except Exception as e:
+        from larccommon.error_reporting import get_reporter
+        get_reporter().report_exception()
+        log_error(f"get_error_detail: {e}")
         return None
 
 
-def get_audit(user_id=None, table_name=None, date_from=None, date_to=None, limit=500):
+def get_audit(app_name=None, user_name=None, table_name=None, date_from=None, date_to=None, limit=500):
     c = _conn()
     if not c:
         return []
@@ -291,12 +285,15 @@ def get_audit(user_id=None, table_name=None, date_from=None, date_to=None, limit
         sql = """SELECT id, ts, user_name, app_name, table_name, operation,
                         row_id, field, old_value, new_value
                  FROM audit_log WHERE 1=1"""
-        sql, params = _filters(sql, [], None, user_id, table_name, date_from, date_to, limit)
+        sql, params = _filters(sql, [], app_name, user_name, table_name, date_from, date_to, limit)
         cur.execute(sql, params)
         return [dict(zip(['id', 'ts', 'user', 'app', 'table', 'op', 'row',
                           'field', 'old', 'new'], r))
                 for r in cur.fetchall()]
-    except:
+    except Exception as e:
+        from larccommon.error_reporting import get_reporter
+        get_reporter().report_exception()
+        log_error(f"get_audit: {e}")
         return []
 
 
@@ -401,7 +398,10 @@ def save_annee(label, start, end, term, unit):
             WHERE s_id = (SELECT MAX(s_id) FROM larcauth_academicyear)
         """, (label, start, end, term, unit))
         return True
-    except:
+    except Exception as e:
+        from larccommon.error_reporting import get_reporter
+        get_reporter().report_exception()
+        log_error(f"save_annee: {e}")
         return False
 
 
@@ -430,7 +430,10 @@ def save_trimestre(trim, label_fr, label_en, start_fr, end_fr,
                     VALUES (%s, %s, %s, %s, %s, NOW(), NOW())
                 """, (trim, lang, label, start, end))
         return True
-    except:
+    except Exception as e:
+        from larccommon.error_reporting import get_reporter
+        get_reporter().report_exception()
+        log_error(f"save_trimestre: {e}")
         return False
 
 
@@ -459,7 +462,10 @@ def save_unite(unit_nr, label_fr, label_en, start_fr, end_fr,
                     VALUES (%s, %s, %s, %s, %s, NOW(), NOW())
                 """, (unit_nr, lang, label, start, end))
         return True
-    except:
+    except Exception as e:
+        from larccommon.error_reporting import get_reporter
+        get_reporter().report_exception()
+        log_error(f"save_unite: {e}")
         return False
 
 
@@ -586,5 +592,8 @@ def get_audit_meta():
                     "WHERE user_name <> '' ORDER BY 1")
         users = [r[0] for r in cur.fetchall()]
         return apps, tables, users
-    except:
+    except Exception as e:
+        from larccommon.error_reporting import get_reporter
+        get_reporter().report_exception()
+        log_error(f"get_audit_meta: {e}")
         return [], [], []
