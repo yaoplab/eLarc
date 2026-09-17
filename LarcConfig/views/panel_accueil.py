@@ -22,7 +22,7 @@ from larccommon.l10n import _
 from larccommon.logger import log_error
 from larccommon.safe_slot import safe_slot
 from larccommon.session import session
-from larccommon.theme import PROGRAM_STYLES, theme_manager
+from larccommon.theme import PROGRAM_STYLES, staff_type_color, theme_manager
 from larccommon.widgets import HBarCell, KpiCard, RingChart
 from LarcConfig.common.db_access import get_stats, get_temps
 
@@ -34,6 +34,12 @@ _MONTHS = ['january', 'february', 'march', 'april', 'may', 'june', 'july',
            'august', 'september', 'october', 'november', 'december']
 
 _MAX_PROGRAMS = 4  # PEI, MYP, DPFr, DPEn — le Primaire (PP/PYP) est exclu
+
+# 6 teintes distinctes (theme-aware) pour les 6 unites de l'annee -- reutilise
+# STAFF_TYPE_COLORS (deja concu pour 6 categories lisibles clair/sombre),
+# sans lien semantique avec les roles staff : juste 6 couleurs stables.
+_UNIT_COLOR_KEYS = ['administrateur', 'coordonnateur', 'superviseur',
+                     'secretaire', 'professeur', 'staff']
 
 
 def _fmt_date(value):
@@ -156,15 +162,25 @@ class TimelineWidget(QWidget):
         super().__init__(parent)
         self._start = None
         self._end = None
-        self._events = []  # (date, label, kind)
-        # 180 px : frise compacte — 5 lignes de légendes max sous l'axe
-        self.setMinimumHeight(ds.space_xxxl + ds.space_lg + ds.space_sm)
+        self._events = []  # (date, label, kind) -- 'today' + bornes annee
+        self._unites = []  # [{'nr', 'label', 'start', 'end'}] les 6, langue deja resolue
+        self._trimestres = []  # [{'nr', 'label', 'start', 'end'}] les 3
+        self._current_unit_nr = None
+        self._current_trim_nr = None
+        # 208 px : frise compacte -- bandes unites/trimestres + 5 lignes de
+        # legendes max sous l'axe
+        self.setMinimumHeight(ds.space_xxxl + ds.space_lg + ds.space_md)
         ds.theme_changed.connect(self.update)
 
-    def set_data(self, start, end, events):
+    def set_data(self, start, end, events, unites=None, trimestres=None,
+                 current_unit_nr=None, current_trim_nr=None):
         self._start = start
         self._end = end
         self._events = events
+        self._unites = unites or []
+        self._trimestres = trimestres or []
+        self._current_unit_nr = current_unit_nr
+        self._current_trim_nr = current_trim_nr
         self.update()
 
     @staticmethod
@@ -193,24 +209,53 @@ class TimelineWidget(QWidget):
             return left + (d - self._start).days / span * (right - left)
 
         events = {k: d for d, _l, k in self._events}
-        t_start = events.get('term_start')
-        t_end = events.get('term_end')
-        u_start = events.get('unit_start')
-        u_end = events.get('unit_end')
 
-        band_h = ds.space_xs
-        # Bandes trimestre / unité au-dessus de l'axe
-        if t_start and t_end:
-            rect = QRectF(x(t_start), axis_y - ds.space_md - band_h,
+        # Bande trimestres (fine, sans libellé — 3 segments contigus,
+        # couleurs de rôle distinctes) juste au-dessus de la bande unités.
+        term_band_h = ds.space_xs
+        term_band_bottom = axis_y - ds.space_xs - ds.space_md - ds.space_xxs
+        term_band_top = term_band_bottom - term_band_h
+        term_colors = (pal.primary, pal.accent, pal.tertiary)
+        for t in self._trimestres:
+            t_start, t_end = t.get('start'), t.get('end')
+            if not t_start or not t_end:
+                continue
+            rect = QRectF(x(t_start), term_band_top,
                           max(x(t_end) - x(t_start), ds.border_width * 2),
-                          band_h)
-            p.fillRect(rect, QColor(pal.accent))
-        if u_start and u_end:
-            rect = QRectF(x(u_start),
-                          axis_y - ds.space_md - band_h * 2 - ds.space_xs,
-                          max(x(u_end) - x(u_start), ds.border_width * 2),
-                          band_h)
-            p.fillRect(rect, QColor(pal.success))
+                          term_band_h)
+            color = term_colors[(t['nr'] - 1) % 3]
+            p.fillRect(rect, QColor(color))
+            if t['nr'] == self._current_trim_nr:
+                p.setPen(self._pen(pal.text_strong, ds.border_width * 2))
+                p.setBrush(Qt.BrushStyle.NoBrush)
+                p.drawRect(rect)
+
+        # Bande unités (plus épaisse, libellé « U1 »..« U6 » si assez de
+        # place) — 6 segments contigus, une couleur stable par unité, sur
+        # toute l'année (demande utilisateur : couleur + temps distingués).
+        unit_band_h = ds.space_md
+        unit_band_bottom = axis_y - ds.space_xs
+        unit_band_top = unit_band_bottom - unit_band_h
+        unit_fm = QFontMetrics(theme_manager.font_px(ds.font_small))
+        for u in self._unites:
+            u_start, u_end = u.get('start'), u.get('end')
+            if not u_start or not u_end:
+                continue
+            rx0, rx1 = x(u_start), x(u_end)
+            rect = QRectF(rx0, unit_band_top,
+                          max(rx1 - rx0, ds.border_width * 2), unit_band_h)
+            key = _UNIT_COLOR_KEYS[(u['nr'] - 1) % len(_UNIT_COLOR_KEYS)]
+            badge, _container, on_badge = staff_type_color(key)
+            p.fillRect(rect, QColor(badge))
+            if u['nr'] == self._current_unit_nr:
+                p.setPen(self._pen(pal.text_strong, ds.border_width * 2))
+                p.setBrush(Qt.BrushStyle.NoBrush)
+                p.drawRect(rect.adjusted(1, 1, -1, -1))
+            short = f"U{u['nr']}"
+            if rect.width() >= unit_fm.horizontalAdvance(short) + ds.space_xxs:
+                p.setPen(self._pen(on_badge, 1))
+                p.setFont(theme_manager.font_px(ds.font_small))
+                p.drawText(rect, Qt.AlignmentFlag.AlignCenter, short)
 
         # Axe
         p.setPen(self._pen(pal.outline_variant, ds.border_width * 2))
@@ -227,8 +272,7 @@ class TimelineWidget(QWidget):
             p.drawLine(tx, ds.space_xs, tx, axis_y + ds.space_xxs)
 
         # Placement anti-chevauchement des libellés (lignes sous l'axe)
-        colors = {'year': pal.primary, 'term': pal.accent,
-                  'unit': pal.success, 'today': pal.error}
+        colors = {'year': pal.primary, 'today': pal.error}
         fm = QFontMetrics(theme_manager.font_px(ds.font_small))
         rows = []  # lignes : list[(lx, rx)] des créneaux occupés
         render = []  # (date, caption, kind, above, lx, lw, row_i)
@@ -478,19 +522,26 @@ class AccueilPanel(M3ScrollArea):
 
         events = [
             (ay.get('start'), _("panel.accueil.year_start"), 'year_start'),
-            ((trim.get('start_fr') or trim.get('start_en')),
-             _("panel.accueil.term_start"), 'term_start') if trim else None,
-            ((unit.get('start_fr') or unit.get('start_en')),
-             _("panel.accueil.unit_start"), 'unit_start') if unit else None,
             (today, _("panel.accueil.today_short"), 'today'),
-            ((unit.get('end_fr') or unit.get('end_en')),
-             _("panel.accueil.unit_end"), 'unit_end') if unit else None,
-            ((trim.get('end_fr') or trim.get('end_en')),
-             _("panel.accueil.term_end"), 'term_end') if trim else None,
             (ay.get('end'), _("panel.accueil.year_end"), 'year_end'),
         ]
-        self._timeline.set_data(ay.get('start'), ay.get('end'),
-                                [e for e in events if e and e[0]])
+
+        def _resolve(row, nr_key):
+            sfx = '_en' if self._lang == 'en' else '_fr'
+            return {'nr': row[nr_key], 'label': row.get(f'label{sfx}') or '',
+                    'start': row.get(f'start{sfx}') or row.get('start_fr')
+                             or row.get('start_en'),
+                    'end': row.get(f'end{sfx}') or row.get('end_fr')
+                           or row.get('end_en')}
+
+        unites_r = [_resolve(u, 'unit_nr') for u in data['unites']]
+        trimestres_r = [_resolve(t, 'trim') for t in data['trimestres']]
+
+        self._timeline.set_data(
+            ay.get('start'), ay.get('end'),
+            [e for e in events if e and e[0]],
+            unites=unites_r, trimestres=trimestres_r,
+            current_unit_nr=unit_nr, current_trim_nr=term_nr)
 
         def label_of(row, fr_key, en_key):
             return (row.get(en_key) if self._lang == 'en'

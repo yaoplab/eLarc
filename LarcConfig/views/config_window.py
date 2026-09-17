@@ -117,13 +117,21 @@ class ConfigWindow(QWidget):
             return
         self._current = section
         self._style_buttons(section)
-        if section not in self._panels:
+        is_new = section not in self._panels
+        if is_new:
             panel = self._create(section)
             if panel:
                 self._panels[section] = panel
                 self._stack.addWidget(panel)
         if section in self._panels:
-            self._stack.setCurrentWidget(self._panels[section])
+            panel = self._panels[section]
+            self._stack.setCurrentWidget(panel)
+            # Panneaux mis en cache (jamais reconstruits) : on rafraîchit
+            # leurs données à chaque navigation vers eux, sinon un panneau
+            # ouvert AVANT une modification ailleurs (ex. dates dans « Le
+            # Temps ») reste figé sur les anciennes valeurs.
+            if not is_new and hasattr(panel, 'reload'):
+                panel.reload()
 
     @safe_slot("ConfigWindow.on_topbar_theme")
     def _on_topbar_theme(self, key: str):
