@@ -21,6 +21,7 @@ from larccommon.widgets.table_settings import TableSettings
 from larccommon.widgets.charts import HBarCell, RingChart, StatChange
 from larccommon.widgets.kpi import KpiCard
 from larccommon.widgets.sections_flow import SectionsFlow, table_section
+from larccommon.widgets.timeline import TimelineWidget
 
 __all__ = [
     "NavButton",
@@ -48,4 +49,5 @@ __all__ = [
     "KpiCard",
     "SectionsFlow",
     "table_section",
+    "TimelineWidget",
 ]
