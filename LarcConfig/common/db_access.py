@@ -38,11 +38,11 @@ TEACHER_ID_MAX = 2000
 
 
 def get_roles():
-    """Personnel actif ayant au moins un rôle (professeurs et non-enseignants).
+    """Personnel actif ayant au moins un accès (professeurs et non-enseignants).
 
-    Les rôles vivent dans larcauth_teachadm ; larcauth_aecuser ne porte que
-    l'identité, is_active (peut se connecter) et is_superuser (Admin).
-    Le rôle Professeur ne vaut que pour les IDs collège/lycée (1000-2000).
+    Les accès (type_director, type_coordonator, type_supervisor, type_secretary,
+    is_superuser) sont des drapeaux de larcauth_aecuser. Le rôle Professeur ne
+    vaut que pour les IDs collège/lycée (1000-2000).
     """
     c = _conn()
     if not c:
@@ -50,25 +50,18 @@ def get_roles():
     try:
         cur = c.cursor()
         cur.execute("""
-            SELECT a.id, a.last_name, a.first_name, a.email,
-                   a.is_superuser,
-                   COALESCE(t.is_director, FALSE),
-                   COALESCE(t.is_coordonator, FALSE),
-                   COALESCE(t.is_supervisor, FALSE),
-                   COALESCE(t.is_secretary, FALSE),
-                   COALESCE(t.is_teacher, FALSE)
-                       AND a.id BETWEEN %(lo)s AND %(hi)s,
-                   COALESCE(t.is_non_teaching, FALSE)
-            FROM larcauth_aecuser a
-            LEFT JOIN larcauth_teachadm t ON t.aecuser_ptr_id = a.id
-            WHERE a.is_active AND (
-                  a.is_superuser OR t.is_director OR t.is_coordonator
-                  OR t.is_supervisor OR t.is_secretary OR t.is_non_teaching
-                  OR (t.is_teacher AND a.id BETWEEN %(lo)s AND %(hi)s))
-            ORDER BY a.last_name, a.first_name
+            SELECT id, last_name, first_name, email, is_superuser,
+                   COALESCE(type_director, FALSE), COALESCE(type_coordonator, FALSE),
+                   COALESCE(type_supervisor, FALSE), COALESCE(type_secretary, FALSE),
+                   COALESCE(type_teacher, FALSE) AND id BETWEEN %(lo)s AND %(hi)s
+            FROM larcauth_aecuser
+            WHERE is_active AND (is_superuser OR type_director OR type_coordonator
+                  OR type_supervisor OR type_secretary
+                  OR (type_teacher AND id BETWEEN %(lo)s AND %(hi)s))
+            ORDER BY last_name, first_name
         """, {'lo': TEACHER_ID_MIN, 'hi': TEACHER_ID_MAX})
         labels = ['Admin', 'Directeur', 'Coordonnateur', 'Superviseur',
-                  'Secrétaire', 'Professeur', 'Non enseignant']
+                  'Secrétaire', 'Professeur']
         rows = []
         for r in cur.fetchall():
             roles = [lbl for flag, lbl in zip(r[4:], labels) if flag]
