@@ -1,4 +1,4 @@
-"""Panel Rôles — liste des utilisateurs."""
+"""Panel Rôles — personnel (professeurs et non-enseignants) et son rôle."""
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QHeaderView, QTableWidgetItem
 from phibuilder.widgets import M3Label, M3TableWidget, M3ScrollArea
@@ -18,11 +18,11 @@ class RolesPanel(M3ScrollArea):
         l.setContentsMargins(sp(SpacingToken.LG), sp(SpacingToken.LG),
                              sp(SpacingToken.LG), sp(SpacingToken.LG))
         l.setSpacing(sp(SpacingToken.MD))
-        l.addWidget(M3Label("Roles", theme=phi, style="headline_small"))
+        l.addWidget(M3Label("Rôles du personnel", theme=phi, style="headline_small"))
 
         table = M3TableWidget(theme=phi)
         table.setColumnCount(5)
-        table.setHorizontalHeaderLabels(["ID", "Nom", "Prenom", "Email", "Roles"])
+        table.setHorizontalHeaderLabels(["ID", "Nom", "Prénom", "Email", "Rôles"])
         h = table.horizontalHeader()
         for i in range(5):
             h.setSectionResizeMode(i, QHeaderView.Stretch)

@@ -1,9 +1,9 @@
 """Fenêtre principale LarcConfig — bandeau + navigation + panels à la demande."""
 from PySide6.QtWidgets import (
-    QWidget, QHBoxLayout, QVBoxLayout, QStackedWidget, QApplication,
+    QWidget, QHBoxLayout, QVBoxLayout, QApplication,
 )
 from PySide6.QtCore import Qt, QSize
-from phibuilder.widgets import M3Button, M3Label, M3Frame
+from phibuilder.widgets import M3Button, M3Label, M3Frame, M3StackedWidget
 from phibuilder.widgets.button import ButtonVariant
 from phibuilder.phi.scale import SpacingToken
 from larccommon.design_system import ds
@@ -15,12 +15,34 @@ from larccommon.icons import icon as md3_icon
 _SECTIONS = [
     ('accueil', 'Accueil', 'home'),
     ('temps', 'Le temps', 'schedule'),
-    ('i18n', 'Langues', 'translate'),
-    ('themes', 'Themes', 'tonality'),
-    ('roles', 'Roles', 'person'),
-    ('logs', 'Logs', 'description'),
-    ('types', "Types d'evenements", 'event'),
+    ('programmes', 'Programmes et langues', 'school'),
+    ('classes', 'Classes', 'view_module'),
+    ('affectation', 'Affectation élèves-classes', 'group'),
+    ('matieres_classe', 'Matières par classe', 'subject'),
+    ('matieres_eleves', 'Matières des élèves (PEI/DP)', 'view_comfy'),
+    ('types', "Types d'événements", 'event'),
     ('lieux', 'Lieux', 'location_on'),
+    ('themes', 'Thèmes', 'tonality'),
+    ('i18n', 'Traductions', 'translate'),
+    ('roles', 'Rôles', 'person'),
+    ('logs', 'Journal (logs)', 'description'),
+]
+# Sections dont l'écran n'existe pas encore : affichées grisées « bientôt ».
+_PLANNED = {'programmes', 'classes', 'affectation', 'matieres_classe',
+            'matieres_eleves'}
+_ICONS = {k: ic for k, _, ic in _SECTIONS}
+_LABELS = {k: lb for k, lb, _ in _SECTIONS}
+
+# Catégories du menu : (clé, titre, [sections]). Une catégorie à une seule
+# section est un bouton direct ; sinon un clic déplie/replie ses sections.
+_CATEGORIES = [
+    ('accueil', 'Accueil', ['accueil']),
+    ('temps', 'Le temps', ['temps']),
+    ('ecole', 'École et effectifs', ['programmes', 'classes', 'affectation',
+                                     'matieres_classe', 'matieres_eleves']),
+    ('vie', 'Vie scolaire', ['types', 'lieux']),
+    ('apparence', 'Apparence et langue', ['themes', 'i18n']),
+    ('admin', 'Administration', ['roles', 'logs']),
 ]
 
 
@@ -77,20 +99,30 @@ class ConfigWindow(QWidget):
         sl.addWidget(self._user_lbl)
         sl.addSpacing(sp(SpacingToken.MD))
 
-        for key, label, icon_name in _SECTIONS:
-            btn = M3Button(label, theme=phi, variant=ButtonVariant.TEXT)
-            btn.setIcon(md3_icon(icon_name, color=c.on_surface, size=ds.icon_md))
-            btn.setIconSize(QSize(ds.icon_md, ds.icon_md))
-            btn.setFixedHeight(ds.field_height + ds.space_xs)
-            btn.setCursor(Qt.PointingHandCursor)
-            btn.clicked.connect(lambda checked, k=key: self._switch(k))
-            self._btns[key] = btn
-            sl.addWidget(btn)
+        self._cat_btns = {}
+        self._cat_boxes = {}
+        for cat, title, keys in _CATEGORIES:
+            if len(keys) == 1:
+                self._add_nav_button(sl, keys[0], _LABELS[keys[0]], 0)
+                continue
+            head = self._nav_button(title)
+            head.clicked.connect(lambda checked, k=cat: self._toggle_category(k))
+            self._cat_btns[cat] = head
+            sl.addWidget(head)
+            box = QWidget()
+            bl = QVBoxLayout(box)
+            bl.setContentsMargins(0, 0, 0, 0)
+            bl.setSpacing(sp(SpacingToken.XS))
+            for key in keys:
+                self._add_nav_button(bl, key, _LABELS[key], ds.space_md)
+            box.setVisible(False)
+            self._cat_boxes[cat] = box
+            sl.addWidget(box)
 
         sl.addStretch()
 
         # Stack
-        self._stack = QStackedWidget()
+        self._stack = M3StackedWidget(theme=phi)
         self._stack.setStyleSheet(f"background: {c.background};")
 
         outer.addWidget(side)
@@ -99,23 +131,69 @@ class ConfigWindow(QWidget):
 
         self._switch('accueil')  # Écran d'entrée : Accueil
 
+    def _nav_button(self, label: str) -> M3Button:
+        btn = M3Button(label, theme=theme_manager.phi_theme, variant=ButtonVariant.TEXT)
+        btn.setIconSize(QSize(ds.icon_md, ds.icon_md))
+        btn.setFixedHeight(ds.field_height + ds.space_xs)
+        btn.setCursor(Qt.PointingHandCursor)
+        return btn
+
+    def _add_nav_button(self, layout, key: str, label: str, indent: int):
+        btn = self._nav_button(label)
+        btn.setProperty('indent', indent)
+        if key in _PLANNED:
+            btn.setEnabled(False)
+            btn.setToolTip("Bientôt disponible")
+        btn.clicked.connect(lambda checked, k=key: self._switch(k))
+        self._btns[key] = btn
+        layout.addWidget(btn)
+
+    def _category_of(self, section: str):
+        for cat, _t, keys in _CATEGORIES:
+            if section in keys and len(keys) > 1:
+                return cat
+        return None
+
+    @safe_slot("ConfigWindow._toggle_category")
+    def _toggle_category(self, cat: str):
+        """Déplie la catégorie cliquée et replie les autres."""
+        opening = not self._cat_boxes[cat].isVisible()
+        for k, box in self._cat_boxes.items():
+            box.setVisible(opening and k == cat)
+        self._style_buttons(self._current)
+
     def _style_buttons(self, section: str):
         """Couleurs des boutons de navigation — texte TOUJOURS visible (primary)."""
         c = theme_manager.phi_theme.colors
-        icons = dict((k, ic) for k, _, ic in _SECTIONS)
+        active_cat = self._category_of(section)
+
+        def _qss(bg, indent):
+            return (f"M3Button {{ background: {bg}; color: {c.primary}; text-align: left; "
+                    f"padding-left: {ds.space_xs + indent}px; border-radius: {ds.radius_xs}px; }} "
+                    f"M3Button:disabled {{ color: {c.on_surface_variant}; }}")
+
         for k, btn in self._btns.items():
             bg = c.primary_container if k == section else 'transparent'
-            btn.setIcon(md3_icon(icons.get(k, 'home'), color=c.on_surface,
-                                 size=ds.icon_md))
-            btn.setStyleSheet(
-                f"M3Button {{ background: {bg}; color: {c.primary}; text-align: left; "
-                f"padding-left: {ds.space_xs}px; border-radius: {ds.radius_xs}px; }}")
+            btn.setIcon(md3_icon(_ICONS.get(k, 'home'), color=c.on_surface, size=ds.icon_md))
+            if k in _PLANNED:
+                btn.setText(f"{_LABELS[k]} (bientôt)")
+            btn.setStyleSheet(_qss(bg, btn.property('indent') or 0))
+        for cat, btn in self._cat_btns.items():
+            opened = self._cat_boxes[cat].isVisible()
+            btn.setIcon(md3_icon('expand_less' if opened else 'expand_more',
+                                 color=c.on_surface, size=ds.icon_md))
+            bg = c.surface_variant if cat == active_cat and not opened else 'transparent'
+            btn.setStyleSheet(_qss(bg, 0))
 
     @safe_slot("ConfigWindow._switch")
     def _switch(self, section: str, force: bool = False):
         if self._current == section and not force:
             return
         self._current = section
+        cat = self._category_of(section)
+        if cat and not self._cat_boxes[cat].isVisible():
+            for k, box in self._cat_boxes.items():
+                box.setVisible(k == cat)
         self._style_buttons(section)
         is_new = section not in self._panels
         if is_new:

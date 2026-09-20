@@ -31,27 +31,50 @@ def _conn():
     return c
 
 
+# Professeurs du collège et du lycée : IDs 1000 à 2000 (bornes incluses).
+# LarcConfig ignore le rôle « professeur » des autres sections.
+TEACHER_ID_MIN = 1000
+TEACHER_ID_MAX = 2000
+
+
 def get_roles():
+    """Personnel actif ayant au moins un rôle (professeurs et non-enseignants).
+
+    Les rôles vivent dans larcauth_teachadm ; larcauth_aecuser ne porte que
+    l'identité, is_active (peut se connecter) et is_superuser (Admin).
+    Le rôle Professeur ne vaut que pour les IDs collège/lycée (1000-2000).
+    """
     c = _conn()
     if not c:
         return []
     try:
         cur = c.cursor()
         cur.execute("""
-            SELECT id, last_name, first_name, email,
-                   type_supervisor, type_coordonator, type_secretary, is_superuser
-            FROM larcauth_aecuser ORDER BY last_name
-        """)
+            SELECT a.id, a.last_name, a.first_name, a.email,
+                   a.is_superuser,
+                   COALESCE(t.is_director, FALSE),
+                   COALESCE(t.is_coordonator, FALSE),
+                   COALESCE(t.is_supervisor, FALSE),
+                   COALESCE(t.is_secretary, FALSE),
+                   COALESCE(t.is_teacher, FALSE)
+                       AND a.id BETWEEN %(lo)s AND %(hi)s,
+                   COALESCE(t.is_non_teaching, FALSE)
+            FROM larcauth_aecuser a
+            LEFT JOIN larcauth_teachadm t ON t.aecuser_ptr_id = a.id
+            WHERE a.is_active AND (
+                  a.is_superuser OR t.is_director OR t.is_coordonator
+                  OR t.is_supervisor OR t.is_secretary OR t.is_non_teaching
+                  OR (t.is_teacher AND a.id BETWEEN %(lo)s AND %(hi)s))
+            ORDER BY a.last_name, a.first_name
+        """, {'lo': TEACHER_ID_MIN, 'hi': TEACHER_ID_MAX})
+        labels = ['Admin', 'Directeur', 'Coordonnateur', 'Superviseur',
+                  'Secrétaire', 'Professeur', 'Non enseignant']
         rows = []
         for r in cur.fetchall():
-            roles = []
-            if r[7]: roles.append('Admin')
-            if r[5]: roles.append('Coord')
-            if r[4]: roles.append('Superviseur')
-            if r[6]: roles.append('Secretaire')
+            roles = [lbl for flag, lbl in zip(r[4:], labels) if flag]
             rows.append({
                 'id': r[0], 'last_name': r[1], 'first_name': r[2],
-                'email': r[3], 'roles': ', '.join(roles) if roles else '—'
+                'email': r[3], 'roles': ', '.join(roles)
             })
         return rows
     except Exception as e:

@@ -29,7 +29,7 @@ class I18nPanel(M3ScrollArea):
                              sp(SpacingToken.LG), sp(SpacingToken.LG))
         l.setSpacing(sp(SpacingToken.MD))
 
-        l.addWidget(M3Label("Langues", theme=phi, style="headline_small"))
+        l.addWidget(M3Label("Traductions", theme=phi, style="headline_small"))
 
         # Table
         self._table = M3TableWidget(theme=phi)
