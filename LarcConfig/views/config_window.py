@@ -1,16 +1,19 @@
 """Fenêtre principale LarcConfig — bandeau + navigation + panels à la demande."""
-from PySide6.QtWidgets import (
-    QWidget, QHBoxLayout, QVBoxLayout, QApplication,
-)
-from PySide6.QtCore import Qt, QSize
-from phibuilder.widgets import M3Button, M3Label, M3Frame, M3StackedWidget
-from phibuilder.widgets.button import ButtonVariant
-from phibuilder.phi.scale import SpacingToken
 from larccommon.design_system import ds
+from larccommon.icons import icon as md3_icon
 from larccommon.safe_slot import safe_slot
 from larccommon.theme import theme_manager
 from larccommon.widgets.topbar import TopBar
-from larccommon.icons import icon as md3_icon
+from phibuilder.phi.scale import SpacingToken
+from phibuilder.widgets import M3Button, M3Frame, M3Label, M3StackedWidget
+from phibuilder.widgets.button import ButtonVariant
+from PySide6.QtCore import QSize, Qt
+from PySide6.QtWidgets import (
+    QApplication,
+    QHBoxLayout,
+    QVBoxLayout,
+    QWidget,
+)
 
 _SECTIONS = [
     ('accueil', 'Accueil', 'home'),
@@ -19,7 +22,6 @@ _SECTIONS = [
     ('classes', 'Classes', 'view_module'),
     ('affectation', 'Affectation élèves-classes', 'group'),
     ('matieres_classe', 'Matières par classe', 'subject'),
-    ('matieres_eleves', 'Matières des élèves (PEI/DP)', 'view_comfy'),
     ('types', "Types d'événements", 'event'),
     ('lieux', 'Lieux', 'location_on'),
     ('themes', 'Thèmes', 'tonality'),
@@ -28,8 +30,10 @@ _SECTIONS = [
     ('logs', 'Journal (logs)', 'description'),
 ]
 # Sections dont l'écran n'existe pas encore : affichées grisées « bientôt ».
-_PLANNED = {'programmes', 'classes', 'affectation', 'matieres_classe',
-            'matieres_eleves'}
+# « matieres_eleves » (inscription élève × matière) supprimé le 2026-09-22 :
+# livré comme onglet « Élèves » de « matieres_classe » (panel_effectifs.py),
+# jamais comme section séparée — l'entrée placeholder n'a plus lieu d'être.
+_PLANNED = {'programmes', 'classes', 'affectation'}
 _ICONS = {k: ic for k, _, ic in _SECTIONS}
 _LABELS = {k: lb for k, lb, _ in _SECTIONS}
 
@@ -39,7 +43,7 @@ _CATEGORIES = [
     ('accueil', 'Accueil', ['accueil']),
     ('temps', 'Le temps', ['temps']),
     ('ecole', 'École et effectifs', ['programmes', 'classes', 'affectation',
-                                     'matieres_classe', 'matieres_eleves']),
+                                     'matieres_classe']),
     ('vie', 'Vie scolaire', ['types', 'lieux']),
     ('apparence', 'Apparence et langue', ['themes', 'i18n']),
     ('admin', 'Administration', ['roles', 'logs']),
@@ -253,13 +257,14 @@ class ConfigWindow(QWidget):
 
     def _create(self, section: str):
         from LarcConfig.views.panel_accueil import AccueilPanel
-        from LarcConfig.views.panel_temps import TempsPanel
+        from LarcConfig.views.panel_effectifs import EffectifsPanel
         from LarcConfig.views.panel_i18n import I18nPanel
-        from LarcConfig.views.panel_themes import ThemesPanel
-        from LarcConfig.views.panel_roles import RolesPanel
-        from LarcConfig.views.panel_logs import LogsPanel
-        from LarcConfig.views.panel_types import TypesPanel
         from LarcConfig.views.panel_lieux import LieuxPanel
+        from LarcConfig.views.panel_logs import LogsPanel
+        from LarcConfig.views.panel_roles import RolesPanel
+        from LarcConfig.views.panel_temps import TempsPanel
+        from LarcConfig.views.panel_themes import ThemesPanel
+        from LarcConfig.views.panel_types import TypesPanel
         return {
             'accueil': AccueilPanel,
             'temps': TempsPanel,
@@ -269,4 +274,5 @@ class ConfigWindow(QWidget):
             'logs': LogsPanel,
             'types': TypesPanel,
             'lieux': LieuxPanel,
+            'matieres_classe': EffectifsPanel,
         }[section](self._user)

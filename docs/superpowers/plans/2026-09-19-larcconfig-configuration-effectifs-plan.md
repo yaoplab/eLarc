@@ -1,7 +1,10 @@
 # Plan — LarcConfig : configuration des classes, matières et inscriptions élèves (PEI / DP)
 
-Date : 2026-09-19
-Statut : **réflexion + plan, aucun code écrit.** D1 et D4 tranchés le 2026-09-19 ; D2-D3, D5-D11 restent à valider (section 4). L'utilisateur fournira les règles d'inscription (D11).
+Date : 2026-09-19 — mis à jour le 2026-09-22
+Statut : **Phase 0 (socle & diagnostic) et Phase 1 (onglet A) livrées et testées** (cf. section 7). D1, D4, D11 tranchés le 2026-09-22 (voir ci-dessous) ; D2-D3, D5, D7-D10 restent à valider avant la Phase 2 (grille élèves).
+
+**D11 tranché (2026-09-22)** : en PEI comme en DP, un groupe de matières accepte **0, 1 ou 2 matières** (jamais plus) — pas d'obligation d'en avoir une. Règle DP durcie : voyant vert/rouge = 6 matières + groupes 1-5 couverts **et exactement 3 Sup (NS) + 3 niveau moyen (NM)** (remplace l'avertissement souple « 3-4 NS » de la section 4/D3 ci-dessous).
+
 Périmètre demandé : *mettre à jour* (jamais créer, jamais supprimer) la configuration PEI et DP, **par trimestre**.
 
 ---
@@ -174,8 +177,8 @@ Une constante unique (`TERM_SLOTS = {1: 1, 2: 2, 3: 3}`) porte le mapping trimes
 
 | Phase | Contenu | Critère d'acceptation |
 |---|---|---|
-| **0 — Socle & diagnostic** | `enrolment_rules.py`, lectures de `db_enrolment.py`, mapping trimestre, onglet **Anomalies en lecture seule** | Retrouve exactement A1-A6 ; tests verts ; aucune écriture possible |
-| **1 — Classes & matières de classe** | Onglet A, écritures `label`/`enabled`, cascade confirmée | Audit trace l'utilisateur ; désactiver un slot inscrit propose la cascade ; rien hors périmètre modifié |
+| **0 — Socle & diagnostic** ✅ 2026-09-22 | `enrolment_rules.py`, `db_enrolment.py` (A1-A6), `TERM_SLOTS`, onglet **Anomalies en lecture seule** | Retrouve A1-A6 (⚠ A2/A6 ont grossi depuis le 19/09 à cause de la cascade de rentrée — mesure vivante, pas un invariant gelé) ; 26 tests verts ; aucune écriture possible |
+| **1 — Classes & matières de classe** ✅ 2026-09-22 | Onglet A (`effectifs_classes.py`), écritures `label`/`enabled` classe+slot, cascade confirmée, en-tête commun programme/classe/trimestre dans `panel_effectifs.py` | 81 tests verts (dont intégration lecture live) ; désactiver un slot inscrit propose la cascade ; `WHERE` toujours scopé classe+trimestre ; contexte d'audit attaché (`audit_context.attach`) |
 | **2 — Grille commune + PEI** | Onglet B : grille par groupes, pastilles couleur de groupe + FR/EN, ligne « Toute la classe », aperçu, règle « max 2 par groupe » | Affecter à toute la classe = 1 `UPDATE` ; une élève PEI peut avoir Sciences FR et/ou EN ; aperçu correct |
 | **3 — DP + feu vert** | Jeu de règles DP (colonne 6/Arts, NS), feu vert par trimestre (PEI et DP) | Les 53 élèves DP actuels s'affichent avec 6/6 ; échange de matière atomique ; modification → feu orange |
 | **4 — Corrections & recopie** | Boutons de correction de l'onglet D, recopie trimestre N→N+1 | Chaque correction : aperçu + confirmation ; rien d'appliqué en silence |
