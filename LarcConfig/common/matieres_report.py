@@ -9,11 +9,10 @@ cours à l'écran n'altère pas le document.
 from __future__ import annotations
 
 import datetime
-import re
 from dataclasses import dataclass, field
 
 from LarcConfig.common import db_enrolment, db_othersubjects
-from LarcConfig.common.enrolment_rules import Subject, dp_status, dp_status_reasons
+from LarcConfig.common.enrolment_rules import Subject, dp_status, dp_status_reasons, entry_text
 
 SCHOOL_NAME = "Arc-en-Ciel"
 BACKUP_FORMAT = "larcconfig-matieres-classe/1"
@@ -67,16 +66,6 @@ def _person(last, first) -> str:
     return last if last == first else f"{last} {first}".strip()
 
 
-def _entry_text(e: dict, is_dp: bool) -> str:
-    tags = []
-    # Beaucoup de libellés portent déjà « NS »/« NM » : ne pas le répéter.
-    if is_dp and e.get('niv_sup') and not re.search(r'(?<![A-Za-z])(NS|NM)(?![A-Za-z])', e['label']):
-        tags.append('NS')
-    if e.get('cross_track'):
-        tags.append('*')
-    return e['label'] + (f" ({'/'.join(tags)})" if tags else "")
-
-
 def _classes_table(subjects: list[dict], is_dp: bool) -> Table:
     active = [s for s in subjects if s['enabled']]
     with_cross = any(s.get('cross_track') for s in active)   # colonne omise si jamais utilisée
@@ -113,7 +102,9 @@ def _students_table(groups: list[dict], students: list[dict], enrolments: list[d
         for g in groups:
             cell = by_cell.get((sid, g['nr_group_in_pgm']), [])
             subjects += [Subject(group=g['nr_group_in_pgm'], niv_sup=bool(e.get('niv_sup'))) for e in cell]
-            row.append(" + ".join(_entry_text(e, is_dp) for e in cell))
+            row.append("\n".join(
+                entry_text(e['label'], bool(e.get('niv_sup')), bool(e.get('cross_track')), is_dp)
+                for e in cell))
         flag = ""
         if is_dp:
             status = dp_status(subjects)
@@ -123,8 +114,9 @@ def _students_table(groups: list[dict], students: list[dict], enrolments: list[d
         rows.append(row)
         flags.append(flag)
     note = "* = piste croisée" + ("  ·  NS = niveau supérieur" if is_dp else "")
+    aligns = ["l"] + ["c"] * len(groups) + (["l"] if is_dp else [])
     return Table("Inscriptions des élèves par groupe de matières", columns, rows,
-                 ["l"] * len(columns), flags, note=note, empty_text="Aucun élève actif dans cette classe.")
+                 aligns, flags, note=note, empty_text="Aucun élève actif dans cette classe.")
 
 
 def _others_tables(slots: list[dict], students: list[dict], links: list[dict]) -> list[Table]:

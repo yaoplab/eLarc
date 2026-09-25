@@ -3,6 +3,7 @@
 Aucun Qt, aucun SQL — logique métier testable isolément. Utilisée par la
 grille élèves (Onglet B) du futur panneau « Classes & matières ».
 """
+import re
 from dataclasses import dataclass, field
 
 # Trimestre affiché (1/2/3) -> fk_term_id. Le 4e "trimestre" correspond aux
@@ -77,3 +78,18 @@ def dp_status_reasons(status: DPStatus) -> list[str]:
     if status.ns_count != 3 or status.nm_count != 3:
         reasons.append(f"{status.ns_count} NS / {status.nm_count} NM (3/3 attendus)")
     return reasons
+
+
+# --------------------------------------------------------------------------- libellés d'affichage
+_LEVEL_RE = re.compile(r'(?<![A-Za-z])(NS|NM)(?![A-Za-z])')
+
+
+def entry_text(label: str, niv_sup: bool, cross_track: bool, is_dp: bool) -> str:
+    """Libellé + marques : « (NS) » (DP, seulement si le libellé ne le porte pas
+    déjà) et « * » (piste croisée)."""
+    tags = []
+    if is_dp and niv_sup and not _LEVEL_RE.search(label):
+        tags.append('NS')
+    if cross_track:
+        tags.append('*')
+    return label + (f" ({'/'.join(tags)})" if tags else "")

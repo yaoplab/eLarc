@@ -28,8 +28,9 @@ from phibuilder.widgets import M3Button, M3ComboBox, M3Dialog, M3Label, M3ListWi
 from phibuilder.widgets.button import ButtonVariant
 
 from LarcConfig.common import db_enrolment
+from LarcConfig.views.table_font import TableFontControl
 from LarcConfig.views.table_rows import fix_row_height
-from LarcConfig.common.enrolment_rules import MAX_SUBJECTS_PER_GROUP, Subject, dp_status, dp_status_reasons
+from LarcConfig.common.enrolment_rules import MAX_SUBJECTS_PER_GROUP, Subject, dp_status, dp_status_reasons, entry_text
 
 _NAME_COL = 0
 _STATUS_HEADER = "Statut DP"
@@ -99,6 +100,12 @@ class GridPanel(M3ScrollArea):
         self._title = M3Label("Choisissez une classe", theme=phi, style="headline_small")
         head.addWidget(self._title)
         head.addStretch()
+        self._font_smaller_btn = M3Button("A−", theme=phi, variant=ButtonVariant.TEXT)
+        self._font_smaller_btn.setToolTip("Réduire la taille du texte du tableau")
+        self._font_normal_btn = M3Button("A", theme=phi, variant=ButtonVariant.TEXT)
+        self._font_normal_btn.setToolTip("Taille normale du texte du tableau")
+        head.addWidget(self._font_smaller_btn)
+        head.addWidget(self._font_normal_btn)
         lay.addLayout(head)
         lay.addWidget(M3Label(
             "Double-cliquez une cellule pour choisir les matières d'un élève. "
@@ -128,8 +135,20 @@ class GridPanel(M3ScrollArea):
         self._table.horizontalHeader().sectionDoubleClicked.connect(self._on_header_double_clicked)
         lay.addWidget(self._table)
 
+        self._font = TableFontControl(self._table, "grille_eleves", lines=2)
+        self._font_smaller_btn.clicked.connect(self._on_font_smaller)
+        self._font_normal_btn.clicked.connect(self._on_font_normal)
+
         self.setWidget(container)
         self.setWidgetResizable(True)
+
+    @safe_slot("GridPanel._on_font_smaller")
+    def _on_font_smaller(self, _checked: bool = False):
+        self._font.reduce()
+
+    @safe_slot("GridPanel._on_font_normal")
+    def _on_font_normal(self, _checked: bool = False):
+        self._font.reset()
 
     def set_context(self, classroom_id: int, classroom_label: str, term_id: int,
                      program_sigle: str | None = None):
@@ -181,6 +200,7 @@ class GridPanel(M3ScrollArea):
             labels.append(_STATUS_HEADER)
         self._table.setHorizontalHeaderLabels(labels)
         for col, _g in enumerate(self._groups, start=1):
+            self._table.horizontalHeaderItem(col).setTextAlignment(Qt.AlignCenter)
             self._table.horizontalHeaderItem(col).setToolTip(
                 "Double-cliquer pour appliquer une matière à toute la classe active")
 
@@ -204,8 +224,10 @@ class GridPanel(M3ScrollArea):
                 cell_entries = self._enrolments.get(key, [])
                 for e in cell_entries:
                     subjects.append(Subject(group=g['nr_group_in_pgm'], niv_sup=bool(e.get('niv_sup'))))
-                text = " + ".join(self._format_entry(e) for e in cell_entries)
+                # Une matière par ligne (pas de « + »), centré.
+                text = "\n".join(self._format_entry(e) for e in cell_entries)
                 item = self._ro(text)
+                item.setTextAlignment(Qt.AlignCenter)
                 if text:
                     item.setToolTip(text)
                 if cell_entries:
@@ -242,15 +264,7 @@ class GridPanel(M3ScrollArea):
         return item
 
     def _format_entry(self, e: dict) -> str:
-        text = e['label']
-        tags = []
-        if self._is_dp and e.get('niv_sup'):
-            tags.append('NS')
-        if e.get('cross_track'):
-            tags.append('*')
-        if tags:
-            text += f" ({'/'.join(tags)})"
-        return text
+        return entry_text(e['label'], bool(e.get('niv_sup')), bool(e.get('cross_track')), self._is_dp)
 
     def _column_labels(self) -> list[str]:
         labels = ["Élève"] + [g['group_label'] for g in self._groups]
@@ -275,7 +289,7 @@ class GridPanel(M3ScrollArea):
         self._filter_val_combo.addItem(_FILTER_ALL)
         if col >= 0:
             values = sorted({
-                self._table.item(r, col).text()
+                self._flat(self._table.item(r, col).text())
                 for r in range(self._table.rowCount())
                 if self._table.item(r, col) and self._table.item(r, col).text()
             })
@@ -293,6 +307,11 @@ class GridPanel(M3ScrollArea):
     def _on_filter_value_changed(self, _index: int):
         self._apply_filter()
 
+    @staticmethod
+    def _flat(text: str) -> str:
+        """Cellule multiligne -> une ligne (valeurs du filtre)."""
+        return text.replace("\n", " + ")
+
     def _apply_filter(self):
         col = self._filter_col_combo.currentIndex() - 1
         value = self._filter_val_combo.currentText()
@@ -302,7 +321,7 @@ class GridPanel(M3ScrollArea):
                 self._table.setRowHidden(row, False)
                 continue
             item = self._table.item(row, col)
-            self._table.setRowHidden(row, (item.text() if item else "") != value)
+            self._table.setRowHidden(row, self._flat(item.text() if item else "") != value)
 
     @safe_slot("GridPanel._on_cell_double_clicked")
     def _on_cell_double_clicked(self, row: int, col: int):

@@ -107,3 +107,10 @@ def test_max_subjects_per_group_constant_is_two():
 
 def test_dp_groups_required_is_one_to_five():
     assert DP_GROUPS_REQUIRED == {1, 2, 3, 4, 5}
+
+
+def test_entry_text_tags():
+    from LarcConfig.common.enrolment_rules import entry_text
+    assert entry_text("Anglais NS", True, False, True) == "Anglais NS"
+    assert entry_text("Français", True, False, True) == "Français (NS)"
+    assert entry_text("Sciences", False, True, False) == "Sciences (*)"

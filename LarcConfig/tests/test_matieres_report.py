@@ -62,7 +62,7 @@ def test_student_cells_and_dp_status(monkeypatch):
     t = mr.build_report(DP, 1, 1).sections[1].tables[0]
     assert t.columns == ['Élève', 'Langue', 'Statut DP']
     # « NS » ajouté sauf si le libellé le porte déjà
-    assert t.rows[0][1] == 'Français (NS) + Maths NM'
+    assert t.rows[0][1] == 'Français (NS)\nMaths NM'   # une matière par ligne, pas de « + »
     assert t.rows[0][2].startswith('Non conforme — ')
     assert t.flags == ['warn']
 
@@ -143,3 +143,16 @@ def test_html_uses_arial_and_escapes_text(report):
     html = matieres_print.report_html(report)
     assert 'font-family:\'Arial\'' in html
     assert "&lt;b&gt;Fr&lt;/b&gt; &amp; co" in html
+
+
+def test_student_group_columns_are_centered(monkeypatch):
+    _patch(monkeypatch, [], GROUPS, STUDENTS, [_enrol(1, 1, 'Mathématiques NM - Analyse et Approches', 1)])
+    t = mr.build_report(DP, 1, 1).sections[1].tables[0]
+    assert t.rows[0][1] == 'Mathématiques NM - Analyse et Approches'   # libellé complet
+    assert t.aligns == ['l', 'c', 'l']
+
+
+def test_html_breaks_lines_inside_cells(report):
+    from LarcConfig.common import matieres_print
+    report.sections[0].tables[0].rows[0][1] = "A" + chr(10) + "B"
+    assert "A<br>B" in matieres_print.report_html(report)

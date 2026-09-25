@@ -57,7 +57,8 @@ def _table_html(t: Table, show_title: bool) -> str:
             style = f"background-color:{bg};"
             if flag == "warn" and i == len(row) - 1:
                 style += f"color:{_WARN_FG};"
-            cells.append(f'<td align="{align}" style="{style}">{escape(v)}</td>')
+            text = escape(v).replace("\n", "<br>")   # une matière par ligne dans une cellule
+            cells.append(f'<td align="{align}" style="{style}">{text}</td>')
         out.append("<tr>" + "".join(cells) + "</tr>")
     out.append("</table>")
     if t.note:
