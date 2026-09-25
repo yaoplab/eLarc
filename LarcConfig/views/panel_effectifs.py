@@ -11,11 +11,13 @@ from phibuilder.phi.scale import SpacingToken
 from phibuilder.widgets import M3ComboBox, M3Label, M3SidebarNav, M3StackedWidget
 from PySide6.QtWidgets import QHBoxLayout, QVBoxLayout, QWidget
 
-from LarcConfig.common import db_enrolment
+from LarcConfig.common import db_access, db_enrolment
+from LarcConfig.common.matieres_report import build_report
 from LarcConfig.common.enrolment_rules import TERM_SLOTS
 from LarcConfig.views.effectifs_anomalies import AnomaliesPanel
 from LarcConfig.views.effectifs_classes import ClassesPanel
 from LarcConfig.views.effectifs_grille import GridPanel
+from LarcConfig.views.matieres_actions import ReportMenuButton
 from LarcConfig.views.othersubjects_panel import OtherSubjectsPanel
 
 
@@ -67,6 +69,7 @@ class EffectifsPanel(QWidget):
         self._nav = M3SidebarNav([label for _w, label in pages], theme=phi)
         rail_lay.addWidget(self._nav)
         rail_lay.addStretch()
+        rail_lay.addWidget(ReportMenuButton(self._current_report))
         lay.addWidget(rail)
 
         self._stack = M3StackedWidget(theme=phi)
@@ -88,6 +91,15 @@ class EffectifsPanel(QWidget):
             self._othersubjects.reload()
         if hasattr(self._anomalies, 'reload'):
             self._anomalies.reload()
+
+    def _current_report(self):
+        """Rapport (impression / exports) de la classe et du trimestre affichés, ou None."""
+        index = self._class_combo.currentIndex()
+        if not (0 <= index < len(self._classrooms)):
+            return None
+        term_no = sorted(TERM_SLOTS)[self._term_combo.currentIndex()]
+        year = (db_access.get_temps(within_year=True) or {}).get('annee', {}).get('label', '')
+        return build_report(self._classrooms[index], term_no, TERM_SLOTS[term_no], year)
 
     @safe_slot("EffectifsPanel._on_program_changed")
     def _on_program_changed(self, index: int):

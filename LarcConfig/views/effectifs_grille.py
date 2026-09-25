@@ -29,7 +29,7 @@ from phibuilder.widgets.button import ButtonVariant
 
 from LarcConfig.common import db_enrolment
 from LarcConfig.views.table_rows import fix_row_height
-from LarcConfig.common.enrolment_rules import DP_GROUPS_REQUIRED, MAX_SUBJECTS_PER_GROUP, Subject, dp_status
+from LarcConfig.common.enrolment_rules import MAX_SUBJECTS_PER_GROUP, Subject, dp_status, dp_status_reasons
 
 _NAME_COL = 0
 _STATUS_HEADER = "Statut DP"
@@ -234,14 +234,7 @@ class GridPanel(M3ScrollArea):
             item.setForeground(_qcolor(p.success))
             item.setToolTip("6 matières, groupes 1-5 couverts, 3 NS / 3 NM.")
             return item
-        reasons = []
-        if status.total != 6:
-            reasons.append(f"{status.total} matière(s) (6 attendues)")
-        missing = sorted(DP_GROUPS_REQUIRED - status.groups_covered)
-        if missing:
-            reasons.append("groupe(s) manquant(s) : " + ", ".join(str(m) for m in missing))
-        if status.ns_count != 3 or status.nm_count != 3:
-            reasons.append(f"{status.ns_count} NS / {status.nm_count} NM (3/3 attendus)")
+        reasons = dp_status_reasons(status)
         item = self._ro("Non conforme")
         item.setIcon(md3_icon("cancel", color=p.error))
         item.setForeground(_qcolor(p.error))

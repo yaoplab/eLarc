@@ -63,3 +63,17 @@ def dp_status(subjects: list[Subject]) -> DPStatus:
     )
     return DPStatus(total=total, groups_covered=groups_covered,
                      ns_count=ns_count, nm_count=nm_count, compliant=compliant)
+
+
+def dp_status_reasons(status: DPStatus) -> list[str]:
+    """Motifs de non-conformité DP (liste vide si conforme) — partagés par la
+    grille écran et les exports."""
+    reasons = []
+    if status.total != 6:
+        reasons.append(f"{status.total} matière(s) (6 attendues)")
+    missing = sorted(DP_GROUPS_REQUIRED - status.groups_covered)
+    if missing:
+        reasons.append("groupe(s) manquant(s) : " + ", ".join(str(m) for m in missing))
+    if status.ns_count != 3 or status.nm_count != 3:
+        reasons.append(f"{status.ns_count} NS / {status.nm_count} NM (3/3 attendus)")
+    return reasons
