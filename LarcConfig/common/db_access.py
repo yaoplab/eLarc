@@ -593,6 +593,7 @@ def get_stats(term_id=None):
     """Élèves et matières par classe, groupés par programme (PEI/DP/PP),
     pour le trimestre courant — cohérent avec l'année scolaire affichée.
     Liste de programmes, None si échec."""
+    from LarcConfig.common.enrolment_rules import TERM_SLOTS
     c = _conn()
     if not c:
         return None
@@ -619,7 +620,14 @@ def get_stats(term_id=None):
         term_id = term_id or (getattr(session, 'term_id', 0) or 0)
         if term_id and not _term_has_data(term_id):
             term_id = 0
-        # 2) trimestre courant de l'année active (dernière ligne du trim)
+        # 2) créneau du trimestre courant : les matières par classe sont
+        # rattachées aux créneaux fixes T1/T2/T3 (TERM_SLOTS, comme le panneau
+        # « Matières par classe »), pas aux lignes datées de larcauth_term.
+        if not term_id and current_trim:
+            slot = TERM_SLOTS.get(current_trim)
+            if slot and _term_has_data(slot):
+                term_id = slot
+        # 2b) trimestre courant de l'année active (dernière ligne du trim)
         if not term_id and current_trim:
             cur.execute("""
                 SELECT id FROM larcauth_term WHERE "trim" = %s
