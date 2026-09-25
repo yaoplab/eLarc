@@ -67,13 +67,13 @@ def _table_html(t: Table, show_title: bool) -> str:
 
 def report_html(report: Report) -> str:
     css = (
-        f"body {{ font-family:'{FONT_FAMILY}'; font-size:9pt; color:#111827; }}"
+        f"body {{ font-family:'{FONT_FAMILY}'; font-size:7.5pt; color:#111827; }}"
         f"h1 {{ font-size:15pt; color:{_BLUE}; margin:8pt 0 6pt 0; }}"
         f".tt {{ font-size:11pt; font-weight:bold; color:{_BLUE}; margin:10pt 0 4pt 0; }}"
-        f"th {{ background-color:{_BLUE}; color:#FFFFFF; font-weight:bold; font-size:9pt; }}"
-        f"td {{ font-size:9pt; border-bottom:0.5pt solid {_RULE}; }}"
+        f"th {{ background-color:{_BLUE}; color:#FFFFFF; font-weight:bold; font-size:7.5pt; }}"
+        f"td {{ font-size:7.5pt; border-bottom:0.5pt solid {_RULE}; }}"
         f".note {{ font-size:8pt; color:{_GREY}; font-style:italic; margin-top:3pt; }}"
-        f".empty {{ font-size:9pt; color:{_GREY}; font-style:italic; }}"
+        f".empty {{ font-size:7.5pt; color:{_GREY}; font-style:italic; }}"
     )
     body = []
     for i, section in enumerate(report.sections):
@@ -86,7 +86,7 @@ def report_html(report: Report) -> str:
 def paint_report(report: Report, printer: QPrinter) -> bool:
     """Peint tout le rapport sur `printer` (imprimante ou fichier PDF)."""
     doc = QTextDocument()
-    doc.setDefaultFont(QFont(FONT_FAMILY, 9))
+    doc.setDefaultFont(QFont(FONT_FAMILY, 7.5))
     doc.documentLayout().setPaintDevice(printer)
     doc.setHtml(report_html(report))
 
