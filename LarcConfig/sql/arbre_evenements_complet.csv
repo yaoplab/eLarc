@@ -1,0 +1,202 @@
+﻿ID FR;ID EN;Niveau;Type;Libellé;Actif;Ancien ID FR;Ancien libellé;Ancien actif;Code;Catégorie
+21000;11000;1;node;Absent de l'école;1;4;Absent de l'école;1;absence_school;absence
+21100;11100;2;node;Justifiée;1;215;Type_Niv2_01;0;absence_school_justifiee;absence
+21110;11110;3;slot;Categorie_Niv21100_Level_1;0;2;Retard;1;type_niv3_21110;absence
+21120;11120;3;slot;Categorie_Niv21100_Level_2;0;65;Transport;1;type_niv3_21120;absence
+21130;11130;3;slot;Categorie_Niv21100_Level_3;0;257;Type_Niv4_01;0;type_niv3_21130;absence
+21140;11140;3;slot;Categorie_Niv21100_Level_4;0;346;Type_Niv4_02;0;type_niv3_21140;absence
+21200;11200;2;node;Justifiée (sans détail);1;7;Justifiée (sans détail);1;absence_school_justified;absence
+21210;11210;3;slot;Categorie_Niv21200_Level_1;0;6;Maladie;1;type_niv3_21210;absence
+21220;11220;3;slot;Categorie_Niv21200_Level_2;0;66;Autre;1;type_niv3_21220;absence
+21230;11230;3;slot;Categorie_Niv21200_Level_3;0;258;Type_Niv4_01;0;type_niv3_21230;absence
+21240;11240;3;slot;Categorie_Niv21200_Level_4;0;347;Type_Niv4_02;0;type_niv3_21240;absence
+21300;11300;2;node;Injustifiée;1;8;Injustifiée;1;absence_school_unjustified;absence
+21310;11310;3;slot;Categorie_Niv21300_Level_1;0;9;Maladie;0;type_niv3_21310;absence
+21320;11320;3;slot;Categorie_Niv21300_Level_2;0;67;Autre;1;type_niv3_21320;absence
+21330;11330;3;slot;Categorie_Niv21300_Level_3;0;259;Type_Niv4_01;0;type_niv3_21330;absence
+21340;11340;3;slot;Categorie_Niv21300_Level_4;0;348;Type_Niv4_02;0;type_niv3_21340;absence
+21400;11400;2;slot;Categorie_Niv21000_Level_4;0;1;Absence;1;type_niv2_21400;absence
+21500;11500;2;slot;Categorie_Niv21000_Level_5;0;64;Familial;1;type_niv2_21500;absence
+21600;11600;2;slot;Categorie_Niv21000_Level_6;0;256;Type_Niv4_01;0;type_niv2_21600;absence
+22000;12000;1;node;Absent du cours;1;5;Absent du cours;1;absence_class;absence
+22100;12100;2;node;Justifiée;1;216;Type_Niv2_01;0;absence_class_justifiee;absence
+22110;12110;3;slot;Categorie_Niv22100_Level_1;0;16;Santé;1;type_niv3_22110;absence
+22120;12120;3;slot;Categorie_Niv22100_Level_2;0;69;Familial;1;type_niv3_22120;absence
+22130;12130;3;slot;Categorie_Niv22100_Level_3;0;261;Type_Niv4_01;0;type_niv3_22130;absence
+22140;12140;3;slot;Categorie_Niv22100_Level_4;0;349;Type_Niv4_02;0;type_niv3_22140;absence
+22200;12200;2;node;Justifiée (sans détail);1;10;Justifiée;0;absence_class_justifiee_sans_detail;absence
+22210;12210;3;slot;Categorie_Niv22200_Level_1;0;17;Incident;0;type_niv3_22210;absence
+22220;12220;3;slot;Categorie_Niv22200_Level_2;0;70;Oubli-réveil;1;type_niv3_22220;absence
+22230;12230;3;slot;Categorie_Niv22200_Level_3;0;262;Type_Niv4_01;0;type_niv3_22230;absence
+22240;12240;3;slot;Categorie_Niv22200_Level_4;0;350;Type_Niv4_02;0;type_niv3_22240;absence
+22300;12300;2;node;Injustifiée;1;11;Injustifiée;0;absence_class_unjustified;absence
+22310;12310;3;slot;Categorie_Niv22300_Level_1;0;18;Légère (rhume, fièvre);1;type_niv3_22310;absence
+22320;12320;3;slot;Categorie_Niv22300_Level_2;0;71;Transport;1;type_niv3_22320;absence
+22330;12330;3;slot;Categorie_Niv22300_Level_3;0;263;Type_Niv4_01;0;type_niv3_22330;absence
+22340;12340;3;slot;Categorie_Niv22300_Level_4;0;351;Type_Niv4_02;0;type_niv3_22340;absence
+22400;12400;2;slot;Categorie_Niv22000_Level_4;0;15;Comportement;1;type_niv2_22400;absence
+22500;12500;2;slot;Categorie_Niv22000_Level_5;0;68;Autre;1;type_niv2_22500;absence
+22600;12600;2;slot;Categorie_Niv22000_Level_6;0;260;Type_Niv4_01;0;type_niv2_22600;absence
+23000;13000;1;node;Retard à l'école;1;61;Retard à l'école;1;retard_school;retard
+23100;13100;2;node;5 min;1;12;5 min;1;retard_5min;retard
+23110;13110;3;slot;Categorie_Niv23100_Level_1;0;20;Chronique (suivi médical);1;type_niv3_23110;retard
+23120;13120;3;slot;Categorie_Niv23100_Level_2;0;73;Oubli-réveil;1;type_niv3_23120;retard
+23130;13130;3;slot;Categorie_Niv23100_Level_3;0;265;Type_Niv4_01;0;type_niv3_23130;retard
+23140;13140;3;slot;Categorie_Niv23100_Level_4;0;352;Type_Niv4_02;0;type_niv3_23140;retard
+23200;13200;2;node;10 min;1;217;Type_Niv2_01;0;retard_school_10_min;retard
+23210;13210;3;slot;Categorie_Niv23200_Level_1;0;21;Autre;1;type_niv3_23210;retard
+23220;13220;3;slot;Categorie_Niv23200_Level_2;0;74;Oubli-réveil;1;type_niv3_23220;retard
+23230;13230;3;slot;Categorie_Niv23200_Level_3;0;266;Type_Niv4_01;0;type_niv3_23230;retard
+23240;13240;3;slot;Categorie_Niv23200_Level_4;0;353;Type_Niv4_02;0;type_niv3_23240;retard
+23300;13300;2;node;15 min;1;13;15 min;1;retard_15min;retard
+23310;13310;3;slot;Categorie_Niv23300_Level_1;0;22;Motif familial;1;type_niv3_23310;retard
+23320;13320;3;slot;Categorie_Niv23300_Level_2;0;77;Autre;1;type_niv3_23320;retard
+23330;13330;3;slot;Categorie_Niv23300_Level_3;0;267;Type_Niv4_01;0;type_niv3_23330;retard
+23340;13340;3;slot;Categorie_Niv23300_Level_4;0;354;Type_Niv4_02;0;type_niv3_23340;retard
+23400;13400;2;node;20 min et +;1;14;30 min et +;1;retard_school_20_min_et;retard
+23410;13410;3;slot;Categorie_Niv23400_Level_1;0;23;Autre;1;type_niv3_23410;retard
+23420;13420;3;slot;Categorie_Niv23400_Level_2;0;78;Oubli-réveil;1;type_niv3_23420;retard
+23430;13430;3;slot;Categorie_Niv23400_Level_3;0;268;Type_Niv4_01;0;type_niv3_23430;retard
+23440;13440;3;slot;Categorie_Niv23400_Level_4;0;355;Type_Niv4_02;0;type_niv3_23440;retard
+23500;13500;2;slot;Categorie_Niv23000_Level_5;0;19;Grave / Hospitalisation;1;type_niv2_23500;retard
+23600;13600;2;slot;Categorie_Niv23000_Level_6;0;72;Transport;1;type_niv2_23600;retard
+23700;13700;2;slot;Categorie_Niv23000_Level_7;0;264;Type_Niv4_01;0;type_niv2_23700;retard
+24000;14000;1;node;Retard au cours;1;62;Retard au cours;1;retard_class;retard
+24100;14100;2;node;5 min;1;75;5 min;1;retard_class_5;retard
+24110;14110;3;slot;Categorie_Niv24100_Level_1;0;25;Décès;1;type_niv3_24110;retard
+24120;14120;3;slot;Categorie_Niv24100_Level_2;0;80;Oubli-réveil;1;type_niv3_24120;retard
+24130;14130;3;slot;Categorie_Niv24100_Level_3;0;270;Type_Niv4_01;0;type_niv3_24130;retard
+24140;14140;3;slot;Categorie_Niv24100_Level_4;0;357;Type_Niv4_02;0;type_niv3_24140;retard
+24200;14200;2;node;10 min et +;1;76;15 min et +;1;retard_class_10_min_et;retard
+24210;14210;3;slot;Categorie_Niv24200_Level_1;0;26;Événement familial;1;type_niv3_24210;retard
+24220;14220;3;slot;Categorie_Niv24200_Level_2;0;81;Transport;1;type_niv3_24220;retard
+24230;14230;3;slot;Categorie_Niv24200_Level_3;0;271;Type_Niv4_01;0;type_niv3_24230;retard
+24240;14240;3;slot;Categorie_Niv24200_Level_4;0;358;Type_Niv4_02;0;type_niv3_24240;retard
+24300;14300;2;slot;Categorie_Niv24000_Level_3;0;24;Déplacement;1;type_niv2_24300;retard
+24400;14400;2;slot;Categorie_Niv24000_Level_4;0;79;Familial;1;type_niv2_24400;retard
+24500;14500;2;slot;Categorie_Niv24000_Level_5;0;269;Type_Niv4_01;0;type_niv2_24500;retard
+24600;14600;2;slot;Categorie_Niv24000_Level_6;0;356;Type_Niv4_02;0;type_niv2_24600;retard
+25000;15000;1;node;Événement;1;3;Événement;1;evenement;evenement
+25100;15100;2;node;Positif;1;85;Positif;1;event_behavior_positive;evenement
+25110;15110;3;node;Mérite/Encouragement;1;87;Mérite/Encouragement;1;event_behavior_positive_merit;evenement
+25111;15111;4;slot;Categorie_Niv25110_Level_1;0;29;Généraliste;1;type_niv4_25111;evenement
+25112;15112;4;slot;Categorie_Niv25110_Level_2;0;84;Transport;1;type_niv4_25112;evenement
+25113;15113;4;slot;Categorie_Niv25110_Level_3;0;309;Type_Niv2_02;0;type_niv4_25113;evenement
+25114;15114;4;slot;Categorie_Niv25110_Level_4;0;360;Type_Niv4_02;0;type_niv4_25114;evenement
+25120;15120;3;node;Autre;1;86;Autre;1;event_behavior_positive_other;evenement
+25121;15121;4;slot;Categorie_Niv25120_Level_1;0;30;Autre;1;type_niv4_25121;evenement
+25122;15122;4;slot;Categorie_Niv25120_Level_2;0;89;Dégradation matériel;1;type_niv4_25122;evenement
+25123;15123;4;slot;Categorie_Niv25120_Level_3;0;310;Type_Niv2_02;0;type_niv4_25123;evenement
+25124;15124;4;slot;Categorie_Niv25120_Level_4;0;361;Type_Niv4_02;0;type_niv4_25124;evenement
+25130;15130;3;slot;Categorie_Niv25100_Level_3;0;28;Spécialiste;1;type_niv3_25130;evenement
+25140;15140;3;slot;Categorie_Niv25100_Level_4;0;83;Autre;1;type_niv3_25140;evenement
+25150;15150;3;slot;Categorie_Niv25100_Level_5;0;273;Type_Niv4_01;0;type_niv3_25150;evenement
+25160;15160;3;slot;Categorie_Niv25100_Level_6;0;359;Type_Niv4_02;0;type_niv3_25160;evenement
+25200;15200;2;node;Mauvais comportement;1;88;Négatif;1;evenement_mauvais_comportement;evenement
+25210;15210;3;node;Élève trop agité;1;218;Type_Niv2_01;0;evenement_mauvais_comportement_eleve_trop_agite;evenement
+25211;15211;4;slot;Categorie_Niv25210_Level_1;0;32;Convocation externe;1;type_niv4_25211;evenement
+25212;15212;4;slot;Categorie_Niv25210_Level_2;0;91;Indiscipline légère;1;type_niv4_25212;evenement
+25213;15213;4;slot;Categorie_Niv25210_Level_3;0;311;Type_Niv2_02;0;type_niv4_25213;evenement
+25214;15214;4;slot;Categorie_Niv25210_Level_4;0;362;Type_Niv4_02;0;type_niv4_25214;evenement
+25220;15220;3;node;Manque de respect;1;223;Type_Niv3_01;0;evenement_mauvais_comportement_manque_de_respect;evenement
+25221;15221;4;slot;Categorie_Niv25220_Level_1;0;33;Démarches;1;type_niv4_25221;evenement
+25222;15222;4;slot;Categorie_Niv25220_Level_2;0;92;Fraude;1;type_niv4_25222;evenement
+25223;15223;4;slot;Categorie_Niv25220_Level_3;0;312;Type_Niv2_02;0;type_niv4_25223;evenement
+25224;15224;4;slot;Categorie_Niv25220_Level_4;0;363;Type_Niv4_02;0;type_niv4_25224;evenement
+25230;15230;3;node;Violence physique;1;90;Violence physique;1;event_behavior_negative_physical;evenement
+25231;15231;4;slot;Categorie_Niv25230_Level_1;0;34;Autre;1;type_niv4_25231;evenement
+25232;15232;4;slot;Categorie_Niv25230_Level_2;0;95;Insolence;1;type_niv4_25232;evenement
+25233;15233;4;slot;Categorie_Niv25230_Level_3;0;317;Type_Niv3_02;0;type_niv4_25233;evenement
+25234;15234;4;slot;Categorie_Niv25230_Level_4;0;364;Type_Niv4_02;0;type_niv4_25234;evenement
+25240;15240;3;node;Violence verbale;1;93;Violence verbale;1;event_behavior_negative_verbal;evenement
+25241;15241;4;slot;Categorie_Niv25240_Level_1;0;35;Autre;1;type_niv4_25241;evenement
+25242;15242;4;slot;Categorie_Niv25240_Level_2;0;96;Vol;1;type_niv4_25242;evenement
+25243;15243;4;slot;Categorie_Niv25240_Level_3;0;318;Type_Niv3_02;0;type_niv4_25243;evenement
+25244;15244;4;slot;Categorie_Niv25240_Level_4;0;365;Type_Niv4_02;0;type_niv4_25244;evenement
+25250;15250;3;node;Moquerie;1;224;Type_Niv3_01;0;evenement_mauvais_comportement_moquerie;evenement
+25251;15251;4;slot;Categorie_Niv25250_Level_1;0;36;Activité scolaire (sport, sortie pédagogique, compétition);1;type_niv4_25251;evenement
+25252;15252;4;slot;Categorie_Niv25250_Level_2;0;101;Malaise;1;type_niv4_25252;evenement
+25253;15253;4;slot;Categorie_Niv25250_Level_3;0;319;Type_Niv3_02;0;type_niv4_25253;evenement
+25254;15254;4;slot;Categorie_Niv25250_Level_4;0;366;Type_Niv4_02;0;type_niv4_25254;evenement
+25260;15260;3;node;Harcèlement;1;225;Type_Niv3_01;0;evenement_mauvais_comportement_harcelement;evenement
+25261;15261;4;slot;Categorie_Niv25260_Level_1;0;37;Autre;1;type_niv4_25261;evenement
+25262;15262;4;slot;Categorie_Niv25260_Level_2;0;102;Blessure;1;type_niv4_25262;evenement
+25263;15263;4;slot;Categorie_Niv25260_Level_3;0;320;Type_Niv3_02;0;type_niv4_25263;evenement
+25264;15264;4;slot;Categorie_Niv25260_Level_4;0;367;Type_Niv4_02;0;type_niv4_25264;evenement
+25270;15270;3;node;Autre;1;94;Autre;1;event_behavior_negative_other;evenement
+25271;15271;4;slot;Categorie_Niv25270_Level_1;0;38;Convoqué (direction/administration);1;type_niv4_25271;evenement
+25272;15272;4;slot;Categorie_Niv25270_Level_2;0;103;Autre;1;type_niv4_25272;evenement
+25273;15273;4;slot;Categorie_Niv25270_Level_3;0;321;Type_Niv3_02;0;type_niv4_25273;evenement
+25280;15280;3;slot;Categorie_Niv25200_Level_8;0;31;Motif administratif;1;type_niv3_25280;evenement
+25300;15300;2;node;Manque de travail;1;98;Manque de travail;1;event_behavior_lack_of_work;evenement
+25310;15310;3;node;Plagiat;1;226;Type_Niv3_01;0;event_behavior_lack_of_work_plagiat;evenement
+25311;15311;4;slot;Categorie_Niv25310_Level_1;0;45;Matériel oublié;1;type_niv4_25311;evenement
+25312;15312;4;slot;Categorie_Niv25310_Level_2;0;105;Urgence médicale;1;type_niv4_25312;evenement
+25313;15313;4;slot;Categorie_Niv25310_Level_3;0;322;Type_Niv3_02;0;type_niv4_25313;evenement
+25320;15320;3;node;Devoirs non faits;1;99;Devoirs non faits;1;event_behavior_lack_of_work_homework;evenement
+25321;15321;4;slot;Categorie_Niv25320_Level_1;0;46;Mauvais comportement;1;type_niv4_25321;evenement
+25322;15322;4;slot;Categorie_Niv25320_Level_2;0;241;Type_Niv4_01;0;type_niv4_25322;evenement
+25323;15323;4;slot;Categorie_Niv25320_Level_3;0;323;Type_Niv3_02;0;type_niv4_25323;evenement
+25330;15330;3;node;Bavardage;1;227;Type_Niv3_01;0;event_behavior_lack_of_work_bavardage;evenement
+25331;15331;4;slot;Categorie_Niv25330_Level_1;0;47;Autre;1;type_niv4_25331;evenement
+25332;15332;4;slot;Categorie_Niv25330_Level_2;0;242;Type_Niv4_01;0;type_niv4_25332;evenement
+25333;15333;4;slot;Categorie_Niv25330_Level_3;0;324;Type_Niv3_02;0;type_niv4_25333;evenement
+25340;15340;3;node;Élève distrait;1;228;Type_Niv3_01;0;event_behavior_lack_of_work_eleve_distrait;evenement
+25341;15341;4;slot;Categorie_Niv25340_Level_1;0;48;Dégradation matériel;1;type_niv4_25341;evenement
+25342;15342;4;slot;Categorie_Niv25340_Level_2;0;243;Type_Niv4_01;0;type_niv4_25342;evenement
+25343;15343;4;slot;Categorie_Niv25340_Level_3;0;333;Type_Niv4_02;0;type_niv4_25343;evenement
+25350;15350;3;node;Élève dort;1;229;Type_Niv3_01;0;event_behavior_lack_of_work_eleve_dort;evenement
+25351;15351;4;slot;Categorie_Niv25350_Level_1;0;49;Violence physique;1;type_niv4_25351;evenement
+25352;15352;4;slot;Categorie_Niv25350_Level_2;0;244;Type_Niv4_01;0;type_niv4_25352;evenement
+25353;15353;4;slot;Categorie_Niv25350_Level_3;0;334;Type_Niv4_02;0;type_niv4_25353;evenement
+25360;15360;3;node;Autre;1;100;Autre;1;event_behavior_lack_of_work_other;evenement
+25361;15361;4;slot;Categorie_Niv25360_Level_1;0;50;Insolence;1;type_niv4_25361;evenement
+25362;15362;4;slot;Categorie_Niv25360_Level_2;0;245;Type_Niv4_01;0;type_niv4_25362;evenement
+25363;15363;4;slot;Categorie_Niv25360_Level_3;0;335;Type_Niv4_02;0;type_niv4_25363;evenement
+25370;15370;3;slot;Categorie_Niv25300_Level_7;0;39;Sortie;1;type_niv3_25370;evenement
+25380;15380;3;slot;Categorie_Niv25300_Level_8;0;104;Suivi PAI;1;type_niv3_25380;evenement
+25400;15400;2;node;Matériel oublié (l'élève continue de travailler);1;97;Matériel oublié (élève continue de travailler);1;evenement_materiel_oublie_l_eleve_continue_de_travailler;evenement
+25410;15410;3;slot;Categorie_Niv25400_Level_1;0;51;Vol;1;type_niv3_25410;evenement
+25420;15420;3;slot;Categorie_Niv25400_Level_2;0;246;Type_Niv4_01;0;type_niv3_25420;evenement
+25430;15430;3;slot;Categorie_Niv25400_Level_3;0;336;Type_Niv4_02;0;type_niv3_25430;evenement
+25500;15500;2;slot;Categorie_Niv25000_Level_5;0;27;Rendez-vous médical;1;type_niv2_25500;evenement
+25600;15600;2;slot;Categorie_Niv25000_Level_6;0;82;Familial;1;type_niv2_25600;evenement
+25700;15700;2;slot;Categorie_Niv25000_Level_7;0;272;Type_Niv4_01;0;type_niv2_25700;evenement
+26000;16000;1;node;Sortie du cours;1;40;Sortie du cours;1;sortie_class;sortie
+26100;16100;2;node;Toilettes;1;41;Toilettes;1;sortie_class_toilets;sortie
+26110;16110;3;slot;Categorie_Niv26100_Level_1;0;53;Violence verbale;1;type_niv3_26110;sortie
+26120;16120;3;slot;Categorie_Niv26100_Level_2;0;248;Type_Niv4_01;0;type_niv3_26120;sortie
+26130;16130;3;slot;Categorie_Niv26100_Level_3;0;338;Type_Niv4_02;0;type_niv3_26130;sortie
+26200;16200;2;node;Autre;1;42;Autre;1;sortie_class_other;sortie
+26210;16210;3;slot;Categorie_Niv26200_Level_1;0;54;Indiscipline légère;1;type_niv3_26210;sortie
+26220;16220;3;slot;Categorie_Niv26200_Level_2;0;249;Type_Niv4_01;0;type_niv3_26220;sortie
+26230;16230;3;slot;Categorie_Niv26200_Level_3;0;339;Type_Niv4_02;0;type_niv3_26230;sortie
+26300;16300;2;node;Convocation vie scolaire;1;43;Bureau direction/vie scolaire;1;sortie_class_convocation_vie_scolaire;sortie
+26310;16310;3;slot;Categorie_Niv26300_Level_1;0;56;Malaise/renvoyé;1;type_niv3_26310;sortie
+26320;16320;3;slot;Categorie_Niv26300_Level_2;0;250;Type_Niv4_01;0;type_niv3_26320;sortie
+26330;16330;3;slot;Categorie_Niv26300_Level_3;0;340;Type_Niv4_02;0;type_niv3_26330;sortie
+26400;16400;2;node;Infirmerie;1;44;Infirmerie;1;sortie_class_infirmary;sortie
+26410;16410;3;slot;Categorie_Niv26400_Level_1;0;57;Récupéré par parent/tuteur;1;type_niv3_26410;sortie
+26420;16420;3;slot;Categorie_Niv26400_Level_2;0;251;Type_Niv4_01;0;type_niv3_26420;sortie
+26430;16430;3;slot;Categorie_Niv26400_Level_3;0;341;Type_Niv4_02;0;type_niv3_26430;sortie
+26500;16500;2;slot;Categorie_Niv26000_Level_5;0;52;Fraude;1;type_niv2_26500;sortie
+26600;16600;2;slot;Categorie_Niv26000_Level_6;0;247;Type_Niv4_01;0;type_niv2_26600;sortie
+26700;16700;2;slot;Categorie_Niv26000_Level_7;0;337;Type_Niv4_02;0;type_niv2_26700;sortie
+27000;17000;1;node;Sortie de l'école;1;55;Sortie de l'école;1;sortie_school;sortie
+27100;17100;2;node;Justifiée;1;230;Type_Niv3_01;0;sortie_school_justifiee;sortie
+27110;17110;3;slot;Categorie_Niv27100_Level_1;0;59;Rendez-vous médical;1;type_niv3_27110;sortie
+27120;17120;3;slot;Categorie_Niv27100_Level_2;0;253;Type_Niv4_01;0;type_niv3_27120;sortie
+27130;17130;3;slot;Categorie_Niv27100_Level_3;0;343;Type_Niv4_02;0;type_niv3_27130;sortie
+27200;17200;2;node;Justifiée (sans détail);1;239;Type_Niv4_01;0;sortie_school_justifiee_sans_detail;sortie
+27210;17210;3;slot;Categorie_Niv27200_Level_1;0;60;Autorisation exceptionnelle;1;type_niv3_27210;sortie
+27220;17220;3;slot;Categorie_Niv27200_Level_2;0;254;Type_Niv4_01;0;type_niv3_27220;sortie
+27230;17230;3;slot;Categorie_Niv27200_Level_3;0;344;Type_Niv4_02;0;type_niv3_27230;sortie
+27300;17300;2;node;Injustifiée;1;240;Type_Niv4_01;0;sortie_school_injustifiee;sortie
+27310;17310;3;slot;Categorie_Niv27300_Level_1;0;63;Familial;1;type_niv3_27310;sortie
+27320;17320;3;slot;Categorie_Niv27300_Level_2;0;255;Type_Niv4_01;0;type_niv3_27320;sortie
+27330;17330;3;slot;Categorie_Niv27300_Level_3;0;345;Type_Niv4_02;0;type_niv3_27330;sortie
+27400;17400;2;slot;Categorie_Niv27000_Level_4;0;58;Autre;1;type_niv2_27400;sortie
+27500;17500;2;slot;Categorie_Niv27000_Level_5;0;252;Type_Niv4_01;0;type_niv2_27500;sortie
+27600;17600;2;slot;Categorie_Niv27000_Level_6;0;342;Type_Niv4_02;0;type_niv2_27600;sortie
+28000;18000;1;custom;Categorie_Niv20000_Level_8;0;212;Type_Niv1_01;0;type_niv1_01;custom
+29000;19000;1;custom;Categorie_Niv20000_Level_9;0;214;Type_Niv1_02;0;type_niv1_02;custom

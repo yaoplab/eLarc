@@ -28,6 +28,7 @@ from phibuilder.widgets import M3Button, M3ComboBox, M3Dialog, M3Label, M3ListWi
 from phibuilder.widgets.button import ButtonVariant
 
 from LarcConfig.common import db_enrolment
+from LarcConfig.views.table_rows import fix_row_height
 from LarcConfig.common.enrolment_rules import DP_GROUPS_REQUIRED, MAX_SUBJECTS_PER_GROUP, Subject, dp_status
 
 _NAME_COL = 0
@@ -63,17 +64,13 @@ def _pastel(hex_color: str, surface_hex: str, weight: float = 0.78) -> str:
 
 def _size_list_to_items(lst: M3ListWidget, count: int, phi, max_visible: int = 5):
     """M3ListWidget est en SizePolicy.Expanding et son sizeHint() par défaut
-    ignore le `min-height` imposé par le QSS de chaque item (SpacingToken.XXL) —
-    avec 1 ou 2 matières seulement, ça donnait une boîte à moitié vide ET
-    coupait quand même le 2e élément (nécessitant un scroll). On dimensionne
-    explicitement sur le nombre réel de matières, avec un plafond au-delà
-    duquel ça défile normalement."""
+    ignore la hauteur réelle des lignes : avec 1 ou 2 matières seulement, on
+    obtenait une boîte à moitié vide, ou un 2e élément coupé. On dimensionne
+    donc sur le nombre réel d'éléments et sur la hauteur de ligne *mesurée*
+    (sizeHintForRow — les items doivent déjà être ajoutés), avec un plafond
+    au-delà duquel ça défile."""
     sp = phi.spacing.spacing
-    # La hauteur réelle d'une ligne n'est pas SpacingToken.XXL seul : le CSS
-    # de M3ListWidget::item ajoute un padding vertical (SpacingToken.MD en
-    # haut ET en bas) par-dessus le min-height — vérifié avec sizeHintForRow
-    # (84 + 20 + 20 = 124px réels, pas 84).
-    row_h = sp(SpacingToken.XXL) + 2 * sp(SpacingToken.MD)
+    row_h = max(lst.sizeHintForRow(0), sp(SpacingToken.LG))
     frame = sp(SpacingToken.XS) * 2 + 2  # padding + bordure de la liste elle-même
     visible = max(1, min(count, max_visible))
     lst.setFixedHeight(visible * row_h + frame)
@@ -122,6 +119,9 @@ class GridPanel(M3ScrollArea):
         lay.addLayout(filter_row)
 
         self._table = M3TableWidget(theme=phi)
+        # 2 lignes : la 2e matière d'un groupe passe à la ligne ; le détail complet
+        # d'une cellule plus longue est dans son infobulle (moins de défilement).
+        fix_row_height(self._table, lines=2)
         self._table.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self._table.setSortingEnabled(True)
         self._table.cellDoubleClicked.connect(self._on_cell_double_clicked)
@@ -206,6 +206,8 @@ class GridPanel(M3ScrollArea):
                     subjects.append(Subject(group=g['nr_group_in_pgm'], niv_sup=bool(e.get('niv_sup'))))
                 text = " + ".join(self._format_entry(e) for e in cell_entries)
                 item = self._ro(text)
+                if text:
+                    item.setToolTip(text)
                 if cell_entries:
                     color = _group_color(cell_entries[0]['couleur'], g['nr_group_in_pgm'])
                     item.setForeground(_qcolor(color))
@@ -222,7 +224,6 @@ class GridPanel(M3ScrollArea):
         self._table.setSortingEnabled(True)
         if sort_col >= 0:
             self._table.sortItems(sort_col, sort_order)
-        self._table.resizeRowsToContents()
 
         self._populate_filter_columns(prev_filter_col, prev_filter_val)
 
@@ -353,7 +354,7 @@ class GridPanel(M3ScrollArea):
             f"Maximum {MAX_SUBJECTS_PER_GROUP} matières.", theme=phi)
         dlg.confirm_btn.setText("Valider")
         dlg.cancel_btn.setText("Annuler")
-        lst = M3ListWidget(theme=phi)
+        lst = M3ListWidget(theme=phi, compact=True)
         lst.setSelectionMode(QAbstractItemView.SelectionMode.NoSelection)
         items = []
         for ch in choices:
@@ -401,7 +402,7 @@ class GridPanel(M3ScrollArea):
         # boutons disproportionnées par rapport à une liste de 1-2 matières.
         dlg.confirm_btn.hide()
         dlg.cancel_btn.hide()
-        lst = M3ListWidget(theme=phi)
+        lst = M3ListWidget(theme=phi, compact=True)
         for ch in choices:
             it = QListWidgetItem(self._format_entry(ch))
             it.setData(Qt.UserRole, ch['id'])

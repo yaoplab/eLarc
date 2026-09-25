@@ -7,13 +7,14 @@ cascade (désinscrire les élèves) — jamais en silence.
 from larccommon.safe_slot import safe_slot
 from larccommon.theme import theme_manager
 from phibuilder.phi.scale import SpacingToken
-from phibuilder.widgets import M3Button, M3Label, M3ScrollArea, M3TableWidget
+from phibuilder.widgets import M3Button, M3ComboBox, M3Label, M3ScrollArea, M3TableWidget
 from phibuilder.widgets.button import ButtonVariant
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import QHBoxLayout, QHeaderView, QMessageBox, QTableWidgetItem, QVBoxLayout, QWidget
 
 from LarcConfig.common import db_enrolment
+from LarcConfig.views.table_rows import cell_combo_height, fix_row_height
 
 _COL_ACTIVE, _COL_LABEL, _COL_NIVEAU, _COL_CROSS, _COL_TEACHER, _COL_ENROLLED, _COL_GROUP = range(7)
 _GENERIC_PREFIX = 'matiere_supl'
@@ -54,6 +55,7 @@ class ClassesPanel(M3ScrollArea):
         self._loading = False
         self._rows = []
         self._rows_by_id = {}
+        self._teachers = []
         self._sort_col = None
         self._sort_ascending = True
 
@@ -74,6 +76,7 @@ class ClassesPanel(M3ScrollArea):
         lay.addLayout(head)
 
         self._table = M3TableWidget(theme=phi)
+        fix_row_height(self._table)
         self._table.setColumnCount(7)
         self._table.setHorizontalHeaderLabels(
             ["Actif", "Matière", "Niveau", "Piste croisée", "Enseignant", "Inscrits", "Groupe"])
@@ -100,6 +103,36 @@ class ClassesPanel(M3ScrollArea):
         item.setFlags(item.flags() & ~Qt.ItemIsEditable)
         return item
 
+    @staticmethod
+    def _teacher_label(t: dict) -> str:
+        # Le compte placeholder "en attente" a le même last_name/first_name
+        # (cf. db_enrolment.PLACEHOLDER_TEACHER_ID) : éviter de le dupliquer.
+        last, first = (t.get('last_name') or '').strip(), (t.get('first_name') or '').strip()
+        return last if last == first else f"{last} {first}".strip()
+
+    def _make_teacher_combo(self, cts_id: int, current_id, current_name: str) -> M3ComboBox:
+        combo = M3ComboBox(theme=theme_manager.phi_theme)
+        combo.setFixedHeight(cell_combo_height())
+        combo.blockSignals(True)
+        found = False
+        # Le placeholder "en attente" est épinglé en premier, plutôt que
+        # noyé dans le tri alphabétique des vrais enseignants.
+        ordered = sorted(self._teachers,
+                          key=lambda t: (t['id'] != db_enrolment.PLACEHOLDER_TEACHER_ID,
+                                          t['last_name'], t['first_name']))
+        for t in ordered:
+            combo.addItem(self._teacher_label(t), t['id'])
+            found = found or t['id'] == current_id
+        if current_id is not None and not found:
+            combo.addItem(current_name or f"ID {current_id}", current_id)
+        idx = combo.findData(current_id)
+        if idx >= 0:
+            combo.setCurrentIndex(idx)
+        combo.blockSignals(False)
+        combo.currentIndexChanged.connect(
+            lambda _idx, cid=cts_id, cb=combo: self._on_teacher_changed(cid, cb))
+        return combo
+
     def set_context(self, classroom_id: int, classroom_label: str,
                      classroom_enabled: bool, term_id: int, program_sigle: str | None = None):
         self._classroom_id = classroom_id
@@ -117,6 +150,7 @@ class ClassesPanel(M3ScrollArea):
         if self._classroom_id is None:
             self._table.setRowCount(0)
             return
+        self._teachers = db_enrolment.get_teachers()
         self._rows = db_enrolment.get_classroom_subjects(self._classroom_id, self._term_id)
         if self._sort_col is not None:
             self._rows.sort(key=lambda r: _row_sort_key(r, self._sort_col), reverse=not self._sort_ascending)
@@ -156,6 +190,8 @@ class ClassesPanel(M3ScrollArea):
 
             teacher = f"{r.get('teacher_first_name') or ''} {r.get('teacher_last_name') or ''}".strip()
             self._table.setItem(i, _COL_TEACHER, self._ro(teacher))
+            self._table.setCellWidget(i, _COL_TEACHER,
+                                       self._make_teacher_combo(r['id'], r.get('fk_teacher_id'), teacher))
             self._table.setItem(i, _COL_ENROLLED, self._ro(str(r['enrolled_count'])))
             self._table.setItem(i, _COL_GROUP, self._ro(r['group_label']))
 
@@ -225,6 +261,26 @@ class ClassesPanel(M3ScrollArea):
             cts['cross_track'] = cross_track
         else:
             QMessageBox.warning(self, "Erreur", "La mise à jour a échoué.")
+            self.reload()
+
+    @safe_slot("ClassesPanel._on_teacher_changed")
+    def _on_teacher_changed(self, cts_id: int, combo: M3ComboBox):
+        if self._loading:
+            return
+        cts = self._rows_by_id.get(cts_id)
+        if cts is None:
+            return
+        new_teacher_id = combo.currentData()
+        if new_teacher_id == cts.get('fk_teacher_id'):
+            return
+        if db_enrolment.set_classroom_termsubject_teacher(cts_id, new_teacher_id):
+            cts['fk_teacher_id'] = new_teacher_id
+            t = next((t for t in self._teachers if t['id'] == new_teacher_id), None)
+            if t is not None:
+                cts['teacher_first_name'] = t['first_name']
+                cts['teacher_last_name'] = t['last_name']
+        else:
+            QMessageBox.warning(self, "Erreur", "La mise à jour de l'enseignant a échoué.")
             self.reload()
 
     def _on_label_edited(self, cts: dict, item: QTableWidgetItem):

@@ -64,6 +64,10 @@ def main():
     app.setOrganizationName('Arc-en-Ciel')
     app.setStyle('Fusion')
     theme_manager.bind(app)  # réactivité thème (skill theme-reactivity)
+    # Les QMessageBox natifs Windows ignorent le QSS : boutons Oui/Non/OK
+    # invisibles (blanc sur blanc). Boîtes maison aux boutons toujours visibles.
+    from larccommon.msgbox import patch_message_boxes
+    patch_message_boxes()
     win = LoginWindow(
         title_prefix="LarcConfig",
         on_intranet_login=_on_intranet_login,

@@ -11,6 +11,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QHeaderView, QTableWidgetItem, QVBoxLayout, QWidget
 
 from LarcConfig.common import db_enrolment
+from LarcConfig.views.table_rows import fix_row_height
 
 _DETAIL_ROW_CAP = 300
 
@@ -47,6 +48,7 @@ class AnomaliesPanel(M3ScrollArea):
             theme=phi, style="body_small"))
 
         self._summary = M3TableWidget(theme=phi)
+        fix_row_height(self._summary)
         self._summary.setColumnCount(3)
         self._summary.setHorizontalHeaderLabels(["Code", "Anomalie", "Nombre"])
         h = self._summary.horizontalHeader()
@@ -60,6 +62,7 @@ class AnomaliesPanel(M3ScrollArea):
         self._detail_lbl = M3Label("Détail", theme=phi, style="title_medium")
         lay.addWidget(self._detail_lbl)
         self._detail = M3TableWidget(theme=phi)
+        fix_row_height(self._detail)
         self._detail.setAlternatingRowColors(False)
         lay.addWidget(self._detail)
 

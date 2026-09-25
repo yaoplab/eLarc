@@ -111,10 +111,109 @@ def get_event_types(fk_language: int):
         return []
 
 
-def set_event_type_active(event_type_id: int, enabled: bool) -> bool:
-    """Active/désactive un type — jamais de suppression (principe gabarit)."""
+FREE_LABEL_PREFIX = 'Categorie_Niv'   # libellé d'un emplacement libre : Categorie_Niv<ID parent>_Level_<rang>
+
+
+def _is_free_slot(label, active) -> bool:
+    """Emplacement libre = inactif ET libellé « Categorie_Niv… » (jamais encore utilisé)."""
+    return (not active) and str(label or '').startswith(FREE_LABEL_PREFIX)
+
+
+def _branch_ranges(event_type_id: int):
+    """Plages d'IDs de la branche d'un type, dans les DEUX langues (IDs hiérarchiques).
+
+    ID = [langue][niv1][niv2][niv3][niv4] : un type de niveau 1 couvre 1000 IDs, de
+    niveau 2 : 100, de niveau 3 : 10, de niveau 4 : 1. Le français (2) et l'anglais (1)
+    ont le même suffixe.
+    """
+    suffix = event_type_id % 10000
+    width = next((w for w in (1000, 100, 10) if suffix % w == 0), 1)
+    return [(lang * 10000 + suffix, lang * 10000 + suffix + width - 1) for lang in (1, 2)]
+
+
+def count_event_type_usage(event_type_id: int) -> int:
+    """Nombre d'événements (élèves + personnel) utilisant ce type ou un type en dessous."""
     c = _conn()
     if not c:
+        return 0
+    try:
+        cur = c.cursor()
+        (lo1, hi1), (lo2, hi2) = _branch_ranges(event_type_id)
+        total = 0
+        for table in ('student_event', 'staff_event'):
+            cur.execute(
+                f"SELECT COUNT(*) FROM {table} WHERE event_type_config_id BETWEEN %s AND %s "
+                f"OR event_type_config_id BETWEEN %s AND %s", (lo1, hi1, lo2, hi2))
+            total += cur.fetchone()[0]
+        return total
+    except Exception:
+        return 0
+
+
+def get_event_type_tree(fk_language: int, include_free: bool = False):
+    """Types d'événements d'une langue, dans l'ordre de l'arbre (parent puis enfants).
+
+    Par défaut tous les types sont renvoyés (actifs, et désactivés qui restent visibles pour
+    pouvoir être réactivés) SAUF les emplacements libres (`Categorie_Niv…` inactifs).
+    `include_free=True` ajoute ces emplacements pour pouvoir les renommer et les activer.
+    Une seule requête ; l'ordre hiérarchique est calculé en Python (les enfants sont
+    triés par ID, ce qui est l'ordre d'affichage avec les IDs hiérarchiques).
+    """
+    c = _conn()
+    if not c:
+        return []
+    try:
+        cur = c.cursor()
+        cur.execute(
+            "SELECT id, code, label, parent_id, is_active FROM larcauth_event_type_config "
+            "WHERE fk_language = %s ORDER BY id", (fk_language,))
+        rows = cur.fetchall()
+    except Exception:
+        return []
+    # événements par type (une requête par table), agrégés par branche ci-dessous
+    per_type: dict = {}
+    try:
+        for table in ('student_event', 'staff_event'):
+            cur.execute(f"SELECT event_type_config_id, COUNT(*) FROM {table} "
+                        f"WHERE event_type_config_id IS NOT NULL GROUP BY 1")
+            for type_id, n in cur.fetchall():
+                per_type[type_id] = per_type.get(type_id, 0) + n
+    except Exception:
+        per_type = {}
+
+    def usage_of(type_id):
+        return sum(n for t, n in per_type.items()
+                   if any(lo <= t <= hi for lo, hi in _branch_ranges(type_id)))
+
+    children: dict = {}
+    for r in rows:
+        children.setdefault(r[3], []).append(r)
+    out = []
+
+    def walk(parent_id, depth):
+        for r in children.get(parent_id, []):
+            free = _is_free_slot(r[2], r[4])
+            if include_free or not free:
+                out.append({
+                    'id': r[0], 'code': r[1], 'label': r[2], 'parent_id': r[3],
+                    'depth': depth, 'enabled': bool(r[4]),
+                    'usage': usage_of(r[0]) if per_type else 0,
+                    'is_free': free,
+                })
+            walk(r[0], depth + 1)
+    walk(None, 0)
+    return out
+
+
+def set_event_type_active(event_type_id: int, enabled: bool) -> bool:
+    """Active/désactive un type — jamais de suppression (principe gabarit).
+
+    Refuse de désactiver un type déjà utilisé par des événements (ou dont une branche l'est).
+    """
+    c = _conn()
+    if not c:
+        return False
+    if not enabled and count_event_type_usage(event_type_id):
         return False
     try:
         cur = c.cursor()
@@ -128,9 +227,14 @@ def set_event_type_active(event_type_id: int, enabled: bool) -> bool:
 
 
 def set_event_type_label(event_type_id: int, label: str) -> bool:
-    """Renomme le libellé d'un type, pour la langue de la ligne visée."""
+    """Renomme le libellé d'un type, pour la langue de la ligne visée.
+
+    Refuse de renommer un type déjà utilisé : cela changerait le sens des événements passés.
+    """
     c = _conn()
     if not c:
+        return False
+    if count_event_type_usage(event_type_id):
         return False
     try:
         cur = c.cursor()
@@ -148,7 +252,7 @@ def activate_event_type(
 ) -> bool:
     """Active le 1er slot potentiel libre sous `parent_code`, dans les 2 langues à la fois.
 
-    'Libre' = is_active=FALSE ET code LIKE 'type_niv%%' (jamais encore assigné) — même
+    'Libre' = is_active=FALSE ET libellé « Categorie_Niv… » (jamais encore assigné) — même
     mécanisme que le slot élève ('Name of %%'), cf. spec. Le code final
     (`{parent_code}_{code_suffix}` ou juste `code_suffix` pour une racine) est identique dans
     les 2 langues — c'est le lien conceptuel entre les deux arbres.
@@ -182,7 +286,7 @@ def activate_event_type(
                 cur.execute(
                     "SELECT id FROM larcauth_event_type_config "
                     "WHERE parent_id = %s AND fk_language = %s "
-                    "AND is_active = FALSE AND code LIKE 'type_niv%%' "
+                    "AND is_active = FALSE AND LEFT(label, 13) = 'Categorie_Niv' "
                     "ORDER BY id LIMIT 1",
                     (parent_id, fk_language),
                 )
@@ -190,7 +294,7 @@ def activate_event_type(
                 cur.execute(
                     "SELECT id FROM larcauth_event_type_config "
                     "WHERE parent_id IS NULL AND fk_language = %s "
-                    "AND is_active = FALSE AND code LIKE 'type_niv%%' "
+                    "AND is_active = FALSE AND LEFT(label, 13) = 'Categorie_Niv' "
                     "ORDER BY id LIMIT 1",
                     (fk_language,),
                 )

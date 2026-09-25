@@ -6,6 +6,7 @@ ajouteront les fonctions d'UPDATE-only à côté, jamais ici en silence.
 """
 from larccommon.database import db
 from larccommon.logger import log_error
+from LarcConfig.common.db_access import TEACHER_ID_MIN, TEACHER_ID_MAX
 
 
 def _conn():
@@ -282,6 +283,34 @@ def get_classroom_subjects(classroom_id: int, term_id: int) -> list[dict]:
         return []
 
 
+def get_teachers() -> list[dict]:
+    """Enseignants actifs du périmètre (collège/lycée, mêmes bornes que
+    db_access.TEACHER_ID_MIN/MAX) pour peupler la combobox d'affectation.
+
+    Source = `larcauth_teachadm` (enabled + is_teacher), pas `aecuser` :
+    `aecuser.is_active` est à false pour la plupart des enseignants
+    réellement affectés, et `type_teacher` est trop large (vérifié 2026-09-24)."""
+    c = _conn()
+    if not c:
+        return []
+    try:
+        cur = c.cursor()
+        cur.execute(
+            "SELECT a.id, a.first_name, a.last_name "
+            "FROM larcauth_teachadm t "
+            "JOIN larcauth_aecuser a ON a.id = t.aecuser_ptr_id "
+            "WHERE t.enabled AND t.is_teacher AND a.id BETWEEN %s AND %s "
+            "ORDER BY a.last_name, a.first_name",
+            (TEACHER_ID_MIN, TEACHER_ID_MAX),
+        )
+        return _rows(cur)
+    except Exception as e:
+        from larccommon.error_reporting import get_reporter
+        get_reporter().report_exception()
+        log_error(f"get_teachers: {e}")
+        return []
+
+
 def set_classroom_label(classroom_id: int, label: str) -> bool:
     """Renomme une classe (jamais de création/suppression — principe gabarit)."""
     c = _conn()
@@ -370,6 +399,28 @@ def set_classroom_termsubject_cross_track(cts_id: int, cross_track: bool) -> boo
         from larccommon.error_reporting import get_reporter
         get_reporter().report_exception()
         log_error(f"set_classroom_termsubject_cross_track: {e}")
+        return False
+
+
+def set_classroom_termsubject_teacher(cts_id: int, teacher_id: int) -> bool:
+    """Affecte un enseignant à un slot de matière-classe."""
+    c = _conn()
+    if not c:
+        return False
+    try:
+        from larccommon.audit_context import attach, refresh
+        refresh()
+        cur = c.cursor()
+        attach(c)
+        cur.execute(
+            "UPDATE larcauth_classroom_termsubject SET fk_teacher_id = %s, updated = NOW() WHERE id = %s",
+            (teacher_id, cts_id),
+        )
+        return cur.rowcount > 0
+    except Exception as e:
+        from larccommon.error_reporting import get_reporter
+        get_reporter().report_exception()
+        log_error(f"set_classroom_termsubject_teacher: {e}")
         return False
 
 

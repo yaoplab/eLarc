@@ -8,12 +8,14 @@ dependencies = [
     "PySide6>=6.5",
     "psycopg2-binary>=2.9",
     "materialyoucolor>=3.0",
+    "openpyxl>=3.1",
 ]
 
 [project.optional-dependencies]
 dev = [
     "pytest>=9",
     "pytest-qt>=4",
+    "reportlab>=4",   # génération du guide PDF (tools/build_guide_types.py)
     "ruff>=0.15",
     "black>=26",
     "pre-commit>=4",
