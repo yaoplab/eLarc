@@ -30,7 +30,7 @@ from phibuilder.widgets.button import ButtonVariant
 from LarcConfig.common import db_enrolment
 from LarcConfig.views.table_font import TableFontControl
 from LarcConfig.views.table_rows import fix_row_height
-from LarcConfig.common.enrolment_rules import MAX_SUBJECTS_PER_GROUP, Subject, dp_status, dp_status_reasons, entry_text
+from LarcConfig.common.enrolment_rules import MAX_SUBJECTS_PER_GROUP, Subject, dp_status, dp_status_reasons
 
 _NAME_COL = 0
 _STATUS_HEADER = "Statut DP"
@@ -264,7 +264,8 @@ class GridPanel(M3ScrollArea):
         return item
 
     def _format_entry(self, e: dict) -> str:
-        return entry_text(e['label'], bool(e.get('niv_sup')), bool(e.get('cross_track')), self._is_dp)
+        # Le niveau (NS/NM) est déjà dans le libellé ; seule la piste croisée est marquée.
+        return e['label'] + (" (*)" if e.get('cross_track') else "")
 
     def _column_labels(self) -> list[str]:
         labels = ["Élève"] + [g['group_label'] for g in self._groups]

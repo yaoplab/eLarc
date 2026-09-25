@@ -12,7 +12,7 @@ import datetime
 from dataclasses import dataclass, field
 
 from LarcConfig.common import db_enrolment, db_othersubjects
-from LarcConfig.common.enrolment_rules import Subject, dp_status, dp_status_reasons, entry_text
+from LarcConfig.common.enrolment_rules import Subject, dp_status, dp_status_reasons
 
 SCHOOL_NAME = "Arc-en-Ciel"
 BACKUP_FORMAT = "larcconfig-matieres-classe/1"
@@ -103,8 +103,7 @@ def _students_table(groups: list[dict], students: list[dict], enrolments: list[d
             cell = by_cell.get((sid, g['nr_group_in_pgm']), [])
             subjects += [Subject(group=g['nr_group_in_pgm'], niv_sup=bool(e.get('niv_sup'))) for e in cell]
             row.append("\n".join(
-                entry_text(e['label'], bool(e.get('niv_sup')), bool(e.get('cross_track')), is_dp)
-                for e in cell))
+                e['label'] + (" (*)" if e.get('cross_track') else "") for e in cell))
         flag = ""
         if is_dp:
             status = dp_status(subjects)

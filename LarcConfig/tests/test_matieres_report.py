@@ -61,16 +61,16 @@ def test_student_cells_and_dp_status(monkeypatch):
     _patch(monkeypatch, [], GROUPS, STUDENTS, enr)
     t = mr.build_report(DP, 1, 1).sections[1].tables[0]
     assert t.columns == ['Élève', 'Langue', 'Statut DP']
-    # « NS » ajouté sauf si le libellé le porte déjà
-    assert t.rows[0][1] == 'Français (NS)\nMaths NM'   # une matière par ligne, pas de « + »
+    assert t.rows[0][1] == 'Français\nMaths NM'   # une matière par ligne, pas de « + »
     assert t.rows[0][2].startswith('Non conforme — ')
     assert t.flags == ['warn']
 
 
-def test_ns_tag_not_repeated_when_label_already_has_it(monkeypatch):
-    _patch(monkeypatch, [], GROUPS, STUDENTS, [_enrol(1, 1, 'Anglais NS', 1, niv_sup=True)])
+def test_no_ns_tag_added_but_cross_track_marked(monkeypatch):
+    enr = [_enrol(1, 1, 'Anglais NS', 1, niv_sup=True), dict(_enrol(1, 2, 'Sciences', 1), cross_track=True)]
+    _patch(monkeypatch, [], GROUPS, STUDENTS, enr)
     t = mr.build_report(DP, 1, 1).sections[1].tables[0]
-    assert t.rows[0][1] == 'Anglais NS'
+    assert t.rows[0][1] == 'Anglais NS\nSciences (*)'
 
 
 def test_no_dp_status_column_outside_dp(monkeypatch):
