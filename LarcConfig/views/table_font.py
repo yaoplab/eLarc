@@ -18,10 +18,11 @@ _SETTINGS = QSettings("Larc", "LarcConfig")
 
 
 class TableFontControl:
-    def __init__(self, table: QTableWidget, key: str, lines: int = 1):
+    def __init__(self, table: QTableWidget, key: str, lines: int = 1, header_lines: int = 1):
         self._table = table
         self._key = f"table_font/{key}"
         self._lines = lines
+        self._header_lines = header_lines
         typo = theme_manager.phi_theme.typo
         # Tailles de base (px) du corps et de l'en-tête, telles que le thème les a posées.
         self._body_px = typo.body_medium.size
@@ -59,6 +60,11 @@ class TableFontControl:
         font.setPixelSize(body)
         height = max(ds.space_lg + ds.space_xs,
                      self._lines * QFontMetrics(font).lineSpacing() + 2 * ds.space_xs)
+        head_font = self._table.horizontalHeader().font()
+        head_font.setPixelSize(head)
+        # en-tête : hauteur de N lignes (libellés longs à la ligne) + marges haut/bas
+        self._table.horizontalHeader().setFixedHeight(
+            self._header_lines * QFontMetrics(head_font).lineSpacing() + 2 * ds.space_xs)
         vh = self._table.verticalHeader()
         vh.setSectionResizeMode(QHeaderView.ResizeMode.Fixed)
         vh.setDefaultSectionSize(height)

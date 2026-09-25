@@ -135,7 +135,7 @@ class GridPanel(M3ScrollArea):
         self._table.horizontalHeader().sectionDoubleClicked.connect(self._on_header_double_clicked)
         lay.addWidget(self._table)
 
-        self._font = TableFontControl(self._table, "grille_eleves", lines=2)
+        self._font = TableFontControl(self._table, "grille_eleves", lines=2, header_lines=2)
         self._font_smaller_btn.clicked.connect(self._on_font_smaller)
         self._font_normal_btn.clicked.connect(self._on_font_normal)
 
@@ -200,7 +200,8 @@ class GridPanel(M3ScrollArea):
             labels.append(_STATUS_HEADER)
         self._table.setHorizontalHeaderLabels(labels)
         for col, _g in enumerate(self._groups, start=1):
-            self._table.horizontalHeaderItem(col).setTextAlignment(Qt.AlignCenter)
+            # Centré, à la ligne si le libellé dépasse la colonne (2 lignes max, cf. TableFontControl)
+            self._table.horizontalHeaderItem(col).setTextAlignment(Qt.AlignCenter | Qt.TextWordWrap)
             self._table.horizontalHeaderItem(col).setToolTip(
                 "Double-cliquer pour appliquer une matière à toute la classe active")
 
