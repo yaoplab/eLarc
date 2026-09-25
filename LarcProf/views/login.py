@@ -87,6 +87,7 @@ class LoginWindow(LoginAuthMixin, LoginCreationMixin, LoginHelpersMixin, QMainWi
                 font-size: {fs(13)}px;
                 background: {p.surface};
                 color: {p.text_strong};
+                min-height: {ds.field_height}px;
             }}
             QLineEdit:focus {{ border-color: {p.primary}; }}
             QPushButton.btn-primary {{

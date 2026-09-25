@@ -7,9 +7,12 @@ class ListItemType:
     SINGLE_LINE = 0; TWO_LINE = 1; THREE_LINE = 2
 
 class M3ListWidget(QListWidget):
-    def __init__(self, theme: Theme | None = None, parent=None):
+    def __init__(self, theme: Theme | None = None, parent=None, compact: bool = False):
         super().__init__(parent)
         self._theme = theme
+        # compact : lignes serrées pour de longues listes de noms (le style
+        # par défaut impose min-height XXL, pensé pour des listes courtes).
+        self._compact = compact
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.setAlternatingRowColors(False)
         self.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
@@ -24,12 +27,15 @@ class M3ListWidget(QListWidget):
             )
             return
         c, s = self._theme.colors, self._theme.spacing
+        pad_v = SpacingToken.XS if self._compact else SpacingToken.MD
+        pad_h = SpacingToken.MD if self._compact else SpacingToken.LG
+        min_h = SpacingToken.MD if self._compact else SpacingToken.XXL
         self.setStyleSheet(f"""
 M3ListWidget {{ background-color: {c.surface}; border: 1px solid {c.outline}; border-radius: {s.spacing(SpacingToken.SM)}px;
   outline: none; color: {c.on_surface}; font-family: '{self._theme.typo.family}';
   font-size: {self._theme.typo.body_medium.size}px; padding: {s.spacing(SpacingToken.XS)}px; }}
-M3ListWidget::item {{ padding: {s.spacing(SpacingToken.MD)}px {s.spacing(SpacingToken.LG)}px;
-  border-radius: {s.spacing(SpacingToken.SM)}px; min-height: {s.spacing(SpacingToken.XXL)}px; }}
+M3ListWidget::item {{ padding: {s.spacing(pad_v)}px {s.spacing(pad_h)}px;
+  border-radius: {s.spacing(SpacingToken.SM)}px; min-height: {s.spacing(min_h)}px; }}
 M3ListWidget::item:selected {{ background-color: {c.primary_container}; color: {c.on_primary_container};
   border-radius: {s.spacing(SpacingToken.SM)}px; }}
 M3ListWidget::item:hover {{ background-color: {c.surface_container_highest}; }}

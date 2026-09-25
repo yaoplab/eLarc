@@ -141,8 +141,15 @@ class HomeWindow(QMainWindow):
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self.setWindowTitle('LarcProf — Tableau de bord')
-        self.resize(ds.window_width * 53 // 50, ds.window_height * 17 // 20)
-        self.setMinimumSize(ds.window_width * 41 // 50, ds.window_height * 13 // 20)
+        # +espace pour le bandeau ligne de temps (hero + TimelineWidget),
+        # sinon la carte Profil/Synchro/PEI-DP se fait comprimer et le texte
+        # se chevauche (fenetre a taille fixe, le bandeau n'etait pas prevu
+        # dans la hauteur d'origine).
+        _timeline_extra_h = ds.space_xxxl + ds.space_xl + ds.space_md
+        self.resize(ds.window_width * 53 // 50,
+                   ds.window_height * 17 // 20 + _timeline_extra_h)
+        self.setMinimumSize(ds.window_width * 41 // 50,
+                            ds.window_height * 13 // 20 + _timeline_extra_h)
 
         self._main_window = None
         self._pgm_buttons: dict[str, QPushButton] = {}

@@ -94,7 +94,8 @@ class GroupStatsMixin:
             cur = conn.cursor()
 
             if mode == "grp_all":
-                class_filter = "AND p.sigle IN ('PYP', 'PP', 'PEI', 'MYP', 'DPEn', 'DPFr')"
+                # LarcSuperviseur borné a college + lycee -- Maternelle/Primaire exclus du dashboard
+                class_filter = "AND p.sigle IN ('PEI', 'MYP', 'DPEn', 'DPFr')"
             elif mode == "grp_primaire":
                 class_filter = "AND (p.sigle ILIKE 'PYP' OR p.sigle ILIKE 'PP')"
             elif mode == "grp_college":
@@ -436,7 +437,8 @@ class GroupStatsMixin:
                 self._history_filter_type.lineEdit().setText("")
 
             if mode == "grp_all":
-                class_filter = "AND p.sigle IN ('PYP', 'PP', 'PEI', 'MYP', 'DPEn', 'DPFr')"
+                # LarcSuperviseur borné a college + lycee -- Maternelle/Primaire exclus du dashboard
+                class_filter = "AND p.sigle IN ('PEI', 'MYP', 'DPEn', 'DPFr')"
             elif mode == "grp_primaire":
                 class_filter = "AND (p.sigle ILIKE 'PYP' OR p.sigle ILIKE 'PP')"
             elif mode == "grp_college":

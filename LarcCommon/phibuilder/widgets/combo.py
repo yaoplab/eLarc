@@ -15,9 +15,26 @@ class M3ComboBox(QComboBox):
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         self.setMinimumHeight(_SCALE.spacing(SpacingToken.MD) * 2)  # 40px
         self.setCursor(Qt.PointingHandCursor)
+        # Une combo ne s'active que par clic/clavier : sans ça, la molette
+        # qui défile un tableau change silencieusement sa valeur.
+        self.setFocusPolicy(Qt.StrongFocus)
         if items:
             self.addItems(items)
         self._update_style()
+
+    def wheelEvent(self, event):
+        # Jamais de changement par la molette, même avec le focus : la fenêtre
+        # donne le focus initial à la première combo, sans aucun clic.
+        event.ignore()
+
+    def keyPressEvent(self, event):
+        # Flèches/Page/Début/Fin ne changent la valeur que liste ouverte (choix
+        # explicite) ; sinon elles reviennent au tableau/formulaire parent.
+        if event.key() in (Qt.Key_Up, Qt.Key_Down, Qt.Key_PageUp, Qt.Key_PageDown,
+                            Qt.Key_Home, Qt.Key_End):
+            event.ignore()
+            return
+        super().keyPressEvent(event)
     def _update_style(self):
         if self._theme is None:
             import warnings

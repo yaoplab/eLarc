@@ -9,11 +9,26 @@ Features:
 - Touch target: 32px minimum row height (ds.table_row_min)
 """
 
-from PySide6.QtWidgets import QTableWidget, QHeaderView, QSizePolicy, QAbstractItemView, QTableWidgetItem
+from PySide6.QtWidgets import (
+    QTableWidget, QHeaderView, QSizePolicy, QAbstractItemView, QTableWidgetItem, QStyle, QStyledItemDelegate,
+)
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QKeyEvent
+from PySide6.QtGui import QBrush, QKeyEvent
 from phibuilder.theme import Theme
 from phibuilder.phi.scale import SpacingToken
+
+
+class _BackgroundDelegate(QStyledItemDelegate):
+    """Peint le fond posé par `item.setBackground()` : la règle QSS
+    `M3TableWidget::item` (padding/bordure) fait sinon ignorer à Qt le
+    BackgroundRole — teintes de groupe, lignes en erreur, etc. restaient
+    blanches. Le fond de sélection reste géré par le QSS."""
+
+    def paint(self, painter, option, index):
+        brush = index.data(Qt.BackgroundRole)
+        if isinstance(brush, QBrush) and brush.style() != Qt.NoBrush and not (option.state & QStyle.State_Selected):
+            painter.fillRect(option.rect, brush)
+        super().paint(painter, option, index)
 
 
 class M3TableWidget(QTableWidget):
@@ -27,6 +42,7 @@ class M3TableWidget(QTableWidget):
         self.setAlternatingRowColors(False)
         self.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.setSelectionMode(QAbstractItemView.SingleSelection)
+        self.setItemDelegate(_BackgroundDelegate(self))
 
         # Horizontal header
         h = self.horizontalHeader()

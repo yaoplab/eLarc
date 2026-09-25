@@ -184,7 +184,8 @@ class DataLoader:
     # ------------------------------------------------------------------
     def _build_class_filter(self, mode: str) -> str:
         if mode == "grp_all":
-            return "AND p.sigle IN ('PYP', 'PP', 'PEI', 'MYP', 'DPEn', 'DPFr')"
+            # LarcSuperviseur borné a college + lycee -- Maternelle/Primaire exclus du dashboard
+            return "AND p.sigle IN ('PEI', 'MYP', 'DPEn', 'DPFr')"
         if mode == "grp_primaire":
             return "AND (p.sigle ILIKE 'PYP' OR p.sigle ILIKE 'PP')"
         if mode == "grp_college":
